@@ -5,7 +5,9 @@ export interface Subspecialty {
   id: string;
   name: string;
   active: boolean;
-  userIds: string[];   // physician IDs assigned to this subspecialty
+  userIds: string[];      // physician IDs assigned to this subspecialty
+  description?: string;   // optional description
+  specimenIds?: string[]; // specimen types assigned to this subspecialty
 }
 
 interface SubspecialtyContextType {

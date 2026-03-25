@@ -86,7 +86,7 @@ const CasePanel: React.FC<CasePanelProps> = ({
           <div>
             <div style={{ fontSize: 13, color: '#9ca3af' }}>Similar Cases Assistant</div>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-              {patientName} • MRN: {mrn}
+              {patientName} &bull; MRN: {mrn}
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../../formedrix.css';
 import { Subspecialty } from '../../../contexts/useSubspecialties';
 
 interface Props {

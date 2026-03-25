@@ -22,11 +22,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import '../../../formedrix.css';
 import { ShortcutMap, Shortcut } from './KeyboardShortcutsModal';
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
-const SHORTCUTS_LS_KEY = 'pathscribe_shortcuts_v1';
+const SHORTCUTS_LS_KEY = 'formedrix_shortcuts_v1';
 
 const DEFAULT_SHORTCUTS: ShortcutMap = {
   bold:             { ctrl: true,  shift: true,  alt: false, meta: false, key: 'B' },

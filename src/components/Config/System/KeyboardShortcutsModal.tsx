@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { SHORTCUT_GROUPS, ActionId } from "../constants/systemActions";
+import '../../../formedrix.css';
+import { SHORTCUT_GROUPS } from "../../constants/systemActions";
 
 export type Shortcut = {
   ctrl: boolean;
@@ -114,9 +115,9 @@ const KeyboardShortcutsModal: React.FC<Props> = ({
   };
 
   // Groups sourced from systemActions.ts — single source of truth
-  const groups = SHORTCUT_GROUPS.map(g => ({
+  const groups = SHORTCUT_GROUPS.map((g: any) => ({
     title: g.title,
-    commands: g.actions.map(a => ({ id: a.id, label: a.label })),
+    commands: g.actions.map((a: any) => ({ id: a.id, label: a.label })),
   }));
 
   return (
@@ -188,8 +189,8 @@ const KeyboardShortcutsModal: React.FC<Props> = ({
           padding: "0 40px 40px 40px",
         }}
       >
-        {groups.map((group) => {
-          const filtered = group.commands.filter((cmd) =>
+        {groups.map((group: any) => {
+          const filtered = group.commands.filter((cmd: any) =>
             cmd.label.toLowerCase().includes(search.toLowerCase())
           );
 
@@ -208,7 +209,7 @@ const KeyboardShortcutsModal: React.FC<Props> = ({
                 {group.title}
               </h3>
 
-              {filtered.map((cmd) => (
+              {filtered.map((cmd: any) => (
                 <div
                   key={cmd.id}
                   style={{

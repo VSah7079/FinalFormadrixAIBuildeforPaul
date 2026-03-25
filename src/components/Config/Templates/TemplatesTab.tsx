@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../../formedrix.css';
 import { AdminTemplateList } from './AdminTemplateList';
 
 type TemplateSection = 'review' | 'list';

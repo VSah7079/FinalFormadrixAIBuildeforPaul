@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../../formedrix.css';
 import MacroPanel from './MacroPanel';
 
 const MacrosTab: React.FC = () => {

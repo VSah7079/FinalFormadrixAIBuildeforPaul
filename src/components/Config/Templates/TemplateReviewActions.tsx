@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import '../../../formedrix.css';
 
 export const TemplateReviewActions: React.FC = () => {
   const [status, setStatus] = useState<"pending" | "approved" | "changes" | "rejected">("pending");

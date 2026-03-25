@@ -1,8 +1,7 @@
-import { ServiceResult, ID } from '../types';
+import { ServiceResult } from '../types';
 import { storageGet, storageSet } from '../mockStorage';
 import type {
   AuditLog, ErrorLog,
-  NewAuditLog, NewErrorLog,
   AuditFilterParams, ErrorFilterParams,
   IAuditService,
 } from './IAuditService';
@@ -128,10 +127,10 @@ const SEED_ERROR_LOGS: ErrorLog[] = [
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const loadAudit  = () => storageGet<AuditLog[]>('pathscribe_audit_logs',  SEED_AUDIT_LOGS);
-const loadErrors = () => storageGet<ErrorLog[]>('pathscribe_error_logs',  SEED_ERROR_LOGS);
-const persistAudit  = (data: AuditLog[])  => storageSet('pathscribe_audit_logs',  data);
-const persistErrors = (data: ErrorLog[])  => storageSet('pathscribe_error_logs',  data);
+const loadAudit  = () => storageGet<AuditLog[]>('formedrix_audit_logs',  SEED_AUDIT_LOGS);
+const loadErrors = () => storageGet<ErrorLog[]>('formedrix_error_logs',  SEED_ERROR_LOGS);
+const persistAudit  = (data: AuditLog[])  => storageSet('formedrix_audit_logs',  data);
+const persistErrors = (data: ErrorLog[])  => storageSet('formedrix_error_logs',  data);
 
 let MOCK_AUDIT_LOGS:  AuditLog[]  = loadAudit();
 let MOCK_ERROR_LOGS:  ErrorLog[]  = loadErrors();

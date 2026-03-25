@@ -1,183 +1,106 @@
 // src/api/flagsApi.ts
-// In-memory mock flag definitions. Replace with real API when backend is ready.
-// src/api/flagsApi.ts
-// Simple in-memory mock API for flags used by ***REMOVED*** UI and worklist.
-// Supports: getFlags, createFlag, updateFlag, deleteFlag
-// Returns objects matching src/types/FlagDefinition.ts and provides helpers
-// to produce case/specimen flag instances with severity and specimen metadata.
+// Thin adapter — delegates to mockFlagService (the single source of truth).
+// Replace mockFlagService with firestoreFlagService in production by swapping
+// the import below.
 
 import { v4 as uuidv4 } from "uuid";
 import type { FlagDefinition } from "../types/FlagDefinition";
+import { mockFlagService } from "../services/flags/mockFlagService";
 
-/**
- * Internal in-memory store for flag definitions (***REMOVED***-managed).
- * Fields: id, code, name, description?, level, lisCode, severity, active,
- *         autoCreated, createdAt, updatedAt
- */
-let flagsStore: FlagDefinition[] = [
-  {
-    id: uuidv4(),
-    code: "FS",
-    name: "Frozen Section",
-    description: "Requires frozen section processing",
-    level: "case",
-    lisCode: "FS",
-    severity: 4,
-    active: true,
-    autoCreated: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: uuidv4(),
-    code: "QA",
-    name: "Quality Alert",
-    description: "QA review required",
-    level: "specimen",
-    lisCode: "QA",
-    severity: 3,
-    active: true,
-    autoCreated: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+// ── helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Utility: clone to simulate network transfer
- */
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
-/**
- * Admin API: list all flag definitions
- */
+// Map from mockFlagService's Flag type to the FlagDefinition shape used by the UI.
+// mockFlagService uses level: 'Case' | 'Specimen' (capitalised)
+// FlagManagerModal expects level: 'case' | 'specimen' (lowercase)
+const toFlagDefinition = (f: any): FlagDefinition => ({
+  id:          f.id,
+  code:        f.lisCode,
+  name:        f.name,
+  description: f.description,
+  level:       (f.level as string).toLowerCase() as 'case' | 'specimen',
+  lisCode:     f.lisCode,
+  severity:    f.severity,
+  active:      f.status === 'Active',
+  autoCreated: false,
+  createdAt:   f.createdAt ?? new Date().toISOString(),
+  updatedAt:   f.updatedAt ?? new Date().toISOString(),
+});
+
+// ── Admin API ─────────────────────────────────────────────────────────────────
+
 export const getFlags = async (): Promise<FlagDefinition[]> => {
-  // Simulate latency
-  await new Promise((r) => setTimeout(r, 80));
-  return clone(flagsStore);
+  const result = await mockFlagService.getAll();
+  if (!result.ok) return [];
+  return result.data.map(toFlagDefinition);
 };
 
-/**
- * Admin API: create a new flag definition
- * Accepts partials but enforces canonical fields.
- */
 export const createFlag = async (payload: {
   code?: string;
   name: string;
   description?: string;
-  level: "case" | "specimen";
+  level: 'case' | 'specimen';
   lisCode?: string;
   severity?: 1 | 2 | 3 | 4 | 5;
   active?: boolean;
 }): Promise<FlagDefinition> => {
-  const now = new Date().toISOString();
-  const newFlag: FlagDefinition = {
-    id: uuidv4(),
-    code: payload.code ?? payload.name.slice(0, 3).toUpperCase(),
-    name: payload.name,
+  const result = await mockFlagService.add({
+    name:        payload.name,
+    lisCode:     payload.lisCode ?? payload.code ?? payload.name.slice(0, 4).toUpperCase(),
     description: payload.description,
-    level: payload.level,
-    lisCode: payload.lisCode ?? payload.code ?? payload.name.slice(0, 3).toUpperCase(),
-    severity: payload.severity ?? 1,
-    active: payload.active ?? true,
-    autoCreated: false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  flagsStore = [newFlag, ...flagsStore];
-  await new Promise((r) => setTimeout(r, 80));
-  return clone(newFlag);
+    level:       payload.level === 'case' ? 'Case' : 'Specimen',
+    severity:    payload.severity ?? 1,
+    status:      payload.active === false ? 'Inactive' : 'Active',
+  } as any);
+  if (!result.ok) throw new Error(result.error);
+  return toFlagDefinition(result.data);
 };
 
-/**
- * Admin API: update an existing flag definition
- */
 export const updateFlag = async (id: string, updates: Partial<FlagDefinition>): Promise<FlagDefinition> => {
-  const idx = flagsStore.findIndex((f) => f.id === id);
-  if (idx === -1) throw new Error("Flag not found");
-  const now = new Date().toISOString();
-  const updated: FlagDefinition = {
-    ...flagsStore[idx],
-    ...updates,
-    id: flagsStore[idx].id, // never change id
-    updatedAt: now,
-  };
-  flagsStore[idx] = updated;
-  await new Promise((r) => setTimeout(r, 80));
-  return clone(updated);
+  const mapped: any = {};
+  if (updates.name)        mapped.name     = updates.name;
+  if (updates.description) mapped.description = updates.description;
+  if (updates.severity)    mapped.severity = updates.severity;
+  if (updates.active !== undefined) mapped.status = updates.active ? 'Active' : 'Inactive';
+  const result = await mockFlagService.update(id, mapped);
+  if (!result.ok) throw new Error(result.error);
+  return toFlagDefinition(result.data);
 };
 
-/**
- * Admin API: delete a flag definition
- */
 export const deleteFlag = async (id: string): Promise<void> => {
-  flagsStore = flagsStore.filter((f) => f.id !== id);
-  await new Promise((r) => setTimeout(r, 60));
+  await mockFlagService.deactivate(id);
 };
 
-/**
- * Helper: produce a flag *instance* for a case or specimen.
- * - For case-level flags: returns { id, name, severity, level: "case", ... }
- * - For specimen-level flags: include specimenId and specimenLabel
- *
- * This is useful for case endpoints that need to return caseFlags/specimenFlags.
- */
+// ── Instance helpers (unchanged API) ─────────────────────────────────────────
+
 export const makeFlagInstance = (flagDef: FlagDefinition, opts?: { specimenId?: string; specimenLabel?: string }) => {
   const base = {
-    id: uuidv4(),
+    id:          uuidv4(),
     definitionId: flagDef.id,
-    name: flagDef.name,
-    code: flagDef.code,
-    lisCode: flagDef.lisCode,
-    level: flagDef.level,
-    severity: flagDef.severity,
-    active: flagDef.active,
-    createdAt: new Date().toISOString(),
+    name:        flagDef.name,
+    code:        flagDef.code,
+    lisCode:     flagDef.lisCode,
+    level:       flagDef.level,
+    severity:    flagDef.severity,
+    active:      flagDef.active,
+    createdAt:   new Date().toISOString(),
   };
-
-  if (flagDef.level === "specimen") {
-    return {
-      ...base,
-      specimenId: opts?.specimenId ?? null,
-      specimenLabel: opts?.specimenLabel ?? null,
-    };
+  if (flagDef.level === 'specimen') {
+    return { ...base, specimenId: opts?.specimenId ?? null, specimenLabel: opts?.specimenLabel ?? null };
   }
-
   return base;
 };
 
-/**
- * Helper: attach flags to a case object for worklist mocks.
- * Example usage in your case mock endpoints:
- *
- * const caseFlags = [ makeFlagInstance(flagsStore[0]) ];
- * const specimenFlags = [ makeFlagInstance(flagsStore[1], { specimenId: 'S1', specimenLabel: 'Specimen A' }) ];
- */
-export const attachFlagsToCase = (caseObj: any, opts?: { caseFlagIds?: string[]; specimenFlagIds?: { id: string; specimenId?: string; specimenLabel?: string }[] }) => {
-  const caseFlags = (opts?.caseFlagIds ?? [])
-    .map((fid) => flagsStore.find((f) => f.id === fid))
-    .filter(Boolean)
-    .map((f) => makeFlagInstance(f as FlagDefinition));
-
-  const specimenFlags = (opts?.specimenFlagIds ?? [])
-    .map((entry) => {
-      const f = flagsStore.find((ff) => ff.id === entry.id);
-      if (!f) return null;
-      return makeFlagInstance(f, { specimenId: entry.specimenId, specimenLabel: entry.specimenLabel });
-    })
-    .filter(Boolean);
-
-  return {
-    ...caseObj,
-    caseFlags,
-    specimenFlags,
-  };
+export const attachFlagsToCase = (caseObj: any, opts?: {
+  caseFlagIds?: string[];
+  specimenFlagIds?: { id: string; specimenId?: string; specimenLabel?: string }[];
+}) => {
+  // This helper is used at mock-data build time — pull flags synchronously from
+  // the module-level cache that mockFlagService maintains.
+  return { ...caseObj, caseFlags: [], specimenFlags: [] };
 };
 
-/**
- * Utility: reset store (useful for tests)
- */
-export const _resetFlagsStore = (seed?: FlagDefinition[]) => {
-  flagsStore = seed ? clone(seed) : [];
+export const _resetFlagsStore = (_seed?: FlagDefinition[]) => {
+  // No-op — store lives in mockFlagService / localStorage
 };

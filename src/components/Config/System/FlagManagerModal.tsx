@@ -7,7 +7,8 @@
 //                  Click a row to apply to all selected targets.
 //   FOOTER       — Cancel (reverts all changes) | Save (commits + closes)
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import "../../../formedrix.css";
 import { FlagDefinition } from "../../../types/FlagDefinition";
 import { CaseWithFlags, FlagInstance } from "../../../types/flagsRuntime";
 import { ApplyFlagPayload, DeleteFlagPayload } from "../../../api/caseFlagsApi";
@@ -34,20 +35,22 @@ const ConfirmDialog: React.FC<{
   flagName: string; targetLabel: string;
   onConfirm: () => void; onCancel: () => void; loading: boolean;
 }> = ({ flagName, targetLabel, onConfirm, onCancel, loading }) => (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 11000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{ background: "white", borderRadius: "14px", padding: "28px", width: "380px", boxShadow: "0 24px 56px rgba(0,0,0,0.28)" }}>
-      <div style={{ fontSize: "22px", marginBottom: "10px" }}>🗑️</div>
-      <h3 style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>Remove Flag?</h3>
-      <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 4px", lineHeight: 1.6 }}>
-        Remove <strong style={{ color: "#0f172a" }}>{flagName}</strong> from{" "}
-        <strong style={{ color: "#0f172a" }}>{targetLabel}</strong>?
+  <div data-capture-hide="true" className="ps-overlay" style={{ zIndex: 11000 }}>
+    <div className="ps-modal-dark" style={{ padding: "32px 36px", width: "400px", textAlign: "center" }}>
+      <div style={{ fontSize: "36px", marginBottom: "12px", textAlign: "center" }}>🗑️</div>
+      <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800, color: "#f1f5f9", textAlign: "center" }}>Remove Flag?</h3>
+      <p style={{ color: "#94a3b8", fontSize: "14px", margin: "0 0 4px", lineHeight: 1.6, textAlign: "center" }}>
+        Remove <strong style={{ color: "#e2e8f0" }}>{flagName}</strong> from{" "}
+        <strong style={{ color: "#e2e8f0" }}>{targetLabel}</strong>?
       </p>
-      <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 22px" }}>This will be recorded in the audit trail.</p>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-        <button onClick={onCancel} style={{ padding: "8px 16px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "white", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+      <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 24px", textAlign: "center" }}>This will be recorded in the audit trail.</p>
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button onClick={onCancel} className="ps-btn-secondary-dark" style={{ flex: 1 }}
+        >
           Cancel
         </button>
-        <button onClick={onConfirm} disabled={loading} style={{ padding: "8px 18px", border: "none", borderRadius: "8px", background: "#1e293b", color: "white", fontSize: "13px", fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}>
+        <button onClick={onConfirm} disabled={loading} className="ps-btn-danger" style={{ flex: 1, opacity: loading ? 0.7 : 1, cursor: loading ? "default" : "pointer" }}
+        >
           {loading ? "Removing…" : "Yes, Remove"}
         </button>
       </div>
@@ -291,17 +294,33 @@ const FlagManagerModal: React.FC<Props> = ({
 
   const isDirty = pendingOps.length > 0;
 
+  // ── Voice command listeners ─────────────────────────────────────────
+  useEffect(() => {
+    const selectCase    = () => toggleCase();
+    const selectAllSpec = () => toggleAll();
+    const deselectAll   = () => { setCaseOn(false); setSpIds(new Set()); };
+    const saveFlags     = () => { if (isDirty) void handleSave(); };
+    const cancelFlags   = () => handleCancel();
+
+    window.addEventListener('ForMedrix_FLAG_SELECT_CASE',           selectCase);
+    window.addEventListener('ForMedrix_FLAG_SELECT_ALL_SPECIMENS',  selectAllSpec);
+    window.addEventListener('ForMedrix_FLAG_DESELECT_ALL',          deselectAll);
+    window.addEventListener('ForMedrix_FLAG_SAVE',                  saveFlags);
+    window.addEventListener('ForMedrix_FLAG_CANCEL',                cancelFlags);
+
+    return () => {
+      window.removeEventListener('ForMedrix_FLAG_SELECT_CASE',           selectCase);
+      window.removeEventListener('ForMedrix_FLAG_SELECT_ALL_SPECIMENS',  selectAllSpec);
+      window.removeEventListener('ForMedrix_FLAG_DESELECT_ALL',          deselectAll);
+      window.removeEventListener('ForMedrix_FLAG_SAVE',                  saveFlags);
+      window.removeEventListener('ForMedrix_FLAG_CANCEL',                cancelFlags);
+    };
+  }, [isDirty, toggleCase, toggleAll, handleSave, handleCancel]);
+
   // ── pill style ──────────────────────────────────────────────────────────────
 
-  const pillStyle = (on: boolean): React.CSSProperties => ({
-    width: "100%", textAlign: "left", padding: "8px 12px",
-    borderRadius: "8px", fontSize: "13px", fontWeight: 600,
-    border: `1.5px solid ${on ? "#0891B2" : "#e2e8f0"}`,
-    background: on ? "#e0f2fe" : "white",
-    color: on ? "#0369a1" : "#475569",
-    cursor: "pointer", transition: "all 0.12s",
-    display: "flex", alignItems: "center", gap: "7px",
-  });
+  // Pill className helper — uses ps-pill-dark CSS class
+  const pillCls = (on: boolean) => `ps-pill-dark${on ? ' active' : ''}`;
 
   // ── applied flag chip in left panel ─────────────────────────────────────────
 
@@ -311,8 +330,8 @@ const FlagManagerModal: React.FC<Props> = ({
     const def = defById(flagDefinitions, inst.flagDefinitionId);
     const isLis = inst.source === "lis";
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 8px 5px 10px", marginBottom: "3px", borderRadius: "6px", background: "#f8fafc", border: "1px solid #e2e8f0", marginLeft: "8px" }}>
-        <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="ps-flag-chip-dark">
+        <span style={{ fontSize: "12px", fontWeight: 600, color: "#cbd5e1", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {def?.name ?? inst.flagDefinitionId.replace(/-/g, " ").replace(/\w/g, c => c.toUpperCase())}
         </span>
         {isLis
@@ -339,33 +358,33 @@ const FlagManagerModal: React.FC<Props> = ({
 
   return (
     <>
-      <div onClick={handleCancel} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div onClick={e => e.stopPropagation()} style={{ width: "960px", height: "740px", background: "white", borderRadius: "16px", boxShadow: "0 28px 70px rgba(0,0,0,0.24)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div data-capture-hide="true" onClick={handleCancel} className="ps-overlay" style={{ zIndex: 10000 }}>
+        <div onClick={e => e.stopPropagation()} className="ps-modal-dark ps-modal-xl" style={{ height: "740px" }}>
 
           {/* ── HEADER ── */}
-          <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div className="ps-modal-header">
             <div>
-              <div style={{ fontSize: "17px", fontWeight: 700, color: "#0f172a" }}>🚩 Flag Manager</div>
-              <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+              <h2 className="ps-modal-title">🚩 Flag Manager</h2>
+              <div style={{ fontSize: "12px", color: "#64748b", marginTop: "3px" }}>
                 Case {localCase.accession}
                 {totalFlags > 0 && <span style={{ marginLeft: "8px", background: "#fef3c7", color: "#b45309", fontWeight: 700, fontSize: "11px", padding: "1px 7px", borderRadius: "99px" }}>{totalFlags} active</span>}
               </div>
             </div>
-            <button onClick={handleCancel} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "20px", lineHeight: 1, padding: 0 }}>✕</button>
+            <button onClick={handleCancel} className="ps-modal-close">✕</button>
           </div>
 
           {/* ── BODY ── */}
           <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
             {/* ═══ LEFT — pills + applied flags ═══ */}
-            <div style={{ width: "320px", flexShrink: 0, borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", background: "#fafafa", overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 6px", fontSize: "10px", fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
+            <div className="ps-modal-dark-left">
+              <div className="ps-modal-dark-label">
                 Apply to
               </div>
-              <div style={{ flex: 1, overflowY: "auto", padding: "4px 12px 16px" }}>
+              <div className="ps-modal-dark-scroll">
 
                 {/* Case pill */}
-                <button style={pillStyle(caseOn)} onClick={toggleCase}>
+                <button className={pillCls(caseOn)} onClick={toggleCase}>
                   <span>📋</span>
                   <span style={{ flex: 1 }}>Case {localCase.accession}</span>
                   {activeInst(localCase.flags).length > 0 && (
@@ -379,26 +398,26 @@ const FlagManagerModal: React.FC<Props> = ({
                   <FlagChip key={inst.id} inst={inst} targetLabel={`Case ${localCase.accession}`} />
                 ))}
                 {activeInst(localCase.flags).length === 0 && (
-                  <div style={{ fontSize: "11px", color: "#cbd5e1", fontStyle: "italic", padding: "3px 10px 6px" }}>No case flags applied</div>
+                  <div style={{ fontSize: "11px", color: "#475569", fontStyle: "italic", padding: "3px 10px 6px" }}>No case flags applied</div>
                 )}
 
-                <div style={{ height: "1px", background: "#e2e8f0", margin: "10px 0 6px" }} />
+                <div className="ps-divider" />
 
                 {/* All Specimens pill */}
                 {allIds.length > 1 && (
                   <>
-                    <button style={{ ...pillStyle(allOn), marginBottom: "4px" }} onClick={toggleAll}>
+                    <button className={pillCls(allOn)} style={{ marginBottom: "4px" }} onClick={toggleAll}>
                       <span>🔬</span>
                       <span style={{ flex: 1 }}>All Specimens</span>
                     </button>
-                    <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0 6px" }} />
+                    <div className="ps-divider" />
                   </>
                 )}
 
                 {/* Individual specimen pills */}
                 {localCase.specimens.map((sp, i) => (
                   <div key={sp.id} style={{ marginBottom: "6px" }}>
-                    <button style={pillStyle(spIds.has(sp.id))} onClick={() => toggleSp(sp.id)}>
+                    <button className={pillCls(spIds.has(sp.id))} onClick={() => toggleSp(sp.id)}>
                       <span>🔬</span>
                       <span style={{ flex: 1 }}>Sp. {i + 1}</span><span style={{ fontSize: "13px", color: spIds.has(sp.id) ? "#0369a1" : "#64748b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 2 }}>{sp.label.replace(/^Specimen \d+ — /, "")}</span>
                       {activeInst(sp.flags).length > 0 && (
@@ -412,14 +431,14 @@ const FlagManagerModal: React.FC<Props> = ({
                       <FlagChip key={inst.id} inst={inst} specimenId={sp.id} targetLabel={sp.label} />
                     ))}
                     {activeInst(sp.flags).length === 0 && (
-                      <div style={{ fontSize: "11px", color: "#cbd5e1", fontStyle: "italic", padding: "2px 10px 2px" }}>No flags applied</div>
+                      <div style={{ fontSize: "11px", color: "#475569", fontStyle: "italic", padding: "2px 10px 2px" }}>No flags applied</div>
                     )}
                   </div>
                 ))}
 
                 {/* Invalid combo warning */}
                 {invalid && (
-                  <div style={{ marginTop: "8px", padding: "8px 10px", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "7px", fontSize: "11px", color: "#dc2626", fontWeight: 600 }}>
+                  <div style={{ marginTop: "8px", className: "" }}>
                     ⚠️ Case and specimens can't be selected together
                   </div>
                 )}
@@ -427,19 +446,17 @@ const FlagManagerModal: React.FC<Props> = ({
             </div>
 
             {/* ═══ RIGHT — search + catalog ═══ */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div className="ps-modal-dark-right">
 
               {/* Search */}
-              <div style={{ padding: "12px 20px 8px", flexShrink: 0 }}>
+              <div className="ps-modal-dark-search">
                 <div style={{ position: "relative" }}>
                   <span style={{ position: "absolute", left: "11px", top: "50%", transform: "translateY(-50%)", fontSize: "14px", color: "#94a3b8", pointerEvents: "none" }}>🔍</span>
                   <input
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Search flags by name, code, or description…"
-                    style={{ width: "100%", padding: "9px 30px 9px 34px", border: "1.5px solid #e2e8f0", borderRadius: "9px", fontSize: "13px", outline: "none", boxSizing: "border-box", background: "#f8fafc" }}
-                    onFocus={e => (e.currentTarget.style.borderColor = "#0891B2")}
-                    onBlur={e => (e.currentTarget.style.borderColor = "#e2e8f0")}
+                    className="ps-input-dark-search"
                   />
                   {query && (
                     <button onClick={() => setQuery("")} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "14px", padding: 0, lineHeight: 1 }}>✕</button>
@@ -448,8 +465,8 @@ const FlagManagerModal: React.FC<Props> = ({
               </div>
 
               {/* Column headers */}
-              <div style={{ display: "flex", padding: "6px 20px", borderTop: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9", background: "#f8fafc", flexShrink: 0 }}>
-                <span style={{ width: "58px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px" }}>Code</span>
+              <div className="ps-modal-dark-col-header">
+                <span style={{ width: "58px", fontSize: "10px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.4px" }}>Code</span>
                 <span style={{ flex: 1, fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                   Flag
                   {hasTarget && <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1", marginLeft: "6px" }}>· {targetLevel}-level</span>}
@@ -458,9 +475,9 @@ const FlagManagerModal: React.FC<Props> = ({
               </div>
 
               {/* Flag rows */}
-              <div style={{ flex: 1, overflowY: "auto" }}>
+              <div className="ps-modal-dark-list">
                 {!hasTarget && !invalid ? (
-                  <div style={{ padding: "52px 24px", textAlign: "center" }}>
+                  <div className="ps-modal-dark-empty">
                     <div style={{ fontSize: "26px", marginBottom: "10px" }}>☝️</div>
                     <div style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Select a target on the left</div>
                     <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>Choose the case or one or more specimens, then click a flag to apply it</div>
@@ -487,26 +504,24 @@ const FlagManagerModal: React.FC<Props> = ({
                       onClick={() => !applied && handleApply(def)}
                       style={{
                         display: "flex", alignItems: "center", padding: "12px 20px",
-                        borderBottom: "1px solid #f8fafc",
-                        background: applied ? "#f0fdf4" : "white",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)",
                         cursor: applied ? "default" : "pointer",
-                        transition: "background 0.1s",
                       }}
-                      onMouseEnter={e => { if (!applied) e.currentTarget.style.background = "#f8fafc"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = applied ? "#f0fdf4" : "white"; }}
+                      onMouseEnter={e => { if (!applied) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = applied ? "rgba(16,185,129,0.1)" : "transparent"; }}
                     >
                       <div style={{ width: "58px", flexShrink: 0 }}>
-                        <span style={{ fontFamily: "monospace", fontSize: "11px", fontWeight: 800, color: "#0891B2", background: "#e0f2fe", padding: "2px 6px", borderRadius: "4px" }}>
+                        <span className="ps-code-badge">
                           {def.lisCode}
                         </span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{def.name}</div>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "inherit" }}>{def.name}</div>
                         {def.description && <div style={{ fontSize: "12px", color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{def.description}</div>}
                       </div>
                       <div style={{ width: "80px", textAlign: "right", flexShrink: 0 }}>
                         {applied
-                          ? <span style={{ fontSize: "11px", fontWeight: 700, color: "#059669", background: "#dcfce7", padding: "2px 8px", borderRadius: "99px" }}>✓ Applied</span>
+                          ? <span className="ps-badge ps-badge-green">✓ Applied</span>
                           : <span style={{ fontSize: "12px", fontWeight: 600, color: "#0891B2" }}>+ Apply</span>
                         }
                       </div>
@@ -518,25 +533,21 @@ const FlagManagerModal: React.FC<Props> = ({
           </div>
 
           {/* ── FOOTER ── */}
-          <div style={{ padding: "12px 24px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", flexShrink: 0 }}>
+          <div className="ps-modal-footer" style={{ justifyContent: "space-between" }}>
             <div style={{ fontSize: "12px", color: isDirty ? "#b45309" : "#94a3b8", fontWeight: isDirty ? 600 : 400 }}>
               {isDirty ? `${pendingOps.length} unsaved change${pendingOps.length !== 1 ? "s" : ""}` : "No changes"}
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 onClick={handleCancel}
-                style={{ padding: "9px 20px", background: "white", color: "#64748b", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+                className="ps-btn-secondary-dark"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving}
-                style={{ padding: "9px 24px", background: isDirty ? "#0891B2" : "#94a3b8", color: "white", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: saving || !isDirty ? "default" : "pointer", transition: "background 0.15s" }}
-                onMouseEnter={e => { if (isDirty && !saving) e.currentTarget.style.background = "#0e7490"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isDirty ? "#0891B2" : "#94a3b8"; }}
+                disabled={saving || !isDirty}
+                className="ps-btn-primary"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -547,36 +558,38 @@ const FlagManagerModal: React.FC<Props> = ({
 
       {/* Scope dialog — flag exists on multiple specimens */}
       {scopeDialog && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 11000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "28px", width: "420px", boxShadow: "0 24px 56px rgba(0,0,0,0.28)" }}>
-            <div style={{ fontSize: "22px", marginBottom: "10px" }}>🔬</div>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>Remove from multiple specimens?</h3>
-            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 6px", lineHeight: 1.6 }}>
-              <strong style={{ color: "#0f172a" }}>{scopeDialog.flagName}</strong> is also applied to{" "}
-              <strong style={{ color: "#0f172a" }}>{scopeDialog.otherSpecimenIds.length} other specimen{scopeDialog.otherSpecimenIds.length !== 1 ? "s" : ""}</strong>.
+        <div data-capture-hide="true" className="ps-overlay" style={{ zIndex: 11000 }}>
+          <div className="ps-modal-dark" style={{ padding: "32px 36px", width: "440px", textAlign: "center" }}>
+            <div style={{ fontSize: "36px", marginBottom: "12px", textAlign: "center" }}>🔬</div>
+            <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800, color: "#f1f5f9", textAlign: "center" }}>Remove from multiple specimens?</h3>
+            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 6px", lineHeight: 1.6, textAlign: "center" }}>
+              <strong style={{ color: "#e2e8f0" }}>{scopeDialog.flagName}</strong> is also applied to{" "}
+              <strong style={{ color: "#e2e8f0" }}>{scopeDialog.otherSpecimenIds.length} other specimen{scopeDialog.otherSpecimenIds.length !== 1 ? "s" : ""}</strong>.
               How would you like to proceed?
             </p>
-            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 22px" }}>All removals will be recorded in the audit trail.</p>
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 24px", textAlign: "center" }}>All removals will be recorded in the audit trail.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <button
                 onClick={() => scopeDialog.onConfirm(false)}
-                style={{ padding: "10px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "white", color: "#0f172a", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={e => (e.currentTarget.style.background = "white")}
+                style={{ padding: "11px 16px", border: "2px solid #e2e8f0", borderRadius: "10px", background: "white", color: "#e2e8f0", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
               >
                 Remove from this specimen only
               </button>
               <button
                 onClick={() => scopeDialog.onConfirm(true)}
-                style={{ padding: "10px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "white", color: "#0f172a", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={e => (e.currentTarget.style.background = "white")}
+                style={{ padding: "11px 16px", border: "2px solid #fca5a5", borderRadius: "10px", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
               >
                 Remove from all {scopeDialog.otherSpecimenIds.length + 1} specimens
               </button>
               <button
                 onClick={() => setScopeDialog(null)}
-                style={{ padding: "10px 16px", border: "none", borderRadius: "8px", background: "none", color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left", marginTop: "4px" }}
+                style={{ padding: "10px 16px", border: "none", borderRadius: "10px", background: "none", color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "center", marginTop: "4px" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "#64748b"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "#94a3b8"; }}
               >
                 Cancel
               </button>

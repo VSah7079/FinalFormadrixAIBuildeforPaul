@@ -50,7 +50,7 @@ export const SubspecialtiesPage = () => {
   isOpen={isEditorOpen}
   onClose={() => setIsEditorOpen(false)}
   subId={editingSubId}
-  onSave={updateSubspecialty} // This handles the "Edit" logic (ID + Updates)
+  onSave={(id, updates) => updateSubspecialty({ id, ...updates } as any)}
   onAdd={addSubspecialty}      // This handles the "Create" logic (Data only)
 />
     </div>

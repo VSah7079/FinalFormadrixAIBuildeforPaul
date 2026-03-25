@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../../formedrix.css';
 import { physicianService, clientService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
@@ -109,13 +110,13 @@ const PhysicianModal: React.FC<PhysicianModalProps> = ({ mode, physician, client
           <div style={ROW2}>
             <div style={FIELD}>
               <label style={LABEL}>First Name <span style={{ color: '#ef4444' }}>*</span></label>
-              <input style={{ ...INPUT, borderColor: errors.firstName ? '#ef4444' : '#374151' }} value={draft.firstName} onChange={e => set('firstName', e.target.value)} placeholder="First name" />
-              {errors.firstName && <span style={{ fontSize: 11, color: '#ef4444' }}>{errors.firstName}</span>}
+              <input data-phi="name" style={{ ...INPUT, borderColor: errors.firstName ? '#ef4444' : '#374151' }} value={draft.firstName} onChange={e => set('firstName', e.target.value)} placeholder="First name" />
+              {errors.firstName && <span style={{ fontSize: 11, color: '#ef4444' }} data-phi="name">{errors.firstName}</span>}
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Last Name <span style={{ color: '#ef4444' }}>*</span></label>
-              <input style={{ ...INPUT, borderColor: errors.lastName ? '#ef4444' : '#374151' }} value={draft.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Last name" />
-              {errors.lastName && <span style={{ fontSize: 11, color: '#ef4444' }}>{errors.lastName}</span>}
+              <input data-phi="name" style={{ ...INPUT, borderColor: errors.lastName ? '#ef4444' : '#374151' }} value={draft.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Last name" />
+              {errors.lastName && <span style={{ fontSize: 11, color: '#ef4444' }} data-phi="name">{errors.lastName}</span>}
             </div>
           </div>
 
@@ -231,7 +232,7 @@ const PhysiciansSection: React.FC = () => {
       physicianService.getAll(),
       clientService.getAll(),
     ]).then(([physRes, clientRes]) => {
-      if (physRes.ok)   setPhysicians(physRes.data);
+      if (physRes.ok)   setPhysicians(physRes.data as any);
       if (clientRes.ok) setClients(clientRes.data.map(c => ({ id: c.id, name: c.name })));
       setLoading(false);
     });
@@ -250,10 +251,10 @@ const PhysiciansSection: React.FC = () => {
     const payload = { ...draft, status: (draft.active ? 'Active' : 'Inactive') as 'Active' | 'Inactive' };
     if (modal?.mode === 'add') {
       const res = await physicianService.add({ ...payload, autoCreated: false });
-      if (res.ok) setPhysicians(prev => [...prev, res.data]);
+      if (res.ok) setPhysicians((prev: any) => [...prev, res.data]);
     } else if (modal?.physician) {
       const res = await physicianService.update(modal.physician.id, payload);
-      if (res.ok) setPhysicians(prev => prev.map(p => p.id === res.data.id ? res.data : p));
+      if (res.ok) setPhysicians((prev: any) => prev.map((p: any) => p.id === res.data.id ? res.data : p));
     }
     setModal(null);
   };
@@ -308,17 +309,16 @@ const PhysiciansSection: React.FC = () => {
                         {initials(p)}
                       </div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#DEE4E7' }}>Dr. {fullName(p)}</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#DEE4E7' }} data-phi="name">Dr. {fullName(p)}</div>
                         <div style={{ fontSize: 11, color: '#6b7280' }}>NPI: {p.npi || '—'}</div>
                       </div>
                     </div>
                   </td>
                   <td style={{ padding: '14px 16px', fontSize: 13, color: '#9AA0A6' }}>{p.specialty || '—'}</td>
                   <td style={{ padding: '14px 16px' }}>
-                    <div style={{ fontSize: 12, color: '#9AA0A6', lineHeight: 1.6 }}>
-                      {p.preferredContact === 'Email' && <div>✉ {p.email || '—'}</div>}
+                    <div style={{ fontSize: 12, color: '#9AA0A6', lineHeight: 1.6 }} data-phi="email">{p.preferredContact === 'Email' && <div>✉ {p.email || '—'}</div>}
                       {p.preferredContact === 'Fax'   && <div>📠 {p.fax || '—'}</div>}
-                      {p.preferredContact === 'Phone' && <div>📞 {p.phone || '—'}</div>}
+                      {p.preferredContact === 'Phone' && <div data-phi="phone">📞 {p.phone || '—'}</div>}
                       <div style={{ fontSize: 11, color: '#4b5563' }}>via {p.preferredContact}</div>
                     </div>
                   </td>

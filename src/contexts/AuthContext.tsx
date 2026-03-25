@@ -1,17 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { VoiceProfileId } from "../constants/voiceProfiles";
 
-interface User {
+// 1. Defined the User with the new linguistic property
+export interface User {
   id: string;
   name: string;
   email: string;
   role: "pathologist" | "***REMOVED***";
   initials: string;
+  voiceProfile: VoiceProfileId; // Required to ensure the VoiceProvider always has a value
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUserProfile: (updates: Partial<User>) => void; // New: update state without logout
   isAuthenticated: boolean;
   loading: boolean;
 }
@@ -22,34 +26,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const STORAGE_KEY = "pathscribe-user";
+  const STORAGE_KEY = "formedrix-user";
+
+  // Helper to sync state and storage
+  const saveUser = (userData: User | null) => {
+    if (userData) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    setUser(userData);
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         let authenticatedUser: User | null = null;
 
-        if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
+        // Mock Login Data with Voice Profiles
+        if (email === "***REMOVED***@formedrix.ai" && password === "***REMOVED***") {
           authenticatedUser = {
-            id: "1",
+            id: "u1",
             name: "Dr. Sarah Johnson",
-            email: "***REMOVED***@pathscribe.ai",
+            email: "***REMOVED***@formedrix.ai",
             role: "pathologist",
             initials: "SJ",
+            voiceProfile: "EN-US",
           };
-        } else if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
+        } else if (email === "***REMOVED***@formedrix.ai" && password === "***REMOVED***") {
           authenticatedUser = {
-            id: "2",
+            id: "u3",
             name: "System Admin",
-            email: "***REMOVED***@pathscribe.ai",
+            email: "***REMOVED***@formedrix.ai",
             role: "***REMOVED***",
             initials: "SA",
+            voiceProfile: "EN-US",
           };
         }
 
         if (authenticatedUser) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(authenticatedUser));
-          setUser(authenticatedUser);
+          saveUser(authenticatedUser);
           resolve(true);
         } else {
           resolve(false);
@@ -58,30 +74,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
+  const logout = () => saveUser(null);
+
+  // Allow the UI (like StaffModal) to push updates to the current session
+  const updateUserProfile = (updates: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      saveUser(updatedUser);
+    }
   };
 
-  // Load session on initial mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      setUser(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        // Migration check: ensure old sessions get a default profile
+        if (parsed && !parsed.voiceProfile) {
+          parsed.voiceProfile = "EN-US";
+        }
+        setUser(parsed);
+      } catch (e) {
+        console.error("Failed to parse stored user", e);
+      }
     }
     setLoading(false);
   }, []);
-
-  // Keep React state synced with localStorage on every render
-  // This prevents Back/Forward from restoring stale authenticated UI
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored && user !== null) {
-      setUser(null);
-    }
-  });
-
-  const isAuthenticated = Boolean(localStorage.getItem(STORAGE_KEY));
 
   return (
     <AuthContext.Provider
@@ -89,7 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         login,
         logout,
-        isAuthenticated,
+        updateUserProfile,
+        isAuthenticated: !!user,
         loading,
       }}
     >
@@ -100,8 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../formedrix.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 
@@ -112,8 +113,8 @@ const AuditLogPage: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <img
-              src="/pathscribe-logo-dark.svg"
-              alt="PathScribe AI"
+              src="/formedrix-logo.svg"
+              alt="ForMedrix AI"
               style={{ height: '60px', width: 'auto', cursor: 'pointer' }}
               onClick={handleNavigateHome}
             />
@@ -461,7 +462,7 @@ const AuditLogPage: React.FC = () => {
           fontSize: '12px',
           borderTop: '1px solid rgba(255,255,255,0.1)'
         }}>
-          <div>© 2026 PathScribe AI Systems • HIPAA Compliant</div>
+          <div>&copy; 2026 ForMedrix AI Systems &bull; HIPAA Compliant</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%', boxShadow: '0 0 8px #10B981', display: 'inline-block' }} />
             SYSTEMS OPERATIONAL

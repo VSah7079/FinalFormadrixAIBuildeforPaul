@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import '../../../formedrix.css';
 import { useSubspecialties, Subspecialty } from "../../../contexts/useSubspecialties";
 import { useSpecimens } from "../../../contexts/useSpecimens";
 import {
@@ -140,7 +141,7 @@ const SubspecialtiesSection: React.FC = () => {
       const affectedSpecimens = specimens.filter((sp) => sp.subspecialtyId === editTarget!.id);
       const affectedUsers     = users.filter((u) => editTarget!.userIds.includes(u.id));
       if (affectedSpecimens.length > 0 || affectedUsers.length > 0) {
-        setInactiveConfirm({ sub: editTarget!, draft, specimenAssignments, affectedSpecimens: affectedSpecimens.map((sp) => ({ id: sp.id, name: sp.name })), affectedUsers: affectedUsers.map((u) => ({ id: u.id, name: u.name, role: u.role })) });
+        setInactiveConfirm({ sub: editTarget!, draft, specimenAssignments, affectedSpecimens: affectedSpecimens.map((sp) => ({ id: sp.id, name: sp.name })), affectedUsers: affectedUsers.map((u: any) => ({ id: u.id, name: (u as any).name ?? u.id, role: (u as any).role ?? (u.roles?.[0] ?? '') })) });
         return;
       }
     }
@@ -343,7 +344,7 @@ const SubspecialtiesSection: React.FC = () => {
                         {filteredPhysicians.length === 0
                           ? <div style={{ textAlign: "center", color: "#4b5563", fontSize: 13, padding: "16px 0" }}>{physicianSearch ? "No physicians match your search." : "No physicians available."}</div>
                           : filteredPhysicians.map((u) => (
-                              <CheckRow key={u.id} label={`${u.firstName} ${u.lastName}`} sub={u.roles?.join(", ")} checked={draft.userIds.includes(u.id)} onChange={() => setDraft(prev => ({ ...prev, userIds: prev.userIds.includes(u.id) ? prev.userIds.filter(x => x !== u.id) : [...prev.userIds, u.id] }))} />
+                              <CheckRow key={u.id} label={`${u.firstName} ${u.lastName}`} data-phi="name" sub={u.roles?.join(", ")} checked={draft.userIds.includes(u.id)} onChange={() => setDraft(prev => ({ ...prev, userIds: prev.userIds.includes(u.id) ? prev.userIds.filter(x => x !== u.id) : [...prev.userIds, u.id] }))} />
                             ))
                         }
                       </div>

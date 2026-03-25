@@ -21,6 +21,7 @@
  */
 
 import React from 'react';
+import '../../../formedrix.css';
 
 // ─── Retention policy data ────────────────────────────────────────────────────
 // TODO: Move to SystemConfig when these become user-configurable.
@@ -55,7 +56,7 @@ const RetentionSection: React.FC = () => (
         🗄️ Data Retention
       </h2>
       <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
-        How long PathScribe retains AI decisions, audit trails, and case snapshots.
+        How long ForMedrix retains AI decisions, audit trails, and case snapshots.
         These settings are governed by your institution's data governance policy.
       </p>
     </div>
@@ -80,7 +81,7 @@ const RetentionSection: React.FC = () => (
       fontSize: '12px', color: '#a78bfa', lineHeight: '1.5',
     }}>
       🔒 Retention periods are currently set by your system ***REMOVED***istrator.
-      Contact your PathScribe ***REMOVED***istrator to request changes.
+      Contact your ForMedrix ***REMOVED***istrator to request changes.
     </div>
   </div>
 );

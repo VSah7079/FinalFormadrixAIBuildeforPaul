@@ -1,79 +1,113 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
+import './formedrix.css';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Auth + Providers
 import { AuthProvider } from "./contexts/AuthContext";
 import { SystemConfigProvider } from "./contexts/SystemConfigContext";
-import { SpecimenProvider } from "./contexts/useSpecimens";           // New
-import { SubspecialtyProvider } from "./contexts/useSubspecialties"; // New
+import { MessagingProvider } from "./contexts/MessagingContext";
+import { SpecimenProvider } from "./contexts/useSpecimens";
+import { SubspecialtyProvider } from "./contexts/useSubspecialties";
 import { SpecimenDictionaryProvider } from "./components/Config/System/useSpecimenDictionary";
 
-// Core Pages
-import Home from "./Home";
-import Login from "./Login";
-import WorklistPage from "./Worklist/WorklistPage";
-import AuditLogPage from "./pages/AuditLogPage";
-import ConfigurationPage from "./pages/ConfigurationPage";
-import SearchPage from "./SearchPage";
+// Voice Integration
+import { VoiceProvider } from './contexts/VoiceProvider';
 
-// Reports
-import PatientReportPage from "./components/PatientReportPage/PatientReportPage";
-import SynopticReportPage from "./pages/SynopticReportPage";
-import FullReportPage from "./pages/FullReportPage";
-
-// Templates (Admin + Pathologist)
-import { TemplateRenderer } from "./components/Config/Templates";
-import { AdminTemplateList } from "./components/Config/Templates";
-
-// Protocol Editor (Admin)
-import ProtocolEditor from "./protocols/ProtocolEditor";
-
-// Contribution Dashboard
-import ContributionDashboardPage from "./pages/ContributionDashboardPage";
-
-// Protected Route Wrapper
+// Standard Wrappers
 import ProtectedRoute from "./ProtectedRoute";
+import AppShell from "./components/AppShell/AppShell";
 
-const App: React.FC = () => {
-  return (
-    <Router>
-      <SystemConfigProvider>
-        <AuthProvider>
-          {/* We wrap the app in our new Clinical Data providers */}
+// ── Lazy-loaded pages ─────────────────────────────────────────────────────────
+const Home                      = lazy(() => import("./pages/Home"));
+const Login                     = lazy(() => import("./Login"));
+const WorklistPage              = lazy(() => import("./pages/WorklistPage"));
+const AuditLogPage              = lazy(() => import("./pages/AuditLogPage"));
+const ConfigurationPage         = lazy(() => import("./pages/ConfigurationPage"));
+const SearchPage                = lazy(() => import("./pages/SearchPage"));
+const ContributionDashboardPage = lazy(() => import("./pages/ContributionDashboardPage"));
+
+const SynopticReportPage        = lazy(() => import("./pages/SynopticReportPage"));
+const FullReportPage            = lazy(() => import("./pages/FullReportPage"));
+const PatientReportPage         = lazy(() => import("./components/PatientReportPage/PatientReportPage"));
+
+const SynopticEditor            = lazy(() => import("./components/Config/Protocols/SynopticEditor"));
+const ProtocolEditor            = lazy(() => import("./protocols/ProtocolEditor"));
+const TemplateRendererPage      = lazy(() => import("./components/Config/Templates/TemplateRenderer")
+  .then(m => ({ default: m.TemplateRenderer })));
+
+// ── Loading fallback ──────────────────────────────────────────────────────────
+const PageLoader: React.FC = () => (
+  <div style={{
+    position: "fixed", inset: 0,
+    background: "#0b1120",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: 9999,
+  }}>
+    <div style={{
+      width: 36, height: 36,
+      border: "3px solid rgba(8,145,178,0.15)",
+      borderTop: "3px solid #0891B2",
+      borderRadius: "50%",
+      animation: "ps-spin 0.7s linear infinite",
+    }} />
+    <style>{`@keyframes ps-spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
+// ── App ───────────────────────────────────────────────────────────────────────
+const App: React.FC = () => (
+  <Router>
+    <SystemConfigProvider>
+      <AuthProvider>
+        <MessagingProvider>
           <SpecimenProvider>
             <SubspecialtyProvider>
               <SpecimenDictionaryProvider>
-                <Routes>
-                  {/* Public Route */}
-                  <Route path="/login" element={<Login />} />
+                
+                {/* VoiceProvider wraps the dynamic content to keep the connection alive during navigation */}
+                <VoiceProvider>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
 
-                  {/* Protected Routes */}
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/worklist" element={<WorklistPage />} />
-                    <Route path="/search" element={<SearchPage />} />
-                    <Route path="/audit" element={<AuditLogPage />} />
-                    <Route path="/configuration" element={<ConfigurationPage />} />
-                    <Route path="/contribution" element={<ContributionDashboardPage />} />
+                      {/* Public Route */}
+                      <Route path="/login" element={<Login />} />
 
-                    {/* Clinical Routes */}
-                    <Route path="/case/:caseId/synoptic" element={<SynopticReportPage />} />
-                    <Route path="/report/:accession" element={<FullReportPage />} />
-                    <Route path="/case/:accession" element={<PatientReportPage />} />
+                      {/* Protected Routes */}
+                      <Route element={<ProtectedRoute />}>
+                        <Route element={<AppShell />}>
+                          <Route path="/"              element={<Home />} />
+                          <Route path="/worklist"      element={<WorklistPage />} />
+                          <Route path="/search"        element={<SearchPage />} />
+                          <Route path="/audit"         element={<AuditLogPage />} />
+                          <Route path="/configuration" element={<ConfigurationPage />} />
+                          <Route path="/contribution"  element={<ContributionDashboardPage />} />
+                        </Route>
 
-                    {/* Admin / Config Routes */}
-                    <Route path="/configuration/protocols/:protocolId" element={<ProtocolEditor />} />
-                    <Route path="/template-review" element={<AdminTemplateList />} />
-                    <Route path="/template-review/:templateId" element={<TemplateRenderer />} />
-                  </Route>
-                </Routes>
+                        {/* Clinical Routes — full-screen, own nav, no AppShell */}
+                        <Route path="/case/:caseId/synoptic" element={<SynopticReportPage />} />
+                        <Route path="/report/:accession"     element={<FullReportPage />} />
+                        <Route path="/case/:accession"       element={<PatientReportPage />} />
+
+                        {/* Synoptic Report Editor */}
+                        <Route path="/template-editor/new"          element={<SynopticEditor />} />
+                        <Route path="/template-editor/:templateId"  element={<SynopticEditor />} />
+
+                        {/* Admin / Config Routes */}
+                        <Route path="/configuration/protocols/:protocolId" element={<ProtocolEditor />} />
+                        <Route path="/template-review/:templateId"         element={<TemplateRendererPage />} />
+
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </VoiceProvider>
+
               </SpecimenDictionaryProvider>
             </SubspecialtyProvider>
           </SpecimenProvider>
-        </AuthProvider>
-      </SystemConfigProvider>
-    </Router>
-  );
-};
+        </MessagingProvider>
+      </AuthProvider>
+    </SystemConfigProvider>
+  </Router>
+);
 
 export default App;

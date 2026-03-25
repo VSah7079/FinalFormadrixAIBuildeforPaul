@@ -86,7 +86,7 @@ export default function FlagManagerModal({
   return (
     <div className="modal">
       <div className="modal-header">
-        <h2>Flag Manager — Case {caseData.accession}</h2>
+        <h2>Flag Manager — Case <span data-phi="accession">{caseData.accession}</span></h2>
       </div>
 
       <div className="modal-body">

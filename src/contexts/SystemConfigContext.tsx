@@ -1,7 +1,7 @@
 /**
  * SystemConfigContext.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * React context, provider, and hook for PathScribe system-level configuration.
+ * React context, provider, and hook for ForMedrix system-level configuration.
  *
  * Architecture role:
  *   This is the runtime layer that sits on top of the pure types in
@@ -49,17 +49,22 @@ import {
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
 const LS_VERSION = 'v1';
-const LS_KEY     = `pathscribe_system_config_${LS_VERSION}`;
+const LS_KEY     = `formedrix_system_config_${LS_VERSION}`;
 
 const loadConfig = (): SystemConfig => {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SystemConfig>;
-      // Merge with defaults so new fields added in future versions always
-      // have a valid value even if the persisted config pre-dates them.
-      return { ...DEFAULT_SYSTEM_CONFIG, ...parsed };
-    }
+    const merged: SystemConfig = raw
+      ? { ...DEFAULT_SYSTEM_CONFIG, ...JSON.parse(raw) as Partial<SystemConfig> }
+      : { ...DEFAULT_SYSTEM_CONFIG };
+
+    // Hard env override — VITE_VOICE_ENABLED=false disables voice entirely
+    // regardless of what is stored in localStorage. Useful for deployments
+    // where voice should never be available (e.g. locked-down client sites).
+    const envVoice = (import.meta as any).env?.VITE_VOICE_ENABLED;
+    if (envVoice === 'false') merged.voiceEnabled = false;
+
+    return merged;
   } catch {
     // Corrupted storage — fall back to defaults silently
   }

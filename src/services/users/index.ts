@@ -25,21 +25,26 @@ export { mockAIBehaviorService    as aiBehaviorService    } from './aiBehavior/m
 export { mockModelService         as modelService         } from './models/mockModelService';
 export { mockSavedSearchService   as savedSearchService   } from './savedSearches/mockSavedSearchService';
 export { mockAuditService         as auditService         } from './auditLog/mockAuditService';
+export { mockCaseService          as caseService          } from './cases/mockCaseService';
+export { mockCodeService          as codeService          } from './codes/mockCodeService';
+export { mockCodeService          as codeService          } from './codes/mockCodeService';
 
 // ─── Re-export types so components don't need to know the file structure ──────
-export type { StaffUser }     from './users/IUserService';
-export type { Role }          from './roles/IRoleService';
-export type { Physician }     from './physicians/IPhysicianService';
-export type { Flag }          from './flags/IFlagService';
-export type { Subspecialty }  from './subspecialties/ISubspecialtyService';
-export type { Specimen }      from './specimens/ISpecimenService';
-export type { Client }        from './clients/mockClientService';
-export type { ShortcutMap }   from './shortcuts/mockShortcutService';
-export type { SystemConfig }  from './systemConfig/mockSystemConfigService';
-export type { Macro }         from './macros/IMacroService';
+export type { StaffUser }         from './users/IUserService';
+export type { Role }              from './roles/IRoleService';
+export type { Physician }         from './physicians/IPhysicianService';
+export type { Flag }              from './flags/IFlagService';
+export type { Subspecialty }      from './subspecialties/ISubspecialtyService';
+export type { Specimen }          from './specimens/ISpecimenService';
+export type { Client }            from './clients/mockClientService';
+export type { ShortcutMap }       from './shortcuts/mockShortcutService';
+export type { SystemConfig }      from './systemConfig/mockSystemConfigService';
+export type { Macro }             from './macros/IMacroService';
 export type { EditorFont, EditorFontConfig } from './fonts/IFontService';
 export type { AIBehaviorConfig }  from './aiBehavior/IAIBehaviorService';
 export type { AIModel }           from './models/IModelService';
 export type { SavedSearch, SearchContext, WorklistFilters, CaseSearchFilters, RefinedSearchFilters } from './savedSearches/ISavedSearchService';
 export type { AuditLog, ErrorLog, AuditLogType, ErrorSeverity } from './auditLog/IAuditService';
-export type { ServiceResult } from './types';
+export type { PathologyCase, CaseStatus, CasePriority, AIStatus, CaseFilterParams } from './cases/ICaseService';
+export type { ClinicalCode, CodeSystem, CodeSearchParams, IcdOSubtype } from './codes/ICodeService';
+export type { ServiceResult }     from './types';

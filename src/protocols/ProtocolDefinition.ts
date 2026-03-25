@@ -7,6 +7,7 @@ export const baseProtocolRegistry: Record<string, ProtocolDefinition> = {
     version: "1.0.0",
     source: "CAP",
     lifecycle: "validated",
+    isBaseTemplate: true,
     category: "Breast",
     sections: [
       {
@@ -33,6 +34,7 @@ export const baseProtocolRegistry: Record<string, ProtocolDefinition> = {
     version: "1.0.0",
     source: "CAP",
     lifecycle: "validated",
+    isBaseTemplate: true,
     category: "Colon",
     sections: [
       {
@@ -59,6 +61,7 @@ export const baseProtocolRegistry: Record<string, ProtocolDefinition> = {
     version: "1.0.0",
     source: "CAP",
     lifecycle: "validated",
+    isBaseTemplate: true,
     category: "Prostate",
     sections: [
       {

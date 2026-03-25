@@ -1,189 +1,242 @@
 /**
  * AllProtocolsSection.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Complete protocol library — active, staged, draft, archived — in one view.
- * Previously the empty "All Templates" stub in TemplatesTab.
+ * Renders the complete protocol library across all lifecycle states.
+ * Consumed by index.tsx (ProtocolsTab).
  *
- * Architecture role:
- *   One of three sub-sections in the merged Protocols tab. Shows every protocol
- *   in the registry regardless of lifecycle state. Useful for ***REMOVED***s who need
- *   a full picture of what exists, what's pending, and what's been archived.
- *
- * Consumed by:
- *   components/Config/Protocols/index.tsx  (renders as 'all' sub-section)
- *
- * Related files:
- *   protocols/protocolRegistry.ts   ← base + override registry
- *   ActiveProtocolsSection.tsx       ← validated-only view
- *   ReviewQueueSection.tsx           ← in-review/staged view
+ * Adds a status filter pill-bar (All / Draft / In Review / Needs Changes /
+ * Approved / Published) above the grouped list.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useState } from 'react';
+import '../../../formedrix.css';
 import { useNavigate } from 'react-router-dom';
-import { loadProtocolRegistry } from '../../../protocols/protocolRegistry';
+import {
+  Protocol,
+  useProtocols,
+  LifecycleState,
+  LIFECYCLE_STYLES,
+  SOURCE_STYLES,
+  CATEGORY_COLORS,
+  LIFECYCLE_ORDER,
+  LifecycleBadge,
+  CoverageBar,
+  UploadProtocolModal,
+  BuildCustomiseModal,
+} from './protocolShared';
+import {
+  ActionBtn,
+  OutlineBtn,
+  TealBtn,
+  SearchBar,
+  CategoryGroup,
+  EmptyState,
+} from './ActiveProtocolsSection';
 
-type LifecycleFilter = 'all' | 'validated' | 'staged' | 'draft' | 'in_review' | 'needs_changes' | 'approved';
+type StatusFilter = 'all' | LifecycleState;
 
-const LIFECYCLE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  validated:     { bg: 'rgba(16,185,129,0.12)',  color: '#10B981',  border: 'rgba(16,185,129,0.3)'  },
-  draft:         { bg: 'rgba(100,116,139,0.12)', color: '#94a3b8',  border: 'rgba(100,116,139,0.3)' },
-  in_review:     { bg: 'rgba(245,158,11,0.12)',  color: '#fbbf24',  border: 'rgba(245,158,11,0.3)'  },
-  needs_changes: { bg: 'rgba(239,68,68,0.12)',   color: '#f87171',  border: 'rgba(239,68,68,0.3)'   },
-  approved:      { bg: 'rgba(16,185,129,0.08)',  color: '#6ee7b7',  border: 'rgba(16,185,129,0.2)'  },
-  staged:        { bg: 'rgba(139,92,246,0.12)',  color: '#a78bfa',  border: 'rgba(139,92,246,0.3)'  },
-  published:     { bg: 'rgba(8,145,178,0.12)',   color: '#38bdf8',  border: 'rgba(8,145,178,0.3)'   },
-};
-
-const LifecycleBadge: React.FC<{ lifecycle: string }> = ({ lifecycle }) => {
-  const s = LIFECYCLE_STYLES[lifecycle] ?? LIFECYCLE_STYLES.draft;
-  return (
-    <span style={{
-      fontSize: '11px', fontWeight: 700, padding: '2px 10px',
-      borderRadius: '99px', background: s.bg, color: s.color,
-      border: `1px solid ${s.border}`, textTransform: 'capitalize', whiteSpace: 'nowrap',
-    }}>
-      {lifecycle.replace('_', ' ')}
-    </span>
-  );
-};
-
-const FILTER_OPTIONS: { id: LifecycleFilter; label: string }[] = [
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all',           label: 'All'           },
-  { id: 'validated',     label: 'Active'        },
-  { id: 'staged',        label: 'Staged'        },
+  { id: 'published',     label: 'Published'     },
+  { id: 'approved',      label: 'Approved'      },
   { id: 'in_review',     label: 'In Review'     },
   { id: 'needs_changes', label: 'Needs Changes' },
   { id: 'draft',         label: 'Draft'         },
 ];
 
-const AllProtocolsSection: React.FC = () => {
-  const navigate = useNavigate();
-  const [search,          setSearch]         = useState('');
-  const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>('all');
+// ─── ProtocolCard (all-protocols variant — shows both reviewer + editor) ──────
 
-  const registry = loadProtocolRegistry();
+const ProtocolCard: React.FC<{ protocol: Protocol }> = ({ protocol: p }) => {
+  const navigate        = useNavigate();
+  const [open, setOpen] = useState(false);
+  const catColor        = CATEGORY_COLORS[p.category] ?? '#64748b';
+  const srcStyle        = SOURCE_STYLES[p.source]     ?? SOURCE_STYLES.Custom;
 
-  // Include mock staged template alongside registry
-  const allProtocols = [
-    ...Object.values(registry),
-    { id: 'breast_dcis_resection', name: 'Breast DCIS – Resection', version: '4.4.0.0', lifecycle: 'staged', source: 'CAP', category: 'Breast', sections: [] },
-  ].filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx); // dedupe
-
-  const filtered = allProtocols.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category?.toLowerCase().includes(search.toLowerCase());
-    const matchLifecycle = lifecycleFilter === 'all' || p.lifecycle === lifecycleFilter;
-    return matchSearch && matchLifecycle;
-  });
-
-  const getDestination = (p: typeof allProtocols[0]) => {
-    if (p.lifecycle === 'validated') return `/configuration/protocols/${p.id}?from=protocols`;
-    return `/template-review/${p.id}`;
-  };
+  const stepIndex = LIFECYCLE_ORDER.indexOf(
+    p.status === 'needs_changes' ? 'in_review' : p.status
+  );
 
   return (
-    <div style={{ padding: '4px 0' }}>
-
-      {/* ── Header ── */}
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px' }}>
-          📚 All Protocols
-        </h2>
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
-          Complete protocol library across all lifecycle states.
-          {' '}<span style={{ color: '#64748b' }}>{allProtocols.length} total</span>
-        </p>
+    <div style={{ marginBottom: '8px' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px',
+          background: open ? '#1a2744' : '#1e293b',
+          border: `1px solid ${open ? 'rgba(8,145,178,0.3)' : '#334155'}`,
+          borderRadius: open ? '10px 10px 0 0' : '10px',
+          cursor: 'pointer', transition: 'all 0.12s',
+        }}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.background = '#243050'; e.currentTarget.style.borderColor = '#475569'; }}}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = '#1e293b'; e.currentTarget.style.borderColor = '#334155'; }}}
+      >
+        <div style={{ width: '3px', height: '36px', borderRadius: '2px', background: catColor, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#f1f5f9', marginBottom: '4px' }} data-phi="name">{p.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'monospace' }}>{p.version}</span>
+            <span style={{ color: '#334155' }}>&bull;</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, fontFamily: 'monospace', padding: '1px 7px', borderRadius: '4px', background: srcStyle.bg, color: srcStyle.color }}>{p.source}</span>
+            <span style={{ color: '#334155' }}>&bull;</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{p.type}</span>
+            <span style={{ color: '#334155' }}>&bull;</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{p.owner}</span>
+          </div>
+        </div>
+        <LifecycleBadge state={p.status} />
+        <span style={{ fontSize: '16px', color: '#475569', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', marginLeft: '4px', flexShrink: 0 }}>›</span>
       </div>
 
-      {/* ── Search + filter bar ── */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search protocols…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            flex: 1, minWidth: '180px', padding: '8px 12px',
-            borderRadius: '7px', border: '1px solid rgba(255,255,255,0.12)',
-            background: 'rgba(255,255,255,0.05)', color: '#f1f5f9',
-            fontSize: '13px', outline: 'none',
-          }}
-        />
-        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-          {FILTER_OPTIONS.map(f => (
+      {open && (
+        <div style={{ background: '#131c30', border: '1px solid rgba(8,145,178,0.2)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px 20px 18px' }}>
+          {/* Stats */}
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', paddingBottom: '14px', marginBottom: '14px', borderBottom: '1px solid #1e293b' }}>
+            {[
+              { label: 'Sections',      value: Math.max(1, Math.round(p.fields / 7)) },
+              { label: 'Fields',        value: p.fields },
+              { label: 'Last Modified', value: p.lastModified },
+              { label: 'Owner',         value: p.owner },
+            ].map(stat => (
+              <div key={stat.label}>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: '10px', color: '#475569', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</div>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '16px', flex: 1, minWidth: '220px', alignItems: 'flex-end' }}>
+              <CoverageBar pct={p.snomedPct} label="SNOMED CT" />
+              <CoverageBar pct={p.icdPct}    label="ICD-10/11" />
+            </div>
+          </div>
+
+          {/* Review note */}
+          {p.reviewNote && (
+            <div style={{ padding: '9px 13px', marginBottom: '14px', borderRadius: '7px', background: p.status === 'needs_changes' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${p.status === 'needs_changes' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`, fontSize: '12px', color: p.status === 'needs_changes' ? '#f87171' : '#fbbf24', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <span style={{ flexShrink: 0 }}>{p.status === 'needs_changes' ? '↩️' : '⚠️'}</span>
+              {p.reviewNote}
+            </div>
+          )}
+
+          {/* Lifecycle tracker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+            {LIFECYCLE_ORDER.map((s, i) => {
+              const sStyle = LIFECYCLE_STYLES[s];
+              const isCurrent = i === stepIndex;
+              const isPast    = i < stepIndex;
+              return (
+                <React.Fragment key={s}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, flexShrink: 0, background: isPast ? 'rgba(16,185,129,0.2)' : isCurrent ? sStyle.bg : '#1e293b', color: isPast ? '#10B981' : isCurrent ? sStyle.color : '#334155', border: `1px solid ${isPast ? 'rgba(16,185,129,0.4)' : isCurrent ? sStyle.border : '#334155'}` }}>
+                      {isPast ? '✓' : i + 1}
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: isCurrent ? 700 : 400, color: isCurrent ? sStyle.color : isPast ? '#475569' : '#334155', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{s.replace('_', ' ')}</span>
+                  </div>
+                  {i < LIFECYCLE_ORDER.length - 1 && <span style={{ color: '#1e293b', fontSize: '12px', flexShrink: 0 }}>—</span>}
+                </React.Fragment>
+              );
+            })}
+            {p.status === 'needs_changes' && (
+              <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '99px', background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>↩ Needs Changes</span>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {p.status === 'published'
+              ? <ActionBtn color="#38bdf8" bg="rgba(56,189,248,0.1)" border="rgba(56,189,248,0.25)" onClick={() => navigate(`/template-review/${p.id}`)}>👁 View Protocol</ActionBtn>
+              : <ActionBtn color="#0891B2" bg="rgba(8,145,178,0.15)" border="rgba(8,145,178,0.35)" onClick={() => navigate(`/template-review/${p.id}`)}>🔍 Open Reviewer</ActionBtn>
+            }
+            {p.status !== 'published' && <ActionBtn onClick={() => navigate(`/template-editor/${p.id}?from=all`)}>✏️ Open Editor</ActionBtn>}
+            <ActionBtn onClick={() => {}}>📋 Duplicate</ActionBtn>
+            <ActionBtn onClick={() => {}}>{'{ }'} Export JSON</ActionBtn>
+            {p.status === 'published' && <ActionBtn onClick={() => {}}>🔁 New Version</ActionBtn>}
+            <ActionBtn danger onClick={() => {}}>🗑 Archive</ActionBtn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+const AllProtocolsSection: React.FC = () => {
+  const navigate                          = useNavigate();
+  const [search,       setSearch]         = useState('');
+  const [statusFilter, setStatusFilter]   = useState<StatusFilter>('all');
+  const [showUpload, setShowUpload] = useState(false);
+  const [showBuild,  setShowBuild]  = useState(false);
+
+  const allProtocols = useProtocols();
+  const filtered = allProtocols.filter(p => {
+    const matchStatus = statusFilter === 'all' || p.status === statusFilter;
+    const q = search.trim().toLowerCase();
+    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.source.toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  const grouped = filtered.reduce<Record<string, Protocol[]>>((acc, p) => {
+    (acc[p.category] = acc[p.category] || []).push(p);
+    return acc;
+  }, {});
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', marginBottom: '4px' }}>📚 All Protocols</div>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Complete library of all templates across all lifecycle states.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0, marginLeft: '16px' }}>
+          <OutlineBtn onClick={() => setShowUpload(true)}>📤 Upload Protocol</OutlineBtn>
+          <TealBtn    onClick={() => setShowBuild(true)}>🔬 Build / Customise</TealBtn>
+        </div>
+      </div>
+
+      {/* Status filter pills */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        {STATUS_FILTERS.map(f => {
+          const active   = statusFilter === f.id;
+          const lcStyle  = f.id !== 'all' ? LIFECYCLE_STYLES[f.id as LifecycleState] : null;
+          const count    = f.id === 'all' ? allProtocols.length : allProtocols.filter(p => p.status === f.id).length;
+          return (
             <button
               key={f.id}
-              onClick={() => setLifecycleFilter(f.id)}
+              onClick={() => setStatusFilter(f.id)}
               style={{
-                padding: '6px 12px', borderRadius: '6px', fontSize: '12px',
-                fontWeight: lifecycleFilter === f.id ? 700 : 500,
-                border: lifecycleFilter === f.id
-                  ? '1px solid rgba(8,145,178,0.5)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                background: lifecycleFilter === f.id
-                  ? 'rgba(8,145,178,0.15)'
-                  : 'rgba(255,255,255,0.03)',
-                color: lifecycleFilter === f.id ? '#38bdf8' : '#94a3b8',
-                cursor: 'pointer', transition: 'all 0.15s',
+                padding: '4px 12px', borderRadius: '99px', fontSize: '11px', fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.12s', fontFamily: 'inherit',
+                background: active ? (lcStyle ? lcStyle.bg : 'rgba(8,145,178,0.15)') : 'rgba(255,255,255,0.04)',
+                color:      active ? (lcStyle ? lcStyle.color : '#0891B2') : '#64748b',
+                border:     `1px solid ${active ? (lcStyle ? lcStyle.border : 'rgba(8,145,178,0.3)') : '#334155'}`,
               }}
             >
-              {f.label}
+              {f.label} <span style={{ opacity: 0.7 }}>({count})</span>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* ── Protocol list ── */}
-      {filtered.length === 0 ? (
-        <div style={{
-          padding: '32px', textAlign: 'center',
-          border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px',
-          color: '#475569', fontSize: '14px',
-        }}>
-          No protocols found{search ? ` matching "${search}"` : ''}.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {filtered.map(p => (
-            <div
-              key={p.id}
-              onClick={() => navigate(getDestination(p))}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '12px 14px',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '8px', background: 'rgba(255,255,255,0.03)',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(8,145,178,0.06)';
-                e.currentTarget.style.borderColor = 'rgba(8,145,178,0.25)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#f1f5f9', marginBottom: '2px' }}>
-                  {p.name}
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '8px' }}>
-                  <span>v{p.version}</span>
-                  <span>•</span>
-                  <span>{p.source}</span>
-                  <span>•</span>
-                  <span>{p.category ?? '—'}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <LifecycleBadge lifecycle={p.lifecycle} />
-                <span style={{ color: '#475569', fontSize: '16px' }}>›</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Search */}
+      <SearchBar value={search} onChange={setSearch} />
+
+      {/* Groups */}
+      {Object.entries(grouped).map(([cat, items]) => (
+        <CategoryGroup key={cat} category={cat} count={items.length}>
+          {items.map(p => <ProtocolCard key={p.id} protocol={p} />)}
+        </CategoryGroup>
+      ))}
+
+      {filtered.length === 0 && <EmptyState search={search} />}
+
+      {showUpload && <UploadProtocolModal onClose={() => setShowUpload(false)} />}
+      {showBuild && (
+        <BuildCustomiseModal
+          onClose={() => setShowBuild(false)}
+          onBuildBlank={() => { setShowBuild(false); navigate('/template-editor/new'); }}
+          onBuildFromTemplate={id => { setShowBuild(false); navigate(`/template-editor/${id}?mode=duplicate&from=all`); }}
+        />
       )}
     </div>
   );

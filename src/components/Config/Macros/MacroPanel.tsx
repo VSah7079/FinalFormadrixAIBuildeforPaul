@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import '../../../formedrix.css';
 import { macroService } from '../../../services';
-import PathScribeEditor, { Macro } from '../../Editor/PathScribeEditor';
+import ForMedrixEditor, { Macro } from '../../Editor/ForMedrixEditor';
 
 interface MacroPanelProps {
   approvedFonts: string[];
@@ -228,7 +229,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
 
             {/* Editor */}
             <div style={{ flex: 1, overflow: 'hidden', borderRadius: '12px' }}>
-            <PathScribeEditor
+            <ForMedrixEditor
                 key={selectedMacroId ?? 'new'}
                 content={editorContent}
                 onChange={setEditorContent}

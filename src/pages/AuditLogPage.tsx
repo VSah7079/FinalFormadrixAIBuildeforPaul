@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import '../formedrix.css';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 // ── Types & Data ─────────────────────────────────────────────────────────────
 // Components import ONLY from services/index.ts — never directly from mock/firestore files.
 import type { AuditLog, ErrorLog } from '../services/auditLog/IAuditService';
-import type { ActiveTab } from '../services/auditLog/IAuditService';
 import { auditService } from '../services';
+import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
+import { VOICE_CONTEXT } from '../constants/systemActions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ function buildMetaHeader(
     .map(([k, v]) => `${k}: ${v}`)
     .join(' | ') || 'None';
   return [
-    `${esc('PathScribe AI — System Audit Log Export')}`,
+    `${esc('ForMedrix AI — System Audit Log Export')}`,
     `${esc('NOTICE: For authorised audit and compliance purposes only. Do not distribute.')}`,
     `${esc('No direct patient identifiers included (HIPAA / GDPR / Privacy Act compliant).')}`,
     ``,
@@ -65,7 +66,7 @@ function exportAuditCSV(rows: AuditLog[], requestedBy: string, filters: Record<s
     ['ID', 'Timestamp', 'Type', 'Event', 'Detail', 'Actioned By', 'Accession No.', 'AI Confidence'].join(','),
     ...rows.map(r => [r.id, r.timestamp, r.type, r.event, r.detail, r.user, r.caseId ?? '', r.confidence ?? ''].map(esc).join(','))
   ];
-  downloadCSV(meta + data.join('\n'), `pathscribe-audit-log-${new Date().toISOString().slice(0,10)}.csv`);
+  downloadCSV(meta + data.join('\n'), `formedrix-audit-log-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 function exportErrorCSV(rows: ErrorLog[], requestedBy: string, filters: Record<string, string>) {
@@ -75,7 +76,7 @@ function exportErrorCSV(rows: ErrorLog[], requestedBy: string, filters: Record<s
     ['ID', 'Timestamp', 'Severity', 'Code', 'Message', 'Source', 'Accession No.', 'Resolved'].join(','),
     ...rows.map(r => [r.id, r.timestamp, r.severity, r.code, r.message, r.source, r.caseId ?? '', r.resolved].map(esc).join(','))
   ];
-  downloadCSV(meta + data.join('\n'), `pathscribe-error-log-${new Date().toISOString().slice(0,10)}.csv`);
+  downloadCSV(meta + data.join('\n'), `formedrix-error-log-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 // UNIQUE_USERS is derived from loaded data — see useMemo below
@@ -85,13 +86,12 @@ function exportErrorCSV(rows: ErrorLog[], requestedBy: string, filters: Record<s
 
 const AuditLogPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
 
   const [isLoaded,        setIsLoaded]        = useState(false);
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [errorLogs,       setErrorLogs]       = useState<ErrorLog[]>([]);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
-  const [activeTab,       setActiveTab]       = useState<ActiveTab>('audit');
+  const [activeTab,       setActiveTab]       = useState<string>('audit');
 
   // Audit filters
   const [typeFilter,  setTypeFilter]  = useState<'all' | 'ai' | 'user' | 'system'>('all');
@@ -114,7 +114,12 @@ const AuditLogPage: React.FC = () => {
     return () => clearTimeout(t);
   }, []);
 
-  const handleNavigateHome = () => navigate('/');
+  // -- Voice: set WORKLIST context on mount ----------------------------------
+  useEffect(() => {
+    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+  }, []);
+
 
   // ── Filtering ────────────────────────────────────────────────────────────
 
@@ -187,34 +192,6 @@ const AuditLogPage: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%' }}>
 
         {/* ── Nav ── */}
-        <nav style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <img src="/pathscribe-logo-dark.svg" alt="PathScribe AI" style={{ height: '60px', width: 'auto', cursor: 'pointer' }} onClick={handleNavigateHome} />
-            <div style={{ width: '1px', height: '30px', background: 'rgba(255,255,255,0.2)' }} />
-            <div style={{ fontSize: '14px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-              <span onClick={handleNavigateHome} style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#0891B2'} onMouseLeave={e => e.currentTarget.style.color = '#64748b'}>Home</span>
-              <span style={{ color: '#cbd5e1' }}>›</span>
-              <span style={{ color: '#0891B2', fontWeight: 600 }}>Audit Logs</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid rgba(255,255,255,0.2)', paddingRight: '20px' }}>
-              <span style={{ fontSize: '17px', fontWeight: 600 }}>{user?.name || 'Dr. Johnson'}</span>
-              <span style={{ fontSize: '12px', color: '#0891B2', fontWeight: 700 }}>MD, FCAP</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button style={{ width: '42px', height: '42px', borderRadius: '8px', backgroundColor: 'transparent', border: '2px solid #0891B2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0891B2', fontWeight: 800, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(8,145,178,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'DJ'}
-              </button>
-              <button onClick={() => setIsResourcesOpen(!isResourcesOpen)} title="Quick Links" style={{ width: '42px', height: '42px', borderRadius: '8px', background: 'transparent', border: '2px solid #0891B2', color: '#0891B2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(8,145,178,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-              </button>
-              <button onClick={logout} title="Sign Out" style={{ width: '42px', height: '42px', borderRadius: '8px', background: 'transparent', border: '2px solid #0891B2', color: '#0891B2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(8,145,178,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-        </nav>
 
         {/* ── Main ── */}
         <main style={{ flex: 1, minHeight: 0, padding: '28px 40px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -306,7 +283,7 @@ const AuditLogPage: React.FC = () => {
                 {/* Export */}
                 <button onClick={() => exportAuditCSV(
                     filteredAuditLogs,
-                    user?.name || 'Unknown',
+                    'Unknown',
                     { 'Type': typeFilter, 'User': userFilter, 'Date Range': dateRange === 'custom' ? `${dateFrom} to ${dateTo}` : dateRange, 'Search': searchQuery }
                   )} style={{ padding: '7px 13px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#94a3b8', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#0891B2'; e.currentTarget.style.color = '#0891B2'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#94a3b8'; }}>
                   ↓ Export CSV
@@ -367,7 +344,7 @@ const AuditLogPage: React.FC = () => {
                 </div>
                 <button onClick={() => exportErrorCSV(
                     filteredErrorLogs,
-                    user?.name || 'Unknown',
+                    'Unknown',
                     { 'Severity': errorSeverity, 'Status': errorResolved, 'Search': errorSearch }
                   )} style={{ padding: '7px 13px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#94a3b8', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#94a3b8'; }}>
                   ↓ Export CSV
@@ -408,7 +385,7 @@ const AuditLogPage: React.FC = () => {
 
         {/* Footer */}
         <footer style={{ padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
-          <div>© 2026 PathScribe AI Systems • HIPAA Compliant</div>
+          <div>&copy; 2026 ForMedrix AI Systems &bull; HIPAA Compliant</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%', boxShadow: '0 0 8px #10B981', display: 'inline-block' }} />
             SYSTEMS OPERATIONAL
@@ -438,3 +415,4 @@ const AuditLogPage: React.FC = () => {
 };
 
 export default AuditLogPage;
+

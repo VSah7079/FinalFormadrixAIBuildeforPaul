@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../formedrix.css';
 import { PatientCaseSummary } from '../../Legacy/CasePanel_similarcases_legacy';
 
 interface PatientHistoryTabProps {
@@ -53,7 +54,7 @@ const PatientHistoryTab: React.FC<PatientHistoryTabProps> = ({
                 justifyContent: 'space-between',
               }}
             >
-              <span>{caseItem.accession}</span>
+              <span data-phi="accession">{caseItem.accession}</span>
               <span style={{ color: '#9ca3af', fontSize: 12 }}>{caseItem.date}</span>
             </div>
 

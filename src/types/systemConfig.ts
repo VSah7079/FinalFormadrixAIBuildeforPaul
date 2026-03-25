@@ -1,101 +1,242 @@
 /**
- * systemConfig.ts
+ * src/types/systemConfig.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Type definitions for the PathScribe system-level configuration.
+ * Pure type definitions and default values for ForMedrix system configuration.
+ * No React, no side effects — safe to import anywhere.
  *
- * Architecture role:
- *   This file is the single source of truth for the *shape* of system config.
- *   It is intentionally kept free of any React, context, or persistence logic —
- *   those live in SystemConfigContext.tsx. Components import only what they need
- *   (the interface and defaults) without pulling in React overhead.
+ * Single source of truth for:
+ *   - The SystemConfig shape (what fields exist and their types)
+ *   - DEFAULT_SYSTEM_CONFIG (safe baseline for first run / new fields)
  *
- * Consumed by:
- *   - contexts/SystemConfigContext.tsx        (provider + hook)
- *   - components/Config/System/LISSection.tsx (renders + edits LIS settings)
- *   - components/Config/System/FontsSection.tsx (renders + edits approved fonts)
- *   - pages/SynopticReportPage.tsx            (reads lisIntegrationEnabled, allowPathScribePostFinalActions)
- *   - components/Editor/PathScribeEditor.tsx  (reads approvedFonts for toolbar font picker)
- *   - any future page that needs to branch on system-level settings
+ * Runtime layer (loading, persisting, React context):
+ *   → contexts/SystemConfigContext.tsx
  *
- * To add a new setting:
- *   1. Add the field here with a JSDoc comment explaining its effect.
- *   2. Add its default value to DEFAULT_SYSTEM_CONFIG below.
- *   3. Add a UI control in the relevant Config/System section component.
+ * ─── Changelog ───────────────────────────────────────────────────────────────
+ * v1  Initial — LIS integration flags, approved fonts
+ * v2  Added jurisdiction, terminologyConfig
+ * v3  Added voiceEnabled master switch
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. JURISDICTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The institution's operating jurisdiction.
+ * Determines which national SNOMED CT release and ICD-10 variant are served,
+ * and which licenses apply. Set once at deployment — never changed by end users.
+ *
+ * Licensing notes per jurisdiction:
+ *   US      — SNOMED CT US Edition (NLM) + ICD-10-CM (NLM/CMS).
+ *             NLM UMLS registration (free) covers both.
+ *   CA      — SNOMED CT Canada Edition (Infoway) + ICD-10-CA (CIHI).
+ *             Infoway affiliate (free) + CIHI registration (free).
+ *   GB_EW   — SNOMED CT UK Edition (NHS Digital/TRUD) + ICD-10 WHO.
+ *             NHS TRUD registration (free) covers both.
+ *   GB_SCT  — SNOMED CT UK Edition + Scottish Extension (NHS Scotland/TRUD).
+ *             Same TRUD registration as GB_EW — Scottish Extension included.
+ *   IE      — SNOMED CT (SNOMED International Affiliate License, commercial fee)
+ *             + ICD-10-AM (HSE Ireland/NCPOH). Ireland is not a SNOMED member
+ *             country — the Affiliate License must be obtained before seeding
+ *             production. Mock mode works without it during development.
+ *
+ * ICD-11 and ICD-O are served from WHO sources — no jurisdiction-specific
+ * licensing required beyond standard WHO registration.
+ */
+export type Jurisdiction = 'US' | 'CA' | 'GB_EW' | 'GB_SCT' | 'IE';
+
+/** Human-readable label for each jurisdiction. Used in the ***REMOVED*** UI. */
+export const JURISDICTION_LABELS: Record<Jurisdiction, string> = {
+  US:     'United States',
+  CA:     'Canada',
+  GB_EW:  'England & Wales (NHS)',
+  GB_SCT: 'Scotland (NHS Scotland)',
+  IE:     'Republic of Ireland (HSE)',
+};
+
+/** ICD-10 variant name for a given jurisdiction. */
+export const icd10VariantForJurisdiction = (j: Jurisdiction): string => ({
+  US:     'ICD-10-CM',
+  CA:     'ICD-10-CA',
+  GB_EW:  'ICD-10 (WHO)',
+  GB_SCT: 'ICD-10 (WHO)',
+  IE:     'ICD-10-AM',
+}[j]);
+
+/** SNOMED CT release name for a given jurisdiction. */
+export const snomedReleaseForJurisdiction = (j: Jurisdiction): string => ({
+  US:     'SNOMED CT US Edition (NLM)',
+  CA:     'SNOMED CT Canada Edition (Infoway)',
+  GB_EW:  'SNOMED CT UK Edition (NHS Digital)',
+  GB_SCT: 'SNOMED CT UK Edition + Scottish Extension (NHS Scotland)',
+  IE:     'SNOMED CT (SNOMED International Affiliate License)',
+}[j]);
+
+/**
+ * Returns true if the jurisdiction requires a manually obtained license
+ * before seeding production terminology. The seed script checks this and
+ * requires --confirm-license for these jurisdictions.
+ */
+export const requiresManualLicense = (j: Jurisdiction): boolean => j === 'IE';
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. TERMINOLOGY
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Deployment mode for a single terminology system.
+ *   mock      — in-memory seed data (development / ***REMOVED***, no Firestore required)
+ *   hosted    — Firestore hosted reference, seeded at deployment (v1 production)
+ *   live_api  — proxied external API via Cloud Function (v2, future)
+ */
+export type TerminologyMode = 'mock' | 'hosted' | 'live_api';
+
+/** Configuration for one terminology system (SNOMED, ICD-10, ICD-11, ICD-O). */
+export interface TerminologySystemConfig {
+  active:   boolean;
+  mode:     TerminologyMode;
+  /** Written by the seed script. Example: "SNOMED CT UK Edition 2025-04-23" */
+  version?: string;
+}
+
+/** Configuration for all four terminology systems. */
+export interface InstitutionTerminologyConfig {
+  snomed: TerminologySystemConfig;
+  icd10:  TerminologySystemConfig;
+  icd11:  TerminologySystemConfig;
+  icdo:   TerminologySystemConfig;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. IDENTIFIER FORMATS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Institution-specific identifier format configuration.
+ *
+ * These patterns drive the smart identifier box on the Search page, which
+ * auto-detects whether a typed value is an accession number, MRN, or patient
+ * name — routing it to the correct field without requiring manual field selection.
+ *
+ * Detection order:
+ *   1. Test accessionPattern  → Accession #
+ *   2. Test mrnPattern        → MRN / Hospital ID
+ *   3. Contains space/comma, mostly alpha → Patient Name
+ *   4. Ambiguous              → search all three fields
+ *
+ * Patterns are standard JavaScript regex strings (no delimiters).
+ * Examples:
+ *   accessionPattern: "^[A-Z]\\d{2}-\\d{4}$"  →  matches S26-4200
+ *   mrnPattern:       "^\\d{6,8}$"             →  matches 123456
+ */
+export interface IdentifierFormats {
+  accessionPattern: string;
+  accessionExample: string;
+  mrnPattern:       string;
+  mrnExample:       string;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. SYSTEM CONFIG — main shape
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface SystemConfig {
+
   // ── LIS Integration ────────────────────────────────────────────────────────
+  /** Enable LIS bi-directional integration. */
+  lisIntegrationEnabled:           boolean;
+  /** LIS FHIR/HL7 endpoint URL. */
+  lisEndpoint:                     string;
+  /** When true, case statuses are owned by the LIS — ForMedrix treats them read-only. */
+  lisOwnsStatuses:                 boolean;
+  /** Allow ForMedrix post-finalization actions (addendum, amendment) even when LIS is active. */
+  allowForMedrixPostFinalActions: boolean;
 
-  /**
-   * Whether a Laboratory Information System is connected to PathScribe.
-   * When true, PathScribe operates in LIS-integrated mode:
-   *   - Case statuses are authoritative in the LIS
-   *   - PathScribe sends status updates to the LIS at key workflow events
-   *     (synoptic finalized, case signed out, addendum signed out, amendment finalized)
-   *   - The "Allow PathScribe to initiate post-final actions" setting becomes relevant
-   */
-  lisIntegrationEnabled: boolean;
-
-  /**
-   * Display name or URL of the connected LIS endpoint.
-   * Used for display in the LIS Integration config section.
-   * e.g. "CoPath Plus — https://lis.hospital.org/api"
-   */
-  lisEndpoint: string;
-
-  /**
-   * When true and lisIntegrationEnabled is true, the LIS is treated as the
-   * owner of all major case statuses (Received, In Progress, Signed Out,
-   * Amended, etc.). PathScribe will not independently set these statuses —
-   * it will only send notifications and await LIS confirmation where applicable.
-   */
-  lisOwnsStatuses: boolean;
-
-  /**
-   * Controls whether pathologists can initiate Addendum or Amendment workflows
-   * directly within PathScribe after a case is signed out.
-   *
-   * When lisIntegrationEnabled = false:
-   *   - This setting has no effect; PathScribe always owns the full workflow.
-   *
-   * When lisIntegrationEnabled = true:
-   *   - true  → Addendum/Amendment can be initiated in PathScribe; PathScribe
-   *             notifies the LIS of the action so statuses stay in sync.
-   *   - false → Addendum/Amendment buttons are hidden in PathScribe; pathologists
-   *             are directed to initiate these actions in the LIS instead.
-   */
-  allowPathScribePostFinalActions: boolean;
-
-  // ── Editor Fonts ───────────────────────────────────────────────────────────
-
-  /**
-   * List of font family names currently enabled for use in the PathScribeEditor.
-   * Only fonts in this array will appear in the editor toolbar font picker.
-   * The full available pool is defined in FontsSection.tsx (AVAILABLE_FONTS).
-   * Admins toggle individual fonts on/off in Configuration → System → Approved Fonts.
-   */
+  // ── Typography ─────────────────────────────────────────────────────────────
+  /** Fonts available in the report editor. */
   approvedFonts: string[];
 
-  // ── Future settings (add here as the product grows) ────────────────────────
-  // e.g. auditRetentionDays, defaultProtocolId, etc.
+  // ── Jurisdiction ───────────────────────────────────────────────────────────
+  /**
+   * Operating jurisdiction — determines SNOMED CT national release, ICD-10
+   * variant, and locale defaults. Set at deployment, not editable by end users.
+   */
+  jurisdiction: Jurisdiction;
+
+  // ── Identifier Formats ─────────────────────────────────────────────────────
+  /** Smart identifier detection patterns for the Search page. */
+  identifierFormats: IdentifierFormats;
+
+  // ── Terminology ────────────────────────────────────────────────────────────
+  /** Per-system terminology configuration (SNOMED, ICD-10, ICD-11, ICD-O). */
+  terminologyConfig: InstitutionTerminologyConfig;
+
+  // ── Voice Integration ──────────────────────────────────────────────────────
+  /**
+   * Master switch for voice commands and dictation.
+   * When false, the mic button is greyed out and voice is completely
+   * unavailable to all users on this client.
+   * Can also be hard-disabled at the environment level via VITE_VOICE_ENABLED=false,
+   * which overrides this setting and removes the mic button entirely.
+   */
+  voiceEnabled: boolean;
+
+
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. DEFAULTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * DEFAULT_SYSTEM_CONFIG
  * ─────────────────────────────────────────────────────────────────────────────
- * Baseline values used when no persisted config exists (first run) or when
- * a new field is added that isn't yet present in a user's saved config.
+ * Baseline values for first run and for any field not yet present in a user's
+ * saved config (new fields added in later versions).
  *
- * Defaults are intentionally conservative:
- *   - LIS integration off  → PathScribe works standalone out of the box
- *   - Post-final actions allowed → pathologist has full capability by default
- *   - Core clinical fonts approved → Arial, Times New Roman, Courier New enabled
+ * Design principles:
+ *   - LIS off by default       → ForMedrix works standalone out of the box
+ *   - Post-final actions on    → pathologist has full capability by default
+ *   - Jurisdiction US          → safe default; overridden at deployment
+ *   - All terminology mock     → no Firestore dependency until seeded
+ *   - ICD-11 off by default    → adoption still in progress in most markets
+ *   - Voice on by default      → feature is available unless explicitly disabled
  */
 export const DEFAULT_SYSTEM_CONFIG: SystemConfig = {
+
+  // LIS
   lisIntegrationEnabled:           false,
   lisEndpoint:                     '',
   lisOwnsStatuses:                 true,
-  allowPathScribePostFinalActions: true,
-  approvedFonts:                   ['Arial', 'Times New Roman', 'Courier New'],
+  allowForMedrixPostFinalActions: true,
+
+  // Typography
+  approvedFonts: ['Arial', 'Times New Roman', 'Courier New'],
+
+  // Jurisdiction
+  jurisdiction: 'US',
+
+  // Identifier formats — match the S26-4200 pattern used in mock data
+  identifierFormats: {
+    accessionPattern: '^[A-Z]\\d{2}-\\d{4,6}$',
+    accessionExample: 'S26-4200',
+    mrnPattern:       '^\\d{5,10}$',
+    mrnExample:       '123456',
+  },
+
+  // Terminology — all mock by default
+  terminologyConfig: {
+    snomed: { active: true,  mode: 'mock' },
+    icd10:  { active: true,  mode: 'mock' },
+    icd11:  { active: false, mode: 'mock' },
+    icdo:   { active: true,  mode: 'mock' },
+  },
+
+  // Voice
+  voiceEnabled: true,
 };

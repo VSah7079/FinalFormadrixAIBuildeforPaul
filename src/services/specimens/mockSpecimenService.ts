@@ -17,8 +17,8 @@ const SEED_SPECIMENS: Specimen[] = [
   { id: 'sp12',name: 'Appendix',                code: 'APP',     description: 'Appendectomy specimen',               defaultStains: ['H&E'],             processingNotes: 'Longitudinal section tip',  subspecialtyId: 'gi',       status: 'Inactive' },
 ];
 
-const load = () => storageGet<Specimen[]>('pathscribe_specimens', SEED_SPECIMENS);
-const persist = (data: Specimen[]) => storageSet('pathscribe_specimens', data);
+const load = () => storageGet<Specimen[]>('formedrix_specimens', SEED_SPECIMENS);
+const persist = (data: Specimen[]) => storageSet('formedrix_specimens', data);
 let MOCK_SPECIMENS: Specimen[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

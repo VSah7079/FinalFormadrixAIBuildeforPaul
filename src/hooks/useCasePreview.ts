@@ -13,18 +13,20 @@ export function useCasePreview() {
   const [isOpen, setIsOpen] = useState(false);
 
   const openPreview = (sc: SimilarCase) => {
-    // ⭐ Load paired-down or full mock report
     const report = getMockReport(sc.accession);
-
-    // ⭐ Store the report, not the SimilarCase
+    // SR-16: set report and open in a single synchronised update.
+    // Previously selectedCase was null on first render, causing the drawer
+    // to return null before isOpen could flip — the shell was never mounted
+    // so the CSS transition had nothing to animate from.
+    // Setting both together ensures the shell is mounted before isOpen=true.
     setSelectedCase(report);
-
-    // ⭐ Open the drawer
     setIsOpen(true);
   };
 
   const closePreview = () => {
     setIsOpen(false);
+    // Clear after transition completes so the drawer can animate out cleanly
+    setTimeout(() => setSelectedCase(null), 350);
   };
 
   return {

@@ -1,4 +1,5 @@
 import SpecimenDictionary from "../../components/Config/System/SpecimenDictionary";
+import '../../formedrix.css';
 
 const SpecimenDictionaryPage = () => {
   return (

@@ -43,17 +43,20 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import '../../../formedrix.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockDcisTemplate } from '../../../templates/mockDcisTemplate';
 import { InlineCommentThread } from '../../../components/Comments/InlineCommentThread';
 import { TemplateLifecycleState } from '../../../types/AuditEvent';
 import { Question, ChoiceQuestion, TemplateSection } from '../../../types/templateTypes';
-import { logEvent } from '../../../audit/auditLogger';
+import { PROTOCOL_REGISTRY } from '../Protocols/protocolShared';
+import { transitionTemplate } from '../../../services/templates/templateService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useSynopticAudit } from '../../../hooks/useSynopticAudit';
 
 const isChoiceQuestion = (q: Question): q is ChoiceQuestion => q.type === 'choice';
 
 type AnswerMap = Record<string, string | string[]>;
-const DEFAULT_USER = 'Dr. Reviewer';
 
 // ─── Lifecycle definitions ────────────────────────────────────────────────────
 
@@ -84,48 +87,87 @@ interface TransitionAction {
   destructive: boolean;   // red confirm button
 }
 
-const TRANSITION_ACTIONS: TransitionAction[] = [
-  {
-    target:      'in_review',
-    label:       'Mark In Review',
-    color:       '#f59e0b',
-    icon:        '🔍',
-    requireNote: false,
-    confirmMsg:  'Mark this protocol as In Review? It will appear in the active review queue.',
-    destructive: false,
-  },
-  {
-    target:      'needs_changes',
-    label:       'Needs Changes',
-    color:       '#ef4444',
-    icon:        '↩️',
-    requireNote: true,
-    confirmMsg:  'Return this protocol for changes. Please provide a reason so the author knows what to address.',
-    destructive: true,
-  },
-  {
-    target:      'approved',
-    label:       'Approve',
-    color:       '#10B981',
-    icon:        '✓',
-    requireNote: true,
-    confirmMsg:  'Approve this protocol? Once approved it can be published to the reporting workflow. Add any final notes below.',
-    destructive: false,
-  },
-  {
-    target:      'published',
-    label:       'Publish',
-    color:       '#0891B2',
-    icon:        '🚀',
-    requireNote: true,
-    confirmMsg:  'Publish this protocol? It will become immediately available in the synoptic reporting workflow for all pathologists.',
-    destructive: false,
-  },
-];
+// ─── Source-aware terminology ─────────────────────────────────────────────────
+// Terminology for the sign-off and go-live steps varies by governing body.
+// Based on the template's source, we use the terms that staff will recognise.
+
+interface SourceTerms {
+  signOff:       string;   // label for the 'approved' transition
+  signOffVerb:   string;   // past tense, used in confirmMsg
+  goLive:        string;   // label for the 'published' transition
+  goLiveVerb:    string;   // past tense, used in live banner
+}
+
+const SOURCE_TERMS: Record<string, SourceTerms> = {
+  CAP:    { signOff: 'Accept',  signOffVerb: 'accepted',  goLive: 'Release',  goLiveVerb: 'released'  },
+  RCPath: { signOff: 'Ratify',  signOffVerb: 'ratified',  goLive: 'Publish',  goLiveVerb: 'published' },
+  ICCR:   { signOff: 'Approve', signOffVerb: 'approved',  goLive: 'Publish',  goLiveVerb: 'published' },
+  Custom: { signOff: 'Approve', signOffVerb: 'approved',  goLive: 'Publish',  goLiveVerb: 'published' },
+};
+
+// State labels shown in the lifecycle tracker — also vary by source
+const SOURCE_STATE_LABELS: Record<string, Partial<Record<TemplateLifecycleState, string>>> = {
+  CAP:    { approved: 'Accepted',  published: 'Released'  },
+  RCPath: { approved: 'Ratified',  published: 'Published' },
+};
+
+function getTerms(source?: string): SourceTerms {
+  // If source contains multiple values, use the first recognised one
+  if (!source) return SOURCE_TERMS.Custom;
+  const key = Object.keys(SOURCE_TERMS).find(k => source.includes(k));
+  return SOURCE_TERMS[key ?? 'Custom'];
+}
+
+function getStateLabel(state: TemplateLifecycleState, source?: string): string {
+  const overrides = SOURCE_STATE_LABELS[source ?? ''] ?? {};
+  return (overrides[state] ?? state).replace('_', ' ');
+}
+
+function getTransitionActions(source?: string): TransitionAction[] {
+  const t = getTerms(source);
+  return [
+    {
+      target:      'in_review',
+      label:       'Mark In Review',
+      color:       '#f59e0b',
+      icon:        '🔍',
+      requireNote: false,
+      confirmMsg:  'Mark this protocol as In Review? It will appear in the active review queue.',
+      destructive: false,
+    },
+    {
+      target:      'needs_changes',
+      label:       'Needs Changes',
+      color:       '#ef4444',
+      icon:        '↩️',
+      requireNote: true,
+      confirmMsg:  'Return this protocol for changes. Please provide a reason so the author knows what to address.',
+      destructive: true,
+    },
+    {
+      target:      'approved',
+      label:       t.signOff,
+      color:       '#10B981',
+      icon:        '✓',
+      requireNote: true,
+      confirmMsg:  `${t.signOff} this protocol? Once ${t.signOffVerb} it can be ${t.goLiveVerb} to the reporting workflow. Add any final notes below.`,
+      destructive: false,
+    },
+    {
+      target:      'published',
+      label:       t.goLive,
+      color:       '#0891B2',
+      icon:        '🚀',
+      requireNote: true,
+      confirmMsg:  `${t.goLive} this protocol? It will become immediately available in the synoptic reporting workflow for all pathologists.`,
+      destructive: false,
+    },
+  ];
+}
 
 // ─── LifecycleBadge ───────────────────────────────────────────────────────────
 
-const LifecycleBadge: React.FC<{ state: TemplateLifecycleState }> = ({ state }) => {
+const LifecycleBadge: React.FC<{ state: TemplateLifecycleState; source?: string }> = ({ state, source }) => {
   const s = LIFECYCLE_STYLES[state] ?? LIFECYCLE_STYLES.draft;
   return (
     <span style={{
@@ -134,7 +176,7 @@ const LifecycleBadge: React.FC<{ state: TemplateLifecycleState }> = ({ state }) 
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
       textTransform: 'capitalize', whiteSpace: 'nowrap',
     }}>
-      {state.replace('_', ' ')}
+      {getStateLabel(state, source)}
     </span>
   );
 };
@@ -165,14 +207,30 @@ const ModalOverlay: React.FC<{ children: React.ReactNode; onClose: () => void }>
 export const TemplateRenderer: React.FC = () => {
   const navigate       = useNavigate();
   const { templateId } = useParams();
-  const template       = mockDcisTemplate;
+  const { user }       = useAuth();
+  const currentUser    = user?.name ?? 'Unknown User';
+  const { auditAndNotify, auditOnly } = useSynopticAudit();
+
+  const registryEntry = PROTOCOL_REGISTRY.find(p => p.id === templateId) ?? null;
+  const template = registryEntry
+    ? { ...mockDcisTemplate, id: registryEntry.id, name: registryEntry.name, version: registryEntry.version, source: registryEntry.source, category: registryEntry.category }
+    : mockDcisTemplate;
+
+  // Source-aware terminology — derived once from the template's governing body
+  const terms          = getTerms(template.source);
+  const transActions   = getTransitionActions(template.source);
+
+  // Always return to Review Queue
+  const backTarget = '/configuration?tab=protocols&section=review';
 
   const ANSWERS_KEY = `ps_answers_${template.id}`;
   const STATE_KEY   = `ps_state_${template.id}`;
 
-  const [answers,      setAnswers]      = useState<AnswerMap>({});
-  const [state,        setState]        = useState<TemplateLifecycleState>('draft');
-  const [isDirty,      setIsDirty]      = useState(false);  // annotations touched since last transition
+  const [answers, setAnswers] = useState<AnswerMap>({});
+  const [state,   setState]   = useState<TemplateLifecycleState>(
+    (registryEntry?.status as TemplateLifecycleState | undefined) ?? 'draft'
+  );
+  const [isDirty, setIsDirty] = useState(false);
 
   // ── Confirmation modal state ───────────────────────────────────────────────
   const [confirmAction,  setConfirmAction]  = useState<TransitionAction | null>(null);
@@ -226,7 +284,7 @@ export const TemplateRenderer: React.FC = () => {
   const handleSingleChange = (questionId: string, optionId: string) => {
     const prev = answers[questionId];
     persistAnswers({ ...answers, [questionId]: optionId });
-    logEvent({ user: DEFAULT_USER, category: 'user', action: 'set_single_answer', templateId: template.id, questionId, oldValue: prev, newValue: optionId });
+    auditOnly({ category: 'user', action: 'set_single_answer', templateId: template.id, questionId, oldValue: prev, newValue: optionId });
   };
 
   const handleMultiChange = (questionId: string, optionId: string) => {
@@ -235,13 +293,13 @@ export const TemplateRenderer: React.FC = () => {
     const nextArray = exists ? current.filter(id => id !== optionId) : [...current, optionId];
     const prev      = answers[questionId];
     persistAnswers({ ...answers, [questionId]: nextArray });
-    logEvent({ user: DEFAULT_USER, category: 'user', action: exists ? 'remove_multi_answer' : 'add_multi_answer', templateId: template.id, questionId, oldValue: prev, newValue: nextArray });
+    auditOnly({ category: 'user', action: exists ? 'remove_multi_answer' : 'add_multi_answer', templateId: template.id, questionId, oldValue: prev, newValue: nextArray });
   };
 
   const handleTextChange = (questionId: string, value: string) => {
     const prev = answers[questionId];
     persistAnswers({ ...answers, [questionId]: value });
-    logEvent({ user: DEFAULT_USER, category: 'user', action: 'set_text_answer', templateId: template.id, questionId, oldValue: prev, newValue: value });
+    auditOnly({ category: 'user', action: 'set_text_answer', templateId: template.id, questionId, oldValue: prev, newValue: value });
   };
 
   // ── Lifecycle transition ───────────────────────────────────────────────────
@@ -252,27 +310,41 @@ export const TemplateRenderer: React.FC = () => {
 
   const handleTransitionConfirm = () => {
     if (!confirmAction) return;
-    const prev = state;
-    persistState(confirmAction.target);
-    logEvent({
-      user: DEFAULT_USER, category: 'user', action: 'state_transition',
-      templateId: template.id, stateFrom: prev, stateTo: confirmAction.target,
-      note: confirmNote || undefined,
-    });
+    const prev   = state;
+    const target = confirmAction.target;
+    const note   = confirmNote || undefined;
+
+    persistState(target);
     setConfirmAction(null);
     setConfirmNote('');
+
+    // Sync to PROTOCOL_REGISTRY so queue cards update immediately
+    transitionTemplate(template.id, target as any, note, currentUser).catch(err =>
+      console.error('[TemplateRenderer] transition failed:', err)
+    );
+
+    auditAndNotify({
+      category:     'user',
+      action:       'state_transition',
+      templateId:   template.id,
+      templateName: (template as any).name ?? (template as any).displayName ?? 'Unknown',
+      stateFrom:    prev,
+      stateTo:      target,
+      note,
+    });
   };
 
   const handleReset = () => {
     persistAnswers({});
     persistState('draft');
     setConfirmReset(false);
-    logEvent({ user: 'System', category: 'system', action: 'reset_template', templateId: template.id });
+    transitionTemplate(template.id, 'draft' as any).catch(() => {});
+    auditOnly({ user: 'System', category: 'system', action: 'reset_template', templateId: template.id });
   };
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const allowed     = ALLOWED_TRANSITIONS[state] ?? [];
-  const isPublished = state === 'published';
+  const allowed      = ALLOWED_TRANSITIONS[state] ?? [];
+  const isPublished  = state === 'published';
 
   const inputBase: React.CSSProperties = {
     padding: '8px 12px', borderRadius: '7px',
@@ -299,7 +371,7 @@ export const TemplateRenderer: React.FC = () => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={() => navigateAway('/configuration?tab=protocols')}
+            onClick={() => navigateAway(backTarget)}
             style={{
               padding: '7px 14px', borderRadius: '7px',
               border: '1px solid #334155', background: 'rgba(255,255,255,0.04)',
@@ -314,7 +386,7 @@ export const TemplateRenderer: React.FC = () => {
           {/* Breadcrumb */}
           <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span
-              onClick={() => navigateAway('/configuration?tab=protocols')}
+              onClick={() => navigateAway(backTarget)}
               style={{ cursor: 'pointer', color: '#64748b' }}
               onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
               onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
@@ -323,7 +395,7 @@ export const TemplateRenderer: React.FC = () => {
             </span>
             <span style={{ color: '#334155' }}>›</span>
             <span
-              onClick={() => navigateAway('/configuration?tab=protocols')}
+              onClick={() => navigateAway(backTarget)}
               style={{ cursor: 'pointer', color: '#64748b' }}
               onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
               onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
@@ -332,7 +404,7 @@ export const TemplateRenderer: React.FC = () => {
             </span>
             <span style={{ color: '#334155' }}>›</span>
             <span style={{ color: '#f1f5f9', fontWeight: 600 }}>
-              {template.name ?? templateId}
+              {(template as any).name ?? (template as any).displayName ?? templateId}
             </span>
           </div>
         </div>
@@ -343,7 +415,7 @@ export const TemplateRenderer: React.FC = () => {
               ● Unsaved annotations
             </span>
           )}
-          <LifecycleBadge state={state} />
+          <LifecycleBadge state={state} source={template.source} />
         </div>
       </nav>
 
@@ -353,12 +425,12 @@ export const TemplateRenderer: React.FC = () => {
         {/* ── Page header ── */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f1f5f9', margin: '0 0 6px' }}>
-            {template.name ?? templateId}
+            {(template as any).name ?? (template as any).displayName ?? templateId}
           </h1>
           <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', gap: '10px' }}>
-            <span>Version 4.4.0.0</span>
-            <span>•</span><span>CAP</span>
-            <span>•</span><span>Breast</span>
+            <span>Version {(template as any).version ?? (template as any).sourceVersion}</span>
+            <span>&bull;</span><span>{template.source}</span>
+            <span>&bull;</span><span>{registryEntry?.category ?? ""}</span>
           </div>
         </div>
 
@@ -370,7 +442,7 @@ export const TemplateRenderer: React.FC = () => {
         }}>
           {isPublished ? (
             <div style={{ fontSize: '14px', color: '#38bdf8', fontWeight: 600, textAlign: 'center' }}>
-              🚀 This protocol has been published and is live in the reporting workflow.
+              🚀 This protocol has been {terms.goLiveVerb} and is live in the reporting workflow.
             </div>
           ) : (
             <>
@@ -378,7 +450,7 @@ export const TemplateRenderer: React.FC = () => {
                 LIFECYCLE TRANSITION
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {TRANSITION_ACTIONS.map(action => {
+                {transActions.map(action => {
                   const isAllowed = allowed.includes(action.target);
                   const s = LIFECYCLE_STYLES[action.target];
                   return (
@@ -439,7 +511,7 @@ export const TemplateRenderer: React.FC = () => {
                         border: `1px solid ${isCurrent ? sStyle.border : isPast ? '#1e293b' : '#1e293b'}`,
                         textTransform: 'capitalize',
                       }}>
-                        {isPast ? '✓ ' : ''}{s.replace('_', ' ')}
+                        {isPast ? '✓ ' : ''}{getStateLabel(s, template.source)}
                       </span>
                       {i < arr.length - 1 && (
                         <span style={{ color: '#1e293b', fontSize: '12px' }}>→</span>
@@ -473,7 +545,7 @@ export const TemplateRenderer: React.FC = () => {
                   {q.text}
                 </div>
 
-                <InlineCommentThread questionId={q.id} currentUser={DEFAULT_USER} />
+                <InlineCommentThread questionId={q.id} currentUser={currentUser} />
 
                 {/* Single-select */}
                 {isChoiceQuestion(q) && !q.multiple && (
@@ -593,7 +665,7 @@ export const TemplateRenderer: React.FC = () => {
                       background: confirmAction.destructive ? '#ef4444' : s.bg,
                       color: confirmAction.destructive ? 'white' : s.color,
                       fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                      border: `1px solid ${s.border}`,
+                      // border (dup): `1px solid ${s.border}`,
                     }}
                     onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                     onMouseLeave={e => e.currentTarget.style.opacity = '1'}

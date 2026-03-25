@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../formedrix.css';
 import { SimilarCaseSummary } from '../../Legacy/CasePanel_similarcases_legacy';
 
 interface DifferentialDiagnosisTabProps {
@@ -69,7 +70,7 @@ const DifferentialDiagnosisTab: React.FC<DifferentialDiagnosisTabProps> = ({
                 marginBottom: 4,
               }}
             >
-              <div style={{ fontSize: 13, color: '#e5e7eb' }}>{c.accession}</div>
+              <div style={{ fontSize: 13, color: '#e5e7eb' }} data-phi="accession">{c.accession}</div>
               <div
                 style={{
                   fontSize: 11,

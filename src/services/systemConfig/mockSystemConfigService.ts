@@ -34,7 +34,7 @@ export interface ISystemConfigService {
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 const SYSTEM_SEED: SystemConfig = {
-  labName: 'PathScribe Demo Lab',
+  labName: 'ForMedrix Demo Lab',
   labCode: 'PSDL',
   timezone: 'America/Phoenix',
   lis: {
@@ -59,8 +59,8 @@ const SYSTEM_SEED: SystemConfig = {
   },
 };
 
-const load    = () => storageGet<SystemConfig>('pathscribe_systemConfig', SYSTEM_SEED);
-const persist = (d: SystemConfig) => storageSet('pathscribe_systemConfig', d);
+const load    = () => storageGet<SystemConfig>('formedrix_systemConfig', SYSTEM_SEED);
+const persist = (d: SystemConfig) => storageSet('formedrix_systemConfig', d);
 let MOCK_CONFIG: SystemConfig = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

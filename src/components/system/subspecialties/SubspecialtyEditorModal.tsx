@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../../formedrix.css';
 import { Subspecialty } from '../../../contexts/useSubspecialties';
 
 // Define the interface that was missing
@@ -54,7 +55,8 @@ export const SubspecialtyEditorModal: React.FC<Props> = ({
       name, 
       description, 
       specimenIds: selectedSpecimenIds, 
-      userIds: selectedUserIds 
+      userIds: selectedUserIds,
+      active: true,
     };
     
     if (subId) onSave(subId, payload);

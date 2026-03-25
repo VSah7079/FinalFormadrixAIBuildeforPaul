@@ -1,4 +1,5 @@
 import React from "react";
+import '../../../formedrix.css';
 
 interface Props {
   name: string;

@@ -1,7 +1,7 @@
 //
 // AuditEvent.ts
 // ------------------------------------------------------------------
-// Central audit event model for PathScribeAI.
+// Central audit event model for ForMedrixAI.
 // Supports:
 // - AI actions
 // - User actions

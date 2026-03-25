@@ -18,8 +18,9 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import React from "react";
-import { pathScribeTheme } from "@theme/pathScribeTheme";
-import type { ContributionFlag, Severity } from "@types/ContributionDashboard";
+import '../../formedrix.css';
+import { ForMedrixTheme } from "@theme/ForMedrixTheme";
+import type { ContributionFlag, Severity } from "../../types/ContributionDashboard";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -37,9 +38,9 @@ const SEVERITY_BG: Record<Severity, string> = {
 };
 
 const SEVERITY_COLOR: Record<Severity, string> = {
-  high:   pathScribeTheme.colors.semantic.warning,
-  medium: pathScribeTheme.colors.semantic.info,
-  low:    pathScribeTheme.colors.semantic.success,
+  high:   ForMedrixTheme.colors.semantic.warning,
+  medium: ForMedrixTheme.colors.semantic.info,
+  low:    ForMedrixTheme.colors.semantic.success,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,8 +61,8 @@ const FlagRow: React.FC<FlagRowProps> = ({
       style={{
         padding: "10px 12px",
         borderRadius: "10px",
-        background: pathScribeTheme.colors.surfaceSubtle,
-        border: `1px solid ${pathScribeTheme.colors.border.subtle}`,
+        background: ForMedrixTheme.colors.surfaceSubtle,
+        border: `1px solid ${ForMedrixTheme.colors.border.subtle}`,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -71,10 +72,10 @@ const FlagRow: React.FC<FlagRowProps> = ({
     >
       {/* Left: case ID + issue description */}
       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span style={{ fontWeight: 600, color: pathScribeTheme.colors.text.primary }}>
+        <span style={{ fontWeight: 600, color: ForMedrixTheme.colors.text.primary }}>
           {label}
         </span>
-        <span style={{ color: pathScribeTheme.colors.text.muted }}>
+        <span style={{ color: ForMedrixTheme.colors.text.muted }}>
           {value}
         </span>
       </div>

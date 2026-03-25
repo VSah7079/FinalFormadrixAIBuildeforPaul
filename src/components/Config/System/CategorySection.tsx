@@ -1,5 +1,6 @@
 import React from "react";
-import { ActionDefinition } from "../actions/actionRegistry";
+import '../../../formedrix.css';
+import { ActionDefinition } from "../../actions/actionRegistry";
 import { ShortcutRow } from "./ShortcutRow";
 
 interface CategorySectionProps {

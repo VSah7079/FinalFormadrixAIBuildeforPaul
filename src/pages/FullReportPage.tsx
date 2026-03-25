@@ -1,11 +1,15 @@
 // src/pages/FullReportPage.tsx
 
+import React, { useState, useEffect } from "react";
+import '../formedrix.css';
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  getMockReport,
-  FullReport,
-  MinimalReport,
-} from "../mock/mockReports";
+import { getMockReport, FullReport, MinimalReport } from "../mock/mockReports";
+import { useAuth } from "../contexts/AuthContext";
+import InternalNotesDrawer from "../components/InternalNotes/InternalNotesDrawer";
+import { VoiceCommandOverlay } from "../components/Voice/VoiceCommandOverlay";
+import { VoiceMissPrompt }     from "../components/Voice/VoiceMissPrompt";
+import { mockActionRegistryService } from "../services/actionRegistry/mockActionRegistryService";
+import { VOICE_CONTEXT } from "../constants/systemActions";
 
 // ─── Shared style tokens ──────────────────────────────────────────────────────
 
@@ -77,9 +81,38 @@ const S = {
 export default function FullReportPage() {
   const { accession } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [internalNotesOpen, setInternalNotesOpen] = useState(false);
 
   const cleanedAccession = accession?.trim() || "";
   const report = cleanedAccession ? getMockReport(cleanedAccession) : null;
+
+  // ── Voice: set CASE_VIEW context — this page is outside AppShell so
+  //    it needs its own context setting and voice overlay components.
+  useEffect(() => {
+    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.CASE_VIEW);
+    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+  }, []);
+
+  // ── Voice: case navigation and go back/forward ─────────────────────────────
+  useEffect(() => {
+    const goBack    = () => navigate(-1);
+    const goForward = () => navigate(1);
+    const nextCase  = () => navigate(1);   // navigate forward in history
+    const prevCase  = () => navigate(-1);  // navigate back in history
+
+    window.addEventListener('ForMedrix_GO_BACK',            goBack);
+    window.addEventListener('ForMedrix_GO_FORWARD',         goForward);
+    window.addEventListener('ForMedrix_NAV_NEXT_CASE',      nextCase);
+    window.addEventListener('ForMedrix_NAV_PREVIOUS_CASE',  prevCase);
+
+    return () => {
+      window.removeEventListener('ForMedrix_GO_BACK',            goBack);
+      window.removeEventListener('ForMedrix_GO_FORWARD',         goForward);
+      window.removeEventListener('ForMedrix_NAV_NEXT_CASE',      nextCase);
+      window.removeEventListener('ForMedrix_NAV_PREVIOUS_CASE',  prevCase);
+    };
+  }, [navigate]);
 
   if (!report) {
     return (
@@ -101,6 +134,8 @@ export default function FullReportPage() {
             ← Go Back
           </button>
         </div>
+        <VoiceCommandOverlay showSuccess={import.meta.env.DEV} />
+        <VoiceMissPrompt />
       </div>
     );
   }
@@ -113,15 +148,40 @@ export default function FullReportPage() {
       <div style={S.bgGrad} />
       <div style={S.content}>
 
-        {/* Back */}
-        <button
-          onClick={() => navigate(-1)}
-          style={{ marginBottom: "28px", padding: "8px 18px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px", color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
-        >
-          ← Back
-        </button>
+        {/* Back + Internal Notes */}
+        <div style={{ marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{ padding: "8px 18px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px", color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+          >
+            ← Back
+          </button>
+          <button
+            onClick={() => setInternalNotesOpen(true)}
+            style={{ padding: "8px 18px", background: "rgba(8,145,178,0.12)", border: "1px solid rgba(8,145,178,0.3)", borderRadius: "8px", color: "#0891B2", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "7px" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(8,145,178,0.2)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(8,145,178,0.12)"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            Internal Notes
+          </button>
+        </div>
+
+        {internalNotesOpen && (
+          <InternalNotesDrawer
+            accession={cleanedAccession}
+            userId={user?.id ?? 'u1'}
+            userName={user?.name ?? 'Unknown'}
+            onClose={() => setInternalNotesOpen(false)}
+          />
+        )}
 
         {/* Header card */}
         <div style={{ ...S.card, borderColor: "rgba(8,145,178,0.3)", marginBottom: "28px" }}>
@@ -130,7 +190,7 @@ export default function FullReportPage() {
               <div style={{ fontSize: "11px", fontWeight: 700, color: "#0891B2", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
                 Pathology Report
               </div>
-              <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#f1f5f9", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+              <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#f1f5f9", margin: "0 0 4px", letterSpacing: "-0.02em" }} data-phi="accession">
                 {report.accession}
               </h1>
               {isFull && (
@@ -153,6 +213,10 @@ export default function FullReportPage() {
           : <MinimalReportView report={report as MinimalReport} />
         }
       </div>
+
+      {/* Voice overlays — this page is outside AppShell so mounts them directly */}
+      <VoiceCommandOverlay showSuccess={import.meta.env.DEV} />
+      <VoiceMissPrompt />
     </div>
   );
 }
@@ -162,17 +226,17 @@ export default function FullReportPage() {
 function FullReportView({ report }: { report: FullReport }) {
   return (
     <>
-      {/* Diagnosis */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Diagnosis</div>
-        <p style={{ ...S.value, fontSize: "15px", fontWeight: 500, color: "#f1f5f9" }}>{report.diagnosis}</p>
+        <p style={{ ...S.value, fontSize: "15px", fontWeight: 500, color: "#f1f5f9" }} data-phi="diagnosis">
+          {report.diagnosis}
+        </p>
       </div>
 
-      {/* Specimens */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Specimens</div>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {report.specimens.map((s) => (
+          {report.specimens.map(s => (
             <div key={s.id} style={{ display: "flex", gap: "14px", padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#0891B220", color: "#0891B2", fontWeight: 700, fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {s.id}
@@ -186,7 +250,6 @@ function FullReportView({ report }: { report: FullReport }) {
         </div>
       </div>
 
-      {/* Synoptic Summary */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Synoptic Summary</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
@@ -203,7 +266,6 @@ function FullReportView({ report }: { report: FullReport }) {
             </div>
           ))}
         </div>
-
         <div style={{ ...S.label, marginBottom: "12px" }}>Biomarkers</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
           {[
@@ -220,19 +282,16 @@ function FullReportView({ report }: { report: FullReport }) {
         </div>
       </div>
 
-      {/* Gross Description */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Gross Description</div>
         <p style={{ ...S.value, lineHeight: 1.8 }}>{report.grossDescription}</p>
       </div>
 
-      {/* Microscopic Description */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Microscopic Description</div>
         <p style={{ ...S.value, lineHeight: 1.8 }}>{report.microscopicDescription}</p>
       </div>
 
-      {/* Ancillary Studies */}
       <div style={S.card}>
         <div style={S.sectionHeading}>Ancillary Studies</div>
         <p style={{ ...S.value, lineHeight: 1.8 }}>{report.ancillaryStudies}</p>
@@ -248,7 +307,9 @@ function MinimalReportView({ report }: { report: MinimalReport }) {
     <>
       <div style={S.card}>
         <div style={S.sectionHeading}>Diagnosis</div>
-        <p style={{ ...S.value, fontSize: "15px", fontWeight: 500, color: "#f1f5f9" }}>{report.diagnosis}</p>
+        <p style={{ ...S.value, fontSize: "15px", fontWeight: 500, color: "#f1f5f9" }} data-phi="diagnosis">
+          {report.diagnosis}
+        </p>
       </div>
 
       {report.specimenType && (

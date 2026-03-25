@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import '../../../formedrix.css';
 import { clientService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
@@ -6,6 +7,11 @@ import {
 } from '../../Common/modalStyles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export interface ClientCodeSystems {
+  icd: 'ICD-10' | 'ICD-11' | 'both';
+  icdOEnabled: boolean;  // ICD-O-3.2 for NHS COSD / NCRAS oncology reporting
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -21,6 +27,8 @@ export interface Client {
   contactTitle: string;
   notes: string;
   status: 'Active' | 'Inactive';
+  /** Per-institution code system configuration (SR-25) */
+  codeSystems: ClientCodeSystems;
 }
 
 // Clients loaded via clientService
@@ -34,7 +42,7 @@ const ROW2: React.CSSProperties   = { display: 'grid', gridTemplateColumns: '1fr
 const ROW3: React.CSSProperties   = { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14 };
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-const ClientAvatar = ({ name, code }: { name: string; code: string }) => (
+const ClientAvatar = ({ name: _name, code }: { name: string; code: string }) => (
   <div style={{
     width: 34, height: 34, minWidth: 34, borderRadius: 8, flexShrink: 0,
     background: 'radial-gradient(circle at 35% 35%, #2d5a8e, #0d1f35 60%)',
@@ -59,10 +67,16 @@ const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 // ─── Draft ────────────────────────────────────────────────────────────────────
 type Draft = Omit<Client, 'id'>;
 
+const defaultCodeSystems: ClientCodeSystems = {
+  icd: 'ICD-10',
+  icdOEnabled: false,
+};
+
 const emptyDraft: Draft = {
   name: '', code: '', address: '', city: '', state: '', zip: '',
   phone: '', fax: '', email: '', contactName: '', contactTitle: '',
   notes: '', status: 'Active',
+  codeSystems: { ...defaultCodeSystems },
 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -75,7 +89,14 @@ interface ClientModalProps {
 
 const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose }) => {
   const [draft, setDraft] = useState<Draft>(
-    client ? { name: client.name, code: client.code, address: client.address, city: client.city, state: client.state, zip: client.zip, phone: client.phone, fax: client.fax, email: client.email, contactName: client.contactName, contactTitle: client.contactTitle, notes: client.notes, status: client.status }
+    client ? {
+      name: client.name, code: client.code, address: client.address,
+      city: client.city, state: client.state, zip: client.zip,
+      phone: client.phone, fax: client.fax, email: client.email,
+      contactName: client.contactName, contactTitle: client.contactTitle,
+      notes: client.notes, status: client.status,
+      codeSystems: client.codeSystems ?? { ...defaultCodeSystems },
+    }
            : { ...emptyDraft }
   );
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
@@ -96,7 +117,7 @@ const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose
   const inputStyle = (k: keyof Draft) => ({ ...INPUT, borderColor: errors[k] ? '#ef4444' : '#374151' });
 
   return (
-    <div style={overlay}>
+    <div data-capture-hide="true" style={overlay}>
       <div style={{ ...modalBox, maxWidth: 580, maxHeight: '92vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ ...modalHeaderStyle, padding: '20px 24px 16px', flexShrink: 0 }}>
           {mode === 'add' ? 'Add Client' : `Edit Client — ${client?.name}`}
@@ -176,6 +197,84 @@ const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose
             <textarea style={TEXTAREA} value={draft.notes} onChange={e => set('notes', e.target.value)} placeholder="Any special instructions or notes..." />
           </div>
 
+          {/* ── Code Systems (SR-25) ── */}
+          <div style={{ borderTop: '1px solid #1f2937', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+              Code Systems
+            </div>
+
+            {/* ICD version selector */}
+            <div style={FIELD}>
+              <label style={LABEL}>ICD Version</label>
+              <div style={{ display: 'flex', gap: 0, borderRadius: 7, overflow: 'hidden', border: '1px solid #374151' }}>
+                {([
+                  { value: 'ICD-10',  label: 'ICD-10',          hint: 'Current standard' },
+                  { value: 'both',    label: 'Both',             hint: 'Transition mode'  },
+                  { value: 'ICD-11',  label: 'ICD-11',           hint: 'New standard'     },
+                ] as const).map((opt, i) => {
+                  const active = draft.codeSystems.icd === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => set('codeSystems', { ...draft.codeSystems, icd: opt.value })}
+                      style={{
+                        flex: 1, padding: '8px 6px', fontSize: 12, fontWeight: active ? 700 : 500,
+                        background: active ? '#8AB4F8' : 'transparent',
+                        color: active ? '#0d1117' : '#9AA0A6',
+                        border: 'none',
+                        borderLeft: i > 0 ? '1px solid #374151' : 'none',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                      }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(138,180,248,0.08)'; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span>{opt.label}</span>
+                      <span style={{ fontSize: 10, opacity: 0.7, fontWeight: 400 }}>{opt.hint}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {draft.codeSystems.icd === 'both' && (
+                <div style={{ fontSize: 11, color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 6, padding: '7px 10px', marginTop: 6, lineHeight: 1.5 }}>
+                  <strong>Transition mode:</strong> ICD-10 and ICD-11 tabs both appear in the code panel. Pathologists can assign codes in both systems simultaneously. Remove ICD-10 once the institution has fully migrated.
+                </div>
+              )}
+              {draft.codeSystems.icd === 'ICD-11' && (
+                <div style={{ fontSize: 11, color: '#22c55e', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 6, padding: '7px 10px', marginTop: 6, lineHeight: 1.5 }}>
+                  ICD-11 only. ICD-10 tab hidden. Codes use the new alphanumeric format (e.g. XH1234).
+                </div>
+              )}
+            </div>
+
+            {/* ICD-O-3.2 toggle */}
+            <div style={{ ...FIELD, marginTop: 12 }}>
+              <label style={LABEL}>ICD-O-3.2 <span style={{ color: '#6b7280', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(NHS COSD / NCRAS oncology)</span></label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${draft.codeSystems.icdOEnabled ? 'rgba(138,180,248,0.3)' : '#374151'}`, borderRadius: 8, transition: 'border-color 0.2s' }}>
+                <div>
+                  <div style={{ fontSize: 13, color: '#DEE4E7', fontWeight: 600 }}>
+                    {draft.codeSystems.icdOEnabled ? 'ICD-O-3.2 enabled' : 'ICD-O-3.2 disabled'}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                    {draft.codeSystems.icdOEnabled
+                      ? 'Morphology + Topography tab visible in code panel. Required for COSD submission.'
+                      : 'Enable for NHS trusts submitting to the National Cancer Registration and Analysis Service.'}
+                  </div>
+                </div>
+                <Toggle
+                  value={draft.codeSystems.icdOEnabled}
+                  onChange={v => set('codeSystems', { ...draft.codeSystems, icdOEnabled: v })}
+                />
+              </div>
+              {draft.codeSystems.icdOEnabled && (
+                <div style={{ fontSize: 11, color: '#8AB4F8', background: 'rgba(138,180,248,0.06)', border: '1px solid rgba(138,180,248,0.15)', borderRadius: 6, padding: '7px 10px', marginTop: 4, lineHeight: 1.5 }}>
+                  ICD-O-3.2 codes are per-specimen. Morphology codes include the behavior digit (e.g. 8500/3 — malignant). Both Morphology and Topography axes are supported.
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Status */}
           <div style={FIELD}>
             <label style={LABEL}>Status</label>
@@ -202,7 +301,7 @@ const ClientDictionary: React.FC = () => {
 
   useEffect(() => {
     clientService.getAll().then(res => {
-      if (res.ok) setClients(res.data);
+      if (res.ok) setClients(res.data as any);
       setLoading(false);
     });
   }, []);
@@ -220,10 +319,10 @@ const ClientDictionary: React.FC = () => {
   const handleSave = async (draft: Draft) => {
     if (modal?.mode === 'add') {
       const res = await clientService.add(draft);
-      if (res.ok) setClients(prev => [...prev, res.data]);
+      if (res.ok) setClients((prev: any) => [...prev, res.data]);
     } else if (modal?.client) {
       const res = await clientService.update(modal.client.id, draft);
-      if (res.ok) setClients(prev => prev.map(c => c.id === res.data.id ? res.data : c));
+      if (res.ok) setClients((prev: any) => prev.map((c: any) => c.id === res.data.id ? res.data : c));
     }
     setModal(null);
   };
@@ -234,7 +333,7 @@ const ClientDictionary: React.FC = () => {
     const res = client.status === 'Active'
       ? await clientService.deactivate(id)
       : await clientService.reactivate(id);
-    if (res.ok) setClients(prev => prev.map(c => c.id === id ? res.data : c));
+    if (res.ok) setClients((prev: any) => prev.map((c: any) => c.id === id ? res.data : c));
   };
 
   const activeCount   = clients.filter(c => c.status === 'Active').length;
@@ -264,7 +363,7 @@ const ClientDictionary: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <div data-capture-hide="true" style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total',    value: clients.length,  color: '#9AA0A6' },
           { label: 'Active',   value: activeCount,     color: '#22c55e' },
@@ -278,7 +377,7 @@ const ClientDictionary: React.FC = () => {
       </div>
 
       {/* Search + Filter */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <div data-capture-hide="true" style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <input type="text" placeholder="Search clients..." value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, padding: '9px 14px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: '#DEE4E7', outline: 'none', fontFamily: 'inherit' }} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}
@@ -288,7 +387,7 @@ const ClientDictionary: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, overflow: 'hidden' }}>
+      <div data-capture-hide="true" style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
@@ -318,6 +417,18 @@ const ClientDictionary: React.FC = () => {
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#DEE4E7' }}>{c.name}</div>
                         {c.notes && <div style={{ fontSize: 11, color: '#4b5563', marginTop: 1 }}>{c.notes}</div>}
+                        {/* Code system badges */}
+                        <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                          {(c.codeSystems?.icd === 'ICD-10' || c.codeSystems?.icd === 'both') && (
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>ICD-10</span>
+                          )}
+                          {(c.codeSystems?.icd === 'ICD-11' || c.codeSystems?.icd === 'both') && (
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>ICD-11</span>
+                          )}
+                          {c.codeSystems?.icdOEnabled && (
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, background: 'rgba(138,180,248,0.1)', color: '#8AB4F8', border: '1px solid rgba(138,180,248,0.2)' }}>ICD-O-3.2</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>

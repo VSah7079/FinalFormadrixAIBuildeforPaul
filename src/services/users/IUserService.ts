@@ -1,7 +1,9 @@
+// src/services/users/IUserService.ts
+import { VoiceProfileId } from '../../constants/voiceProfiles';
 import { ServiceResult, ID } from '../types';
 
 export interface StaffUser {
-  id: ID;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -12,6 +14,10 @@ export interface StaffUser {
   department: string;
   signatureUrl?: string;
   status: 'Active' | 'Inactive';
+  /** * The personal linguistic override. 
+   * If undefined/null, the system falls back to the Global Facility Profile.
+   */
+  voiceProfile?: VoiceProfileId | null; 
 }
 
 export interface IUserService {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { useAuditLog } from "../components/Audit/useAuditLog";
 import {
   ProtocolDefinition,
@@ -16,7 +15,6 @@ const ProtocolEditor: React.FC = () => {
   const navigate = useNavigate();
   const { protocolId } = useParams();
   const location = useLocation();
-  const { user } = useAuth();
   const { log } = useAuditLog();
   const returnTab = new URLSearchParams(location.search).get("from") || "protocols";
   const [protocol, setProtocol] = useState<ProtocolDefinition | null>(null);
@@ -313,9 +311,9 @@ const ProtocolEditor: React.FC = () => {
             }}
           >
             <span>Source: <span style={{ color: "#94a3b8" }}>{protocol.source}</span></span>
-            <span style={{ color: "#334155" }}>•</span>
+            <span style={{ color: "#334155" }}>&bull;</span>
             <span>Version: <span style={{ color: "#94a3b8" }}>{protocol.version}</span></span>
-            <span style={{ color: "#334155" }}>•</span>
+            <span style={{ color: "#334155" }}>&bull;</span>
             <span>Lifecycle:{" "}
               <span
                 style={{

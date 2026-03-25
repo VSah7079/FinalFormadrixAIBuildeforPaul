@@ -53,7 +53,7 @@ export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt">;
 
 // ─── localStorage ─────────────────────────────────────────────────────────────
 
-const LS_KEY = "pathscribe:clientDictionary";
+const LS_KEY = "formedrix:clientDictionary";
 
 const load = (): Client[] => {
   try {
@@ -72,10 +72,10 @@ const persist = (clients: Client[]) => {
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 //
-// Scenario: "Riverview Health System" has purchased PathScribeAI.
+// Scenario: "Riverview Health System" has purchased ForMedrixAI.
 // They operate a central pathology lab that serves:
-//   • Their own network of affiliated sites           (internal)
-//   • Independent practices and reference lab partners (external)
+//   &bull; Their own network of affiliated sites           (internal)
+//   &bull; Independent practices and reference lab partners (external)
 //
 // Internal hierarchy:
 //   client-INT-001  Riverview Health System          ← parent institution (no parentId)
@@ -106,7 +106,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "1 Riverview Plaza, Springfield, IL 62701",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "RHS",
       hl7Version: "2.5.1",
       enabled: true,
@@ -135,7 +135,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "100 Memorial Drive, Springfield, IL 62702",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "RMH",
       hl7Version: "2.5.1",
       enabled: true,
@@ -162,7 +162,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "200 Eastside Blvd, Springfield, IL 62703",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "REC",
       hl7Version: "2.5.1",
       enabled: true,
@@ -189,7 +189,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "300 Cancer Care Way, Springfield, IL 62704",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "ROC",
       hl7Version: "2.5.1",
       enabled: true,
@@ -216,7 +216,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "400 Northgate Pkwy, Springfield, IL 62705",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "RON",
       hl7Version: "2.5.1",
       enabled: false,      // draw site uses portal, not direct HL7
@@ -244,7 +244,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "1000 Blue Ridge Rd, Decatur, IL 62521",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "BRFM",
       hl7Version: "2.5.1",
       enabled: true,
@@ -270,7 +270,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "2000 Summit Blvd, Peoria, IL 61602",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "SWHG",
       hl7Version: "2.5.1",
       enabled: false,
@@ -296,7 +296,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "3000 Crestwood Lane, Rockford, IL 61101",
     active: false,           // contract lapsed — kept for historical case lookup
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "CRWD",
       hl7Version: "2.4",
       enabled: false,
@@ -324,7 +324,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "4000 Harbor View Dr, Chicago, IL 60601",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "PCRL",
       hl7Version: "2.5.1",
       enabled: true,         // send-out results return via HL7
@@ -350,7 +350,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "5000 Tri-State Tollway, Aurora, IL 60502",
     active: true,
     hl7: {
-      sendingFacility: "PATHSCRIBE",
+      sendingFacility: "ForMedrix",
       receivingFacility: "TSPC",
       hl7Version: "2.5.1",
       enabled: true,         // overflow digital reads returned via HL7

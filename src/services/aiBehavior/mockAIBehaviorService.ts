@@ -2,8 +2,8 @@ import { IAIBehaviorService, AIBehaviorConfig, AI_BEHAVIOR_DEFAULTS } from './IA
 import { storageGet, storageSet } from '../mockStorage';
 import { ServiceResult } from '../types';
 
-const load    = () => storageGet<AIBehaviorConfig>('pathscribe_aiBehavior', AI_BEHAVIOR_DEFAULTS);
-const persist = (d: AIBehaviorConfig) => storageSet('pathscribe_aiBehavior', d);
+const load    = () => storageGet<AIBehaviorConfig>('formedrix_aiBehavior', AI_BEHAVIOR_DEFAULTS);
+const persist = (d: AIBehaviorConfig) => storageSet('formedrix_aiBehavior', d);
 let MOCK_CONFIG: AIBehaviorConfig = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

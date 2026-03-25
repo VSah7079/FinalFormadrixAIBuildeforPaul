@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { pathScribeTheme } from "@theme/pathScribeTheme";
-import type { CaseMixData } from "@types/ContributionDashboard";
+import '../../formedrix.css';
+import { ForMedrixTheme } from "@theme/ForMedrixTheme";
+import type { CaseMixData } from "../../types/ContributionDashboard";
 
 export interface CaseMixTileProps {
   title: string;
@@ -17,9 +18,9 @@ const CATEGORY_LABELS: Record<keyof CaseMixData, string> = {
   other:  "Other",
 };
 
-const t = pathScribeTheme;
+const t = ForMedrixTheme;
 
-const CaseMixTile: React.FC<CaseMixTileProps> = ({ title, data, colors, showCounts = false }) => {
+const CaseMixTile: React.FC<CaseMixTileProps> = ({ title, data, colors, showCounts: _showCounts = false }) => {
   const [hovered, setHovered] = useState<keyof CaseMixData | null>(null);
   const categories = Object.keys(data) as Array<keyof CaseMixData>;
   const total = categories.reduce((sum, k) => sum + data[k], 0);

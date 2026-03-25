@@ -1,7 +1,7 @@
 /**
  * useAuditLog
  * ============================================================
- * Centralised audit logging hook for PathScribe AI.
+ * Centralised audit logging hook for ForMedrix AI.
  *
  * Usage (in any component):
  *   const { log } = useAuditLog();
@@ -17,7 +17,7 @@
  */
 /**
  * useAuditLog
- * Centralised audit logging hook for PathScribe AI.
+ * Centralised audit logging hook for ForMedrix AI.
  *
  * Drop this file into src/components/Audit/useAuditLog.ts (replace existing).
  * It is typed to match src/types/AuditEvent.ts (uses `category` not `type`/`actor`).

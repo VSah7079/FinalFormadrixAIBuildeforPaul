@@ -13,8 +13,8 @@ const SEED_SUBSPECIALTIES: Subspecialty[] = [
   { id: 'thoracic', name: 'Thoracic',            userIds: [],         specimenIds: [],             status: 'Inactive' },
 ];
 
-const load = () => storageGet<Subspecialty[]>('pathscribe_subspecialties', SEED_SUBSPECIALTIES);
-const persist = (data: Subspecialty[]) => storageSet('pathscribe_subspecialties', data);
+const load = () => storageGet<Subspecialty[]>('formedrix_subspecialties', SEED_SUBSPECIALTIES);
+const persist = (data: Subspecialty[]) => storageSet('formedrix_subspecialties', data);
 let MOCK_SUBSPECIALTIES: Subspecialty[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import '../../../formedrix.css';
 import { FlagDefinition } from "../../../types/FlagDefinition";
 import { flagService } from "../../../services";
 
@@ -76,7 +77,7 @@ const FlagConfigPage: React.FC = () => {
   const loadFlags = async () => {
     setLoading(true);
     const res = await flagService.getAll();
-    if (res.ok) setFlags(res.data);
+    if (res.ok) setFlags(res.data as unknown as FlagDefinition[]);
     setLoading(false);
   };
 
@@ -103,11 +104,11 @@ const FlagConfigPage: React.FC = () => {
       code: lisCode, autoCreated: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     if (editingFlag) {
-      const res = await flagService.update(editingFlag.id, { name, description, level, lisCode, active, severity });
-      if (res.ok) setFlags(prev => prev.map(f => f.id === res.data.id ? res.data : f));
+      const res = await flagService.update(editingFlag.id, { name, description, level: (level === "case" ? "Case" : "Specimen") as "Case" | "Specimen", lisCode, severity });
+      if (res.ok) setFlags(prev => prev.map(f => f.id === res.data.id ? res.data as unknown as FlagDefinition : f));
     } else {
-      const res = await flagService.add({ ...payload });
-      if (res.ok) setFlags(prev => [...prev, res.data]);
+      const res = await flagService.add({ ...payload, level: (payload.level === "case" ? "Case" : "Specimen") as "Case" | "Specimen", status: "Active" as const });
+      if (res.ok) setFlags(prev => [...prev, res.data as unknown as FlagDefinition]);
     }
     setShowConfirm(false);
   };

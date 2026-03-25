@@ -11,8 +11,8 @@ const SEED_PHYSICIANS: Physician[] = [
   { id: 'ph6', firstName: 'Susan',    lastName: 'Taylor',   npi: '9876543215', specialty: 'General',             phone: '',         fax: '',         email: '',                      preferredContact: 'Fax',   clientIds: [],           status: 'Unverified', autoCreated: true, autoCreatedAt: '2026-03-02' },
 ];
 
-const load = () => storageGet<Physician[]>('pathscribe_physicians', SEED_PHYSICIANS);
-const persist = (data: Physician[]) => storageSet('pathscribe_physicians', data);
+const load = () => storageGet<Physician[]>('formedrix_physicians', SEED_PHYSICIANS);
+const persist = (data: Physician[]) => storageSet('formedrix_physicians', data);
 let MOCK_PHYSICIANS: Physician[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

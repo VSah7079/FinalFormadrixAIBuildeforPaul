@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import './formedrix.css';
 import SunCalc from "suncalc";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
@@ -76,7 +77,7 @@ export default function Login() {
   const isDark = resolvedTheme === "dark";
   const watermarkOpacity = pauseAnimation ? 0.06 : isDark ? 0.12 : 0.14;
   const watermarkBrightness = pauseAnimation ? "brightness(120%)" : isDark ? "brightness(180%)" : "brightness(240%)";
-  const logoSrc = isDark ? "/pathscribe-logo-dark.svg" : "/pathscribe-logo.svg";
+  const logoSrc = isDark ? "/formedrix-logo.svg" : "/formedrix-logo.svg";
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -116,7 +117,7 @@ export default function Login() {
         animation: "cardFadeIn 0.8s ease-out forwards", boxSizing: "border-box"
       }}>
         <div style={{ width: "100%", marginBottom: "30px", display: "flex", justifyContent: "center" }}>
-          <img src={logoSrc} alt="PathScribe AI" style={{ height: "80px", width: "auto" }} />
+          <img src={logoSrc} alt="ForMedrix AI" style={{ height: "80px", width: "auto" }} />
         </div>
 
         <form onSubmit={handleLogin}>
@@ -158,7 +159,7 @@ export default function Login() {
         </form>
 
         <p style={{ marginTop: "32px", textAlign: "center", fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b" }}>
-          Your credentials are never stored by PathScribe<sup style={{ color: "#0891B2", fontWeight: 800 }}>AI</sup>.
+          Your credentials are never stored by ForMedrix<sup style={{ color: "#0891B2", fontWeight: 800 }}>AI</sup>.
         </p>
       </div>
 
@@ -166,9 +167,9 @@ export default function Login() {
       {showAbout && (
         <div onClick={() => setShowAbout(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: "340px", padding: "32px", borderRadius: "16px", background: isDark ? "#1e293b" : "#fff", color: isDark ? "#fff" : "#000", textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", animation: "modalFadeIn 0.3s ease" }}>
-            <h2 style={{ marginBottom: "10px" }}>PathScribe AI</h2>
+            <h2 style={{ marginBottom: "10px" }}>ForMedrix AI</h2>
             <p style={{ opacity: 0.8, fontSize: "14px" }}>Version 0.9.0 | Build: 2026‑02‑11</p>
-            <p style={{ opacity: 0.8, fontSize: "14px", margin: "10px 0" }}>© 2026 PathScribe Team</p>
+            <p style={{ opacity: 0.8, fontSize: "14px", margin: "10px 0" }}>&copy; 2026 ForMedrix Team</p>
             <button onClick={() => setShowAbout(false)} style={{ marginTop: "24px", width: "100%", padding: "12px", borderRadius: "8px", border: "none", background: "#334155", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Close</button>
           </div>
         </div>

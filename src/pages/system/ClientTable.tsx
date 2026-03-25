@@ -12,6 +12,7 @@
  */
 
 import { useState, useMemo } from "react";
+import '../../formedrix.css';
 import { Client } from "../../contexts/useClientDictionary";
 
 interface ClientTableProps {

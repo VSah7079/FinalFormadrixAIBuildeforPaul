@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../../formedrix.css';
 import { ACTION_GROUPS, DEFAULT_ROLE_PERMISSIONS, ActionId, PermissionSet } from '../../../constants/systemActions';
 import { roleService } from '../../../services';
 import {
@@ -18,12 +19,6 @@ export interface Role {
   builtIn: boolean;      // built-in roles can't be deleted
 }
 
-const BUILT_IN_COLORS: Record<string, string> = {
-  Pathologist: '#8AB4F8',
-  Resident:    '#81C995',
-  Admin:       '#FDD663',
-  Physician:   '#C084FC',
-};
 
 export const DEFAULT_ROLES: Role[] = [
   { id: 'pathologist', name: 'Pathologist', description: 'Licensed pathologist with full clinical case access and sign-out authority.',    color: '#8AB4F8', caseAccess: true,  configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Pathologist'], builtIn: true },
@@ -58,7 +53,7 @@ function groupState(groupActionIds: ActionId[], permissions: PermissionSet): Tri
   return 'some';
 }
 
-const TriCheckbox = ({ state, onClick }: { state: TriState; onClick: () => void }) => (
+const TriCheckbox = ({ state, onClick }: { state: TriState; onClick: (e?: React.MouseEvent) => void }) => (
   <div onClick={onClick} style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${state === 'none' ? '#374151' : '#8AB4F8'}`, background: state === 'all' ? '#8AB4F8' : state === 'some' ? 'rgba(138,180,248,0.2)' : 'transparent', transition: 'all 0.15s' }}>
     {state === 'all'  && <span style={{ color: '#0d1117', fontSize: 10, fontWeight: 900 }}>✓</span>}
     {state === 'some' && <span style={{ color: '#8AB4F8', fontSize: 12, fontWeight: 900, lineHeight: 1 }}>—</span>}
@@ -66,7 +61,7 @@ const TriCheckbox = ({ state, onClick }: { state: TriState; onClick: () => void 
 );
 
 // ─── Permission Editor ────────────────────────────────────────────────────────
-const PermissionEditor: React.FC<{ permissions: PermissionSet; onChange: (p: PermissionSet) => void; builtIn: boolean }> = ({ permissions, onChange, builtIn }) => {
+const PermissionEditor: React.FC<{ permissions: PermissionSet; onChange: (p: PermissionSet) => void; builtIn: boolean }> = ({ permissions, onChange, builtIn: _builtIn }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
 

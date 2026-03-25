@@ -96,7 +96,7 @@ const cards = [
   // ⭐ New tile
   {
     title: 'My Contribution',
-    description: 'Workload • Quality • TAT • Trends',
+    description: 'Workload &bull; Quality &bull; TAT &bull; Trends',
     route: '/contribution',
     color: '#0EA5E9',
     image: '/my_contributions.jpg'
@@ -129,8 +129,8 @@ const cards = [
           transition: 'all 0.4s ease'
         }}>
           <img 
-            src="/pathscribe-logo-dark.svg" 
-            alt="PathScribe AI" 
+            src="/formedrix-logo.svg" 
+            alt="ForMedrix AI" 
             style={{ height: '60px', width: 'auto', cursor: 'pointer' }} 
             onClick={handleNavigateHome}
           />
@@ -281,7 +281,7 @@ const cards = [
           fontSize: '12px',
           borderTop: '1px solid var(--border-color)'
         }}>
-          <div>© 2026 PathScribe AI Systems • HIPAA Compliant</div>
+          <div>&copy; 2026 ForMedrix AI Systems &bull; HIPAA Compliant</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
               width: '8px', 
@@ -483,7 +483,7 @@ const cards = [
                   e.currentTarget.style.color = '#cbd5e1';
                 }}
               >
-                <HelpIcon /> About PathScribe<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super', marginLeft: '0.2em' }}>AI</span>
+                <HelpIcon /> About ForMedrix<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super', marginLeft: '0.2em' }}>AI</span>
               </button>
             </div>
 
@@ -826,7 +826,7 @@ const cards = [
                margin: '0 0 16px 0',
                letterSpacing: '-0.5px'
              }}>
-               PathScribe<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super', marginLeft: '0.1em' }}>AI</span>
+               ForMedrix<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super', marginLeft: '0.1em' }}>AI</span>
              </h2>
              
              <p style={{ 
@@ -844,7 +844,7 @@ const cards = [
                fontSize: '15px',
                lineHeight: '1.6'
              }}>
-               Developed by the PathScribe AI Team
+               Developed by the ForMedrix AI Team
              </p>
              
              <p style={{ 
@@ -852,7 +852,7 @@ const cards = [
                marginBottom: '30px', 
                fontSize: '14px'
              }}>
-               © 2026 PathScribe
+               &copy; 2026 ForMedrix
              </p>
              
              <button 

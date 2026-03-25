@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import '../formedrix.css';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
 import { useLogout } from "@hooks/useLogout";
@@ -16,12 +17,14 @@ import CaseMixTile    from "@components/Dashboards/CaseMixTile";
 import ProductivityTab from "./ProductivityTab";
 import QualityTab      from "./QualityTab";
 import AIContributionTab from "./AIContributionTab";
-import { pathScribeTheme as t } from "@theme/pathScribeTheme";
+import { ForMedrixTheme as t } from "@theme/ForMedrixTheme";
 import type {
   ContributionFlag,
   CaseMixData,
   KpiTile,
-} from "@types/ContributionDashboard";
+} from "../types/ContributionDashboard";
+import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
+import { VOICE_CONTEXT } from '../constants/systemActions';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -182,6 +185,12 @@ const ContributionDashboardPage: React.FC = () => {
     else                   document.documentElement.setAttribute("data-theme", mode);
   };
 
+  // ── Voice: set WORKLIST context on mount ──────────────────────────────────
+  useEffect(() => {
+    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+  }, []);
+
   return (
     <div style={{ padding: "32px", color: t.colors.text.primary }}>
 
@@ -198,12 +207,12 @@ const ContributionDashboardPage: React.FC = () => {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", gap: "8px" }}>
-            <SunIcon     size={22} style={{ cursor: "pointer", opacity: themeMode === "light"  ? 1 : 0.4, transition: "0.2s" }} onClick={() => applyThemeMode("light")}  />
-            <MoonIcon    size={22} style={{ cursor: "pointer", opacity: themeMode === "dark"   ? 1 : 0.4, transition: "0.2s" }} onClick={() => applyThemeMode("dark")}   />
-            <MonitorIcon size={22} style={{ cursor: "pointer", opacity: themeMode === "system" ? 1 : 0.4, transition: "0.2s" }} onClick={() => applyThemeMode("system")} />
+            <div onClick={() => applyThemeMode("light")}  style={{ display: "inline-flex" }}><SunIcon     size={22} style={{ opacity: themeMode === "light"  ? 1 : 0.4, transition: "0.2s" }} /></div>
+            <div onClick={() => applyThemeMode("dark")}   style={{ display: "inline-flex" }}><MoonIcon    size={22} style={{ opacity: themeMode === "dark"   ? 1 : 0.4, transition: "0.2s" }} /></div>
+            <div onClick={() => applyThemeMode("system")} style={{ display: "inline-flex" }}><MonitorIcon size={22} style={{ opacity: themeMode === "system" ? 1 : 0.4, transition: "0.2s" }} /></div>
           </div>
-          <HelpIcon   size={22} style={{ cursor: "pointer", opacity: 0.7 }} onClick={() => setShowAboutModal(true)} />
-          <LogOutIcon size={22} style={{ cursor: "pointer", opacity: 0.7 }} onClick={logout} />
+          <div onClick={() => setShowAboutModal(true)} style={{ display: "inline-flex", cursor: "pointer" }}><HelpIcon   size={22} style={{ opacity: 0.7 }} /></div>
+          <div onClick={logout} style={{ display: "inline-flex", cursor: "pointer" }}><LogOutIcon size={22} style={{ opacity: 0.7 }} /></div>
           <div style={{ width: "42px", height: "42px", borderRadius: "50%", backgroundColor: t.colors.button.subtle, border: `1px solid ${t.colors.button.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontWeight: 700 }}
             onClick={() => setShowProfileModal(true)}>
             {user?.name?.[0] ?? "U"}
@@ -212,7 +221,7 @@ const ContributionDashboardPage: React.FC = () => {
       </div>
 
       {/* ─── Search ──────────────────────────────────────────────────────── */}
-      <CaseSearchBar />
+      <div data-capture-hide="true"><CaseSearchBar /></div>
 
       {/* ─── Tabs ────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: "24px", marginTop: "32px", marginBottom: "24px" }}>
@@ -281,7 +290,7 @@ const ContributionDashboardPage: React.FC = () => {
                   </div>
                   <WarningIcon size={18} style={{ color: t.colors.semantic.warning }} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div data-capture-hide="true" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {mockQualityFlags.map((flag) => (
                     <FlagRow key={flag.id} {...flag} />
                   ))}
@@ -296,7 +305,7 @@ const ContributionDashboardPage: React.FC = () => {
       {activeTab === "productivity" && <ProductivityTab />}
 
       {/* ─── Quality Tab ─────────────────────────────────────────────────── */}
-      {activeTab === "quality" && <QualityTab />}
+      {activeTab === "quality" && <div data-capture-hide="true"><QualityTab /></div>}
 
       {/* ─── AI Contribution Tab ─────────────────────────────────────────── */}
       {activeTab === "ai" && <AIContributionTab />}
@@ -311,7 +320,7 @@ const ContributionDashboardPage: React.FC = () => {
             </div>
             <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowQuickLinksModal(true); }}>Quick Links</button>
             <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowWarningModal(true);   }}>Unsaved Data Warning</button>
-            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowAboutModal(true);     }}>About PathScribe AI</button>
+            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowAboutModal(true);     }}>About ForMedrix AI</button>
             <button style={{ ...closeBtnStyle, marginTop: "20px" }} onClick={() => setShowProfileModal(false)}>Close</button>
           </div>
         </div>
@@ -343,8 +352,8 @@ const ContributionDashboardPage: React.FC = () => {
       {showAboutModal && (
         <div style={overlayStyle} onClick={() => setShowAboutModal(false)}>
           <div style={{ ...modalCardStyle, width: "460px" }} onClick={e => e.stopPropagation()}>
-            <h2 style={modalHeadingStyle}>About PathScribe AI</h2>
-            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>PathScribe AI is a next‑generation pathology reporting platform designed to streamline workflows, enhance diagnostic accuracy, and provide actionable insights through intelligent automation.</p>
+            <h2 style={modalHeadingStyle}>About ForMedrix AI</h2>
+            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>ForMedrix AI is a next‑generation pathology reporting platform designed to streamline workflows, enhance diagnostic accuracy, and provide actionable insights through intelligent automation.</p>
             <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>This dashboard provides a high‑level overview of your case activity, productivity, quality indicators, and AI‑assisted contributions.</p>
             <button style={closeBtnStyle} onClick={() => setShowAboutModal(false)}>Close</button>
           </div>

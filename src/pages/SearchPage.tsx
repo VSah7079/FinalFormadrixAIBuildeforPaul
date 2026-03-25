@@ -1,10 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+type CodeModalSystem = 'snomed' | 'icd' | 'SNOMED' | 'ICD-10' | 'ICD-11' | 'ICD-O-topography' | 'ICD-O-morphology';
+
+import React, { useState, useEffect, useRef } from 'react';
+import '../formedrix.css';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@contexts/AuthContext';
 import { useLogout } from '@hooks/useLogout';
-import WorklistTable from './Worklist/WorklistTable';
-import { caseService } from '../services';
-import type { PathologyCase, CaseFilterParams } from '../services';
+import WorklistTable from '../components/Worklist/WorklistTable';
+import { caseService, codeService } from '../services';
+import type { PathologyCase, CaseFilterParams, ClinicalCode } from '../services';
+import { LookupModal, LookupSearch, LookupItem, LookupSection, LookupEmpty } from '../components/Common/LookupModal';
+import { useSpecimenDictionary } from '../components/Config/System/useSpecimenDictionary';
+import type { SpecimenEntry } from '../components/Config/System/specimenTypes';
+import { useSystemConfig } from '../contexts/SystemConfigContext';
+import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
+import { normalizeAccession } from '../utils/normalizeAccession';
+import { VOICE_CONTEXT } from '../constants/systemActions';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,11 +29,11 @@ const fmtDate = (iso: string): string => {
 
 // ─── localStorage / sessionStorage ───────────────────────────────────────────
 
-const LS_KEY = 'pathscribe:savedSearches';
+const LS_KEY = 'formedrix:savedSearches';
 const lsLoad = (): SavedSearch[] => { try { const r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : []; } catch { return []; } };
 const lsSave = (s: SavedSearch[]) => { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {} };
 
-const SS_KEY = 'pathscribe:lastSearch';
+const SS_KEY = 'formedrix:lastSearch';
 interface LastSearchSnapshot { filters: FilterState; results: PathologyCase[]; hasSearched: boolean; }
 const ssLoad  = (): LastSearchSnapshot | null => { try { const r = sessionStorage.getItem(SS_KEY); return r ? JSON.parse(r) : null; } catch { return null; } };
 const ssSave  = (s: LastSearchSnapshot) => { try { sessionStorage.setItem(SS_KEY, JSON.stringify(s)); } catch {} };
@@ -43,61 +52,8 @@ const SPECIMEN_DICTIONARY = [
   'Sentinel Lymph Node Biopsy','Core Needle Biopsy Breast','Prostate Biopsy Cores',
 ];
 
-// ─── SNOMED CT codes ──────────────────────────────────────────────────────────
-
-type CodeSystem = 'SNOMED' | 'ICD';
-interface CodeSuggestion { system: CodeSystem; code: string; display: string; }
-
-const SNOMED_CODES: CodeSuggestion[] = [
-  { system:'SNOMED', code:'413448000', display:'Invasive ductal carcinoma of breast' },
-  { system:'SNOMED', code:'413449008', display:'Invasive lobular carcinoma of breast' },
-  { system:'SNOMED', code:'413448001', display:'Triple negative breast carcinoma' },
-  { system:'SNOMED', code:'363406005', display:'Adenocarcinoma of colon' },
-  { system:'SNOMED', code:'399068003', display:'Adenocarcinoma of prostate' },
-  { system:'SNOMED', code:'35919005',  display:'Gleason grade 3+3 adenocarcinoma of prostate' },
-  { system:'SNOMED', code:'55557003',  display:'Gleason grade 3+4 adenocarcinoma of prostate' },
-  { system:'SNOMED', code:'80581009',  display:'Gleason grade 4+3 adenocarcinoma of prostate' },
-  { system:'SNOMED', code:'254637007', display:'Non-small cell carcinoma of lung' },
-  { system:'SNOMED', code:'254637006', display:'Squamous cell carcinoma of lung' },
-  { system:'SNOMED', code:'254637008', display:'Adenocarcinoma of lung' },
-  { system:'SNOMED', code:'363478007', display:'Malignant neoplasm of thyroid gland' },
-  { system:'SNOMED', code:'372130007', display:'Malignant melanoma of skin' },
-  { system:'SNOMED', code:'363518003', display:'Malignant neoplasm of endometrium' },
-  { system:'SNOMED', code:'363440005', display:'Transitional cell carcinoma of bladder' },
-  { system:'SNOMED', code:'444810001', display:'High grade serous carcinoma of ovary' },
-  { system:'SNOMED', code:'255082004', display:'Clear cell renal cell carcinoma' },
-  { system:'SNOMED', code:'413449009', display:'Papillary renal cell carcinoma' },
-  { system:'SNOMED', code:'413448002', display:'Chromophobe renal cell carcinoma' },
-  { system:'SNOMED', code:'276828006', display:'Stage I breast carcinoma' },
-  { system:'SNOMED', code:'276829003', display:'Stage II breast carcinoma' },
-  { system:'SNOMED', code:'369900003', display:'pT1 prostate carcinoma' },
-  { system:'SNOMED', code:'369901004', display:'pT2 prostate carcinoma' },
-  { system:'SNOMED', code:'369902006', display:'pT3 prostate carcinoma' },
-];
-
-const ICD_CODES: CodeSuggestion[] = [
-  { system:'ICD', code:'C50.512', display:'Malignant neoplasm lower-outer quadrant left female breast' },
-  { system:'ICD', code:'C50.412', display:'Malignant neoplasm upper-outer quadrant left female breast' },
-  { system:'ICD', code:'C50.119', display:'Malignant neoplasm of central portion of breast, unspecified' },
-  { system:'ICD', code:'C18.2',   display:'Malignant neoplasm of ascending colon' },
-  { system:'ICD', code:'C18.7',   display:'Malignant neoplasm of sigmoid colon' },
-  { system:'ICD', code:'C19',     display:'Malignant neoplasm of rectosigmoid junction' },
-  { system:'ICD', code:'C20',     display:'Malignant neoplasm of rectum' },
-  { system:'ICD', code:'C61',     display:'Malignant neoplasm of prostate' },
-  { system:'ICD', code:'C34.10',  display:'Malignant neoplasm of upper lobe bronchus/lung, unspecified' },
-  { system:'ICD', code:'C34.30',  display:'Malignant neoplasm of lower lobe bronchus/lung, unspecified' },
-  { system:'ICD', code:'C73',     display:'Malignant neoplasm of thyroid gland' },
-  { system:'ICD', code:'C43.9',   display:'Malignant melanoma of skin, unspecified' },
-  { system:'ICD', code:'C54.1',   display:'Malignant neoplasm of endometrium' },
-  { system:'ICD', code:'C67.9',   display:'Malignant neoplasm of bladder, unspecified' },
-  { system:'ICD', code:'C64.1',   display:'Malignant neoplasm of right kidney, except renal pelvis' },
-  { system:'ICD', code:'C64.2',   display:'Malignant neoplasm of left kidney, except renal pelvis' },
-  { system:'ICD', code:'C56.1',   display:'Malignant neoplasm of right ovary' },
-  { system:'ICD', code:'C56.2',   display:'Malignant neoplasm of left ovary' },
-  { system:'ICD', code:'C53.9',   display:'Malignant neoplasm of cervix uteri, unspecified' },
-  { system:'ICD', code:'C77.0',   display:'Secondary malignant neoplasm lymph nodes head/face/neck' },
-  { system:'ICD', code:'C49.9',   display:'Malignant neoplasm connective/soft tissue, unspecified' },
-];
+// ─── SNOMED/ICD inline data removed — now served by codeService ──────────────
+// See src/services/codes/mockCodeService.ts
 
 // ─── Synoptics ────────────────────────────────────────────────────────────────
 
@@ -129,28 +85,28 @@ const ALL_SYNOPTICS: SynopticTemplate[] = [
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-interface UserStub { id: string; name: string; }
+interface UserStub { id: string; name: string; client: string; }
 const ALL_PATHOLOGISTS: UserStub[] = [
-  { id:'path-1', name:'Dr. Sarah Johnson'   },
-  { id:'path-2', name:'Dr. Michael Chen'    },
-  { id:'path-3', name:'Dr. Emily Rodriguez' },
-  { id:'path-4', name:'Dr. James Okafor'    },
-  { id:'path-5', name:'Dr. Priya Nair'      },
-  { id:'path-6', name:'Dr. David Lee'       },
-  { id:'path-7', name:'Dr. Anna Fischer'    },
-  { id:'path-8', name:'Dr. Raj Patel'       },
+  { id:'path-1', name:'Dr. Sarah Johnson',   client:'St. Vincent\'s University Hospital'  },
+  { id:'path-2', name:'Dr. Michael Chen',    client:'Mater Misericordiae University Hospital' },
+  { id:'path-3', name:'Dr. Emily Rodriguez', client:'Beaumont Hospital'                   },
+  { id:'path-4', name:'Dr. James Okafor',    client:'St. James\'s Hospital'               },
+  { id:'path-5', name:'Dr. Priya Nair',      client:'Cork University Hospital'            },
+  { id:'path-6', name:'Dr. David Lee',       client:'Mater Misericordiae University Hospital' },
+  { id:'path-7', name:'Dr. Anna Fischer',    client:'Tallaght University Hospital'        },
+  { id:'path-8', name:'Dr. Raj Patel'  ,     client:'St. Vincent\'s University Hospital'  },
 ];
 const ALL_ATTENDINGS: UserStub[] = [
-  { id:'att-1',  name:'Dr. Robert Williams'  },
-  { id:'att-2',  name:'Dr. Linda Martinez'   },
-  { id:'att-3',  name:'Dr. Kevin Thompson'   },
-  { id:'att-4',  name:'Dr. Susan Clark'      },
-  { id:'att-5',  name:'Dr. Brian Park'       },
-  { id:'att-6',  name:'Dr. Catherine Moore'  },
-  { id:'att-7',  name:'Dr. Thomas Harris'    },
-  { id:'att-8',  name:'Dr. Patricia Allen'   },
-  { id:'att-9',  name:'Dr. Mark Davis'       },
-  { id:'att-10', name:'Dr. Nicole Wilson'    },
+  { id:'att-1',  name:'Dr. Robert Williams',  client:'Blackrock Clinic'                    },
+  { id:'att-2',  name:'Dr. Linda Martinez',   client:'Beacon Hospital'                     },
+  { id:'att-3',  name:'Dr. Kevin Thompson',   client:'St. James\'s Hospital'               },
+  { id:'att-4',  name:'Dr. Susan Clark',      client:'Mater Private Network'               },
+  { id:'att-5',  name:'Dr. Brian Park',       client:'Galway University Hospital'          },
+  { id:'att-6',  name:'Dr. Catherine Moore',  client:'Beacon Hospital'                     },
+  { id:'att-7',  name:'Dr. Thomas Harris',    client:'Blackrock Clinic'                    },
+  { id:'att-8',  name:'Dr. Patricia Allen',   client:'Cork University Hospital'            },
+  { id:'att-9',  name:'Dr. Mark Davis',       client:'St. Vincent\'s University Hospital'  },
+  { id:'att-10', name:'Dr. Nicole Wilson',    client:'Galway University Hospital'          },
 ];
 
 // ─── Flags ────────────────────────────────────────────────────────────────────
@@ -171,11 +127,14 @@ const PRIORITY_OPTIONS    = ['Routine','STAT'] as const;
 interface FilterState {
   patientName: string; hospitalId: string; accessionNo: string;
   diagnosisList: string[]; specimenList: string[];
-  snomedList: CodeSuggestion[]; icdList: CodeSuggestion[];
+  snomedList: ClinicalCode[]; icdCodes: ClinicalCode[];
   synopticIds: string[]; flagsList: string[];
   pathologistIds: string[]; attendingIds: string[];
   submittingNames: string[]; statusList: string[]; priorityList: string[];
   dateFrom: string; dateTo: string;
+  genderList: string[];
+  dobFrom: string; dobTo: string;
+  ageMin: number | undefined; ageMax: number | undefined;
 }
 interface SavedSearch { id: string; name: string; filters: FilterState; createdAt: string; }
 
@@ -189,9 +148,12 @@ const buildSummary = (f: FilterState): string => {
   if (f.hospitalId)            parts.push(`MRN "${f.hospitalId}"`);
   if (f.specimenList.length)   parts.push(`specimen: ${f.specimenList.join(', ')}`);
   if (f.diagnosisList.length)  parts.push(`diagnosis: ${f.diagnosisList.join(', ')}`);
-  if (f.snomedList.length)     parts.push(`SNOMED: ${f.snomedList.map(s=>s.code).join(', ')}`);
-  if (f.icdList.length)        parts.push(`ICD: ${f.icdList.map(s=>s.code).join(', ')}`);
+  if (f.snomedList.length)   parts.push(`SNOMED: ${f.snomedList.map(s=>s.code).join(', ')}`);
+  if (f.icdCodes.length)     parts.push(`ICD: ${f.icdCodes.map(s=>`${s.system}:${s.code}`).join(', ')}`);
   if (f.statusList.length)     parts.push(`status: ${f.statusList.join(', ')}`);
+  if (f.genderList?.length)    parts.push(`gender: ${f.genderList.join(', ')}`);
+  if (f.dobFrom || f.dobTo)    parts.push(`DOB: ${f.dobFrom||'…'} → ${f.dobTo||'…'}`);
+  if (f.ageMin !== undefined || f.ageMax !== undefined) parts.push(`age: ${f.ageMin??'0'}–${f.ageMax??'∞'}yrs`);
   if (f.priorityList.length)   parts.push(`priority: ${f.priorityList.join(', ')}`);
   if (f.flagsList.length)      parts.push(`flags: ${f.flagsList.join(', ')}`);
   if (f.synopticIds.length)    parts.push(`synoptic: ${f.synopticIds.map(id=>ALL_SYNOPTICS.find(t=>t.id===id)?.organ??id).join(', ')}`);
@@ -200,47 +162,18 @@ const buildSummary = (f: FilterState): string => {
   return parts.length===0 ? 'Showing all cases' : 'Showing cases with '+parts.join(' · ');
 };
 
-// ─── Virtual scroll wrapper — scroll listener NOW properly attached ───────────
-
-const ROW_CHUNK = 25;
-const ROW_LOAD  = 25;
-
-const VirtualWorklist: React.FC<{ cases: PathologyCase[]; onBeforeNavigate: () => void }> = ({ cases, onBeforeNavigate }) => {
-  const [visibleCount, setVisibleCount] = useState(ROW_CHUNK);
-  const scrollRef = useRef<HTMLDivElement|null>(null);
-
-  useEffect(() => { setVisibleCount(ROW_CHUNK); }, [cases]);
-
-  const onScroll = useCallback(() => {
-    const el = scrollRef.current; if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200)
-      setVisibleCount(v => Math.min(v + ROW_LOAD, cases.length));
-  }, [cases.length]);
-
-  useEffect(() => {
-    const el = scrollRef.current; if (!el) return;
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [onScroll]);
-
-  return (
-    <div ref={scrollRef} style={{ height:'100%', overflowY:'auto' }}>
-      <WorklistTable cases={cases.slice(0, visibleCount)} onBeforeNavigate={onBeforeNavigate} />
-      {visibleCount < cases.length && (
-        <div style={{ textAlign:'center', padding:'12px 0', fontSize:12, color:'#374151' }}>
-          Showing {visibleCount} of {cases.length} — scroll to load more
-        </div>
-      )}
-    </div>
-  );
-};
+// ─── Virtual scroll wrapper removed ──────────────────────────────────────────
+// WorklistTable manages its own internal scroll and incremental row loading.
+// Passing cases directly is sufficient.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const Chip: React.FC<{ label: string; onRemove: () => void }> = ({ label, onRemove }) => (
-  <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:999, background:'rgba(8,145,178,0.15)', border:'1px solid rgba(8,145,178,0.4)', fontSize:11, color:'#7dd3fc' }}>
+const Chip: React.FC<{ label: string; onRemove: () => void; title?: string; accent?: string }> = ({ label, onRemove, title, accent='#0891B2' }) => (
+  <span title={title} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:999,
+    background:`${accent}33`, border:`1px solid ${accent}80`, fontSize:11, color:'#e2e8f0', cursor:'default' }}>
     {label}
-    <button type="button" onClick={onRemove} style={{ border:'none', background:'transparent', color:'#7dd3fc', cursor:'pointer', fontSize:13, lineHeight:1, padding:0 }}>×</button>
+    <button type="button" onClick={e=>{ e.preventDefault(); e.stopPropagation(); onRemove(); }} style={{ border:'none', background:'transparent', color:'#94a3b8', cursor:'pointer', fontSize:14, lineHeight:1, padding:0, display:'flex', alignItems:'center' }}
+      onMouseEnter={e=>e.currentTarget.style.color='#f1f5f9'} onMouseLeave={e=>e.currentTarget.style.color='#94a3b8'}>×</button>
   </span>
 );
 
@@ -250,32 +183,33 @@ const CheckPill: React.FC<{ label: string; checked: boolean; onChange: () => voi
     cursor:'pointer', fontSize:11, fontWeight:500, transition:'all 0.15s', whiteSpace:'nowrap' as const,
     background: checked ? `${accent}22` : 'rgba(15,23,42,0.5)',
     border:`1px solid ${checked ? accent : 'rgba(148,163,184,0.2)'}`,
-    color: checked ? '#e2e8f0' : '#64748b',
+    color: checked ? '#f1f5f9' : '#cbd5e1',
   }}>
-    <span style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background:checked?accent:'transparent', border:`1.5px solid ${checked?accent:'#475569'}` }} />
+    <span style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background:checked?accent:'transparent', border:`1.5px solid ${checked?accent:'#64748b'}` }} />
     {label}
   </button>
 );
 
-// SectionLabel: dim by default, vivid when active
+// SectionLabel: clear by default, vivid cyan when active
 const SectionLabel: React.FC<{ title: string; active?: boolean }> = ({ title, active=false }) => (
   <div style={{
-    fontSize:10, fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.7px', marginBottom:5,
-    color: active ? '#7dd3fc' : '#4b5563',
+    fontSize:10, fontWeight:700, textTransform:'uppercase' as const, letterSpacing:'0.7px',
+    color: active ? '#7dd3fc' : '#94a3b8',
     transition:'color 0.15s',
   }}>{title}</div>
 );
 
-// Browse button — opens lookup modal
+// Browse button — opens lookup modal, sits inline with input
 const BrowseBtn: React.FC<{ onClick: () => void; count?: number }> = ({ onClick, count }) => (
   <button type="button" onClick={onClick} style={{
-    display:'inline-flex', alignItems:'center', gap:3, padding:'2px 8px', borderRadius:5,
-    border:'1px dashed rgba(8,145,178,0.45)', background:'transparent',
-    color:'#0891B2', fontSize:10, fontWeight:600, cursor:'pointer', transition:'all 0.15s', marginLeft:5,
+    display:'inline-flex', alignItems:'center', gap:3, padding:'5px 10px', borderRadius:7,
+    border:'1px solid rgba(8,145,178,0.45)', background:'rgba(8,145,178,0.08)',
+    color:'#7dd3fc', fontSize:11, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
+    whiteSpace:'nowrap' as const, flexShrink:0,
   }}
-    onMouseEnter={e=>{e.currentTarget.style.background='rgba(8,145,178,0.1)';}}
-    onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}>
-    Browse{count!==undefined?` (${count})`:''}…
+    onMouseEnter={e=>{e.currentTarget.style.background='rgba(8,145,178,0.18)'; e.currentTarget.style.borderColor='rgba(8,145,178,0.7)';}}
+    onMouseLeave={e=>{e.currentTarget.style.background='rgba(8,145,178,0.08)'; e.currentTarget.style.borderColor='rgba(8,145,178,0.45)';}}>
+    {count ? `Browse (${count})` : 'Browse'}
   </button>
 );
 
@@ -289,153 +223,511 @@ const DROP_BTN: React.CSSProperties = {
   border:'none', background:'transparent', color:'#e5e7eb', fontSize:12, cursor:'pointer',
 };
 
-// ─── Lookup Modal shell ───────────────────────────────────────────────────────
+// ─── LookupModal and content components imported from Common/LookupModal ──────
+// LookupModal, LookupSearch, LookupItem, LookupSection, LookupEmpty
 
-const LookupModal: React.FC<{ title: string; subtitle?: string; onClose: () => void; children: React.ReactNode }> = ({ title, subtitle, onClose, children }) => (
-  <div style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.88)', backdropFilter:'blur(12px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10000 }}
-    onClick={onClose}>
-    <div style={{ width:640, maxHeight:'80vh', display:'flex', flexDirection:'column', backgroundColor:'#0a0f1e', borderRadius:16, border:'1px solid rgba(8,145,178,0.3)', boxShadow:'0 30px 60px rgba(0,0,0,0.8)', overflow:'hidden' }}
-      onClick={e=>e.stopPropagation()}>
-      <div style={{ padding:'20px 24px 14px', borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-        <div>
-          <div style={{ fontSize:17, fontWeight:700, color:'#f1f5f9' }}>{title}</div>
-          {subtitle && <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{subtitle}</div>}
-        </div>
-        <button onClick={onClose} style={{ border:'none', background:'transparent', color:'#64748b', fontSize:20, cursor:'pointer', lineHeight:1, padding:'0 4px' }}
-          onMouseEnter={e=>(e.currentTarget.style.color='#e2e8f0')} onMouseLeave={e=>(e.currentTarget.style.color='#64748b')}>×</button>
-      </div>
-      <div style={{ flex:1, overflowY:'auto', padding:'16px 24px 24px' }}>{children}</div>
-    </div>
-  </div>
-);
-
-// ─── Code lookup modal (SNOMED / ICD) ─────────────────────────────────────────
-
-const CodeLookupContent: React.FC<{ system: CodeSystem; codes: CodeSuggestion[]; selected: CodeSuggestion[]; onToggle: (c: CodeSuggestion) => void }> = ({ system, codes, selected, onToggle }) => {
-  const [q, setQ] = useState('');
-  const accent = system === 'SNOMED' ? '#0891B2' : '#8B5CF6';
-  const filtered = q.length < 2 ? codes : codes.filter(c => c.code.toLowerCase().includes(q.toLowerCase()) || c.display.toLowerCase().includes(q.toLowerCase()));
-  return (
-    <>
-      <input autoFocus type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder={`Search ${system} codes or descriptions…`}
-        style={{ width:'100%', padding:'9px 12px', background:'rgba(15,23,42,0.8)', border:`1px solid rgba(148,163,184,0.3)`, borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box' as const, marginBottom:12 }}
-        onFocus={e=>(e.currentTarget.style.borderColor=accent)} onBlur={e=>(e.currentTarget.style.borderColor='rgba(148,163,184,0.3)')} />
-      <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-        {filtered.map(c => {
-          const sel = selected.some(x=>x.code===c.code);
-          return (
-            <button key={c.code} type="button" onClick={()=>onToggle(c)} style={{
-              display:'flex', alignItems:'center', gap:12, padding:'9px 12px', borderRadius:8, cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s',
-              background: sel ? `rgba(${system==='SNOMED'?'8,145,178':'139,92,246'},0.14)` : 'rgba(255,255,255,0.02)',
-              border:`1px solid ${sel ? (system==='SNOMED'?'rgba(8,145,178,0.5)':'rgba(139,92,246,0.5)') : 'rgba(255,255,255,0.05)'}`,
-            }}
-              onMouseEnter={e=>{if(!sel)e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
-              onMouseLeave={e=>{if(!sel)e.currentTarget.style.background='rgba(255,255,255,0.02)';}}>
-              <span style={{ fontFamily:'monospace', fontSize:11, fontWeight:700, color:sel?(system==='SNOMED'?'#7dd3fc':'#c4b5fd'):'#64748b', flexShrink:0, minWidth:76 }}>{c.code}</span>
-              <span style={{ fontSize:12, color:sel?'#e2e8f0':'#94a3b8', flex:1, lineHeight:1.4 }}>{c.display}</span>
-              {sel && <span style={{ color:system==='SNOMED'?'#7dd3fc':'#c4b5fd', fontSize:14, flexShrink:0 }}>✓</span>}
-            </button>
-          );
-        })}
-        {filtered.length===0 && <div style={{ color:'#475569', fontSize:13, padding:'20px 0', textAlign:'center' as const }}>No results{q?' for "'+q+'"':''}</div>}
-      </div>
-    </>
-  );
-};
-
-// ─── Synoptic lookup modal ────────────────────────────────────────────────────
+// ─── Synoptic lookup content (local — synoptics are search-page-specific) ─────
 
 const SynopticLookupContent: React.FC<{ selected: string[]; onToggle: (id: string) => void }> = ({ selected, onToggle }) => {
   const [q, setQ] = useState('');
-  const categories = Array.from(new Set(ALL_SYNOPTICS.map(s=>s.category)));
-  const filtered = q.length < 1 ? ALL_SYNOPTICS : ALL_SYNOPTICS.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.organ.toLowerCase().includes(q.toLowerCase()));
+  const categories = Array.from(new Set(ALL_SYNOPTICS.map(s => s.category)));
+  const filtered = q.length < 1 ? ALL_SYNOPTICS : ALL_SYNOPTICS.filter(s =>
+    s.name.toLowerCase().includes(q.toLowerCase()) || s.organ.toLowerCase().includes(q.toLowerCase())
+  );
   return (
     <>
-      <input autoFocus type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search protocols…"
-        style={{ width:'100%', padding:'9px 12px', background:'rgba(15,23,42,0.8)', border:'1px solid rgba(148,163,184,0.3)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box' as const, marginBottom:14 }}
-        onFocus={e=>(e.currentTarget.style.borderColor='#0891B2')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(148,163,184,0.3)')} />
+      <LookupSearch value={q} onChange={setQ} placeholder="Search protocols…" />
       {q.length < 1
         ? categories.map(cat => {
-            const items = ALL_SYNOPTICS.filter(s=>s.category===cat);
+            const items = ALL_SYNOPTICS.filter(s => s.category === cat);
             return (
-              <div key={cat} style={{ marginBottom:14 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:'#475569', textTransform:'uppercase' as const, letterSpacing:'0.6px', marginBottom:6 }}>{cat}</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                  {items.map(s => { const sel=selected.includes(s.id); return (
-                    <button key={s.id} type="button" onClick={()=>onToggle(s.id)} style={{ padding:'5px 12px', borderRadius:999, cursor:'pointer', fontSize:12, fontWeight:500, transition:'all 0.12s', background:sel?'rgba(8,145,178,0.2)':'rgba(255,255,255,0.04)', border:`1px solid ${sel?'#0891B2':'rgba(255,255,255,0.1)'}`, color:sel?'#7dd3fc':'#94a3b8' }}>{s.organ}</button>
-                  ); })}
+              <div key={cat}>
+                <LookupSection label={cat} count={items.length} />
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5, padding:'8px 24px' }}>
+                  {items.map(s => {
+                    const sel = selected.includes(s.id);
+                    return (
+                      <button key={s.id} type="button" onClick={() => onToggle(s.id)} style={{
+                        padding:'5px 12px', borderRadius:999, cursor:'pointer', fontSize:12, fontWeight:500,
+                        background: sel ? 'rgba(8,145,178,0.2)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${sel ? '#0891B2' : 'rgba(255,255,255,0.1)'}`,
+                        color: sel ? '#7dd3fc' : '#94a3b8', transition:'all 0.12s',
+                      }}>{s.organ}</button>
+                    );
+                  })}
                 </div>
               </div>
             );
           })
-        : <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-            {filtered.map(s => { const sel=selected.includes(s.id); return (
-              <button key={s.id} type="button" onClick={()=>onToggle(s.id)} style={{ padding:'5px 12px', borderRadius:999, cursor:'pointer', fontSize:12, fontWeight:500, transition:'all 0.12s', background:sel?'rgba(8,145,178,0.2)':'rgba(255,255,255,0.04)', border:`1px solid ${sel?'#0891B2':'rgba(255,255,255,0.1)'}`, color:sel?'#7dd3fc':'#94a3b8' }}>{s.name}</button>
-            ); })}
-          </div>
+        : <>
+            {filtered.length === 0
+              ? <LookupEmpty query={q} />
+              : filtered.map(s => (
+                  <LookupItem key={s.id} selected={selected.includes(s.id)} onToggle={() => onToggle(s.id)}
+                    primary={s.name} secondary={s.category} />
+                ))
+            }
+          </>
       }
     </>
   );
 };
 
-// ─── User lookup modal ────────────────────────────────────────────────────────
+// ─── User lookup content ──────────────────────────────────────────────────────
 
 const UserLookupContent: React.FC<{ users: UserStub[]; selected: string[]; onToggle: (id: string) => void; accent?: string }> = ({ users, selected, onToggle, accent='#0891B2' }) => {
-  const [q, setQ] = useState('');
-  const filtered = q.length < 1 ? users : users.filter(u=>u.name.toLowerCase().includes(q.toLowerCase()));
-  const initials = (name: string) => name.replace('Dr. ','').split(' ').map(w=>w[0]).join('').slice(0,2);
+  const [nameQ,   setNameQ]   = useState('');
+  const [clientQ, setClientQ] = useState('');
+
+  const filtered = users.filter(u => {
+    const matchName   = nameQ.length   < 1 || u.name.toLowerCase().includes(nameQ.toLowerCase());
+    const matchClient = clientQ.length < 1 || u.client.toLowerCase().includes(clientQ.toLowerCase());
+    return matchName && matchClient;
+  });
+
+  const initials = (name: string) => name.replace('Dr. ','').split(' ').map(w => w[0]).join('').slice(0,2);
+
   return (
     <>
-      <input autoFocus type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search by name…"
-        style={{ width:'100%', padding:'9px 12px', background:'rgba(15,23,42,0.8)', border:'1px solid rgba(148,163,184,0.3)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box' as const, marginBottom:12 }}
-        onFocus={e=>(e.currentTarget.style.borderColor=accent)} onBlur={e=>(e.currentTarget.style.borderColor='rgba(148,163,184,0.3)')} />
-      <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-        {filtered.map(u => { const sel=selected.includes(u.id); return (
-          <button key={u.id} type="button" onClick={()=>onToggle(u.id)} style={{ display:'flex', alignItems:'center', gap:12, padding:'9px 12px', borderRadius:8, cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s', background:sel?'rgba(8,145,178,0.14)':'rgba(255,255,255,0.02)', border:`1px solid ${sel?'rgba(8,145,178,0.5)':'rgba(255,255,255,0.05)'}` }}
-            onMouseEnter={e=>{if(!sel)e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
-            onMouseLeave={e=>{if(!sel)e.currentTarget.style.background='rgba(255,255,255,0.02)';}}>
-            <div style={{ width:30, height:30, borderRadius:7, background:'rgba(8,145,178,0.12)', border:'1px solid rgba(8,145,178,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:'#0891B2', flexShrink:0 }}>{initials(u.name)}</div>
-            <span style={{ fontSize:13, color:sel?'#e2e8f0':'#94a3b8', flex:1 }}>{u.name}</span>
-            {sel && <span style={{ color:'#0891B2', fontSize:14 }}>✓</span>}
-          </button>
-        ); })}
+      <div style={{ display:'flex', gap:8, padding:'12px 24px 4px' }}>
+        <input
+          value={nameQ} onChange={e => setNameQ(e.target.value)}
+          placeholder="Search by name…"
+          style={{ flex:1, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'7px 12px', fontSize:13, color:'#f1f5f9', outline:'none' }}
+        />
+        <input
+          value={clientQ} onChange={e => setClientQ(e.target.value)}
+          placeholder="Search by hospital…"
+          style={{ flex:1, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'7px 12px', fontSize:13, color:'#f1f5f9', outline:'none' }}
+        />
       </div>
+      {filtered.length === 0
+        ? <LookupEmpty query={nameQ || clientQ} />
+        : filtered.map(u => {
+            const sel = selected.includes(u.id);
+            return (
+              <LookupItem key={u.id} selected={sel} onToggle={() => onToggle(u.id)}
+                primary={u.name}
+                secondary={u.client}
+                badge={initials(u.name)}
+                badgeColor={accent}
+              />
+            );
+          })
+      }
     </>
   );
 };
 
-// ─── Flags lookup modal ───────────────────────────────────────────────────────
+// ─── Flags lookup content ─────────────────────────────────────────────────────
 
 const FlagsLookupContent: React.FC<{ selected: string[]; onToggle: (f: string) => void }> = ({ selected, onToggle }) => {
   const [q, setQ] = useState('');
-  const filtered = q.length < 1 ? ALL_FLAGS : ALL_FLAGS.filter(f=>f.toLowerCase().includes(q.toLowerCase()));
+  const filtered = q.length < 1 ? ALL_FLAGS : ALL_FLAGS.filter(f => f.toLowerCase().includes(q.toLowerCase()));
   return (
     <>
-      <input autoFocus type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search flags…"
-        style={{ width:'100%', padding:'9px 12px', background:'rgba(15,23,42,0.8)', border:'1px solid rgba(148,163,184,0.3)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box' as const, marginBottom:12 }}
-        onFocus={e=>(e.currentTarget.style.borderColor='#f59e0b')} onBlur={e=>(e.currentTarget.style.borderColor='rgba(148,163,184,0.3)')} />
-      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-        {filtered.map(f => { const sel=selected.includes(f); return (
-          <button key={f} type="button" onClick={()=>onToggle(f)} style={{ padding:'6px 14px', borderRadius:999, cursor:'pointer', fontSize:12, fontWeight:500, transition:'all 0.12s', background:sel?'rgba(245,158,11,0.18)':'rgba(255,255,255,0.04)', border:`1px solid ${sel?'#f59e0b':'rgba(255,255,255,0.1)'}`, color:sel?'#fbbf24':'#94a3b8' }}>{f}</button>
-        ); })}
+      <LookupSearch value={q} onChange={setQ} placeholder="Search flags…" />
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'4px 24px 20px' }}>
+        {filtered.length === 0
+          ? <LookupEmpty query={q} />
+          : filtered.map(f => {
+              const sel = selected.includes(f);
+              return (
+                <button key={f} type="button" onClick={() => onToggle(f)} style={{
+                  padding:'6px 14px', borderRadius:999, cursor:'pointer', fontSize:12, fontWeight:500,
+                  background: sel ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${sel ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+                  color: sel ? '#fbbf24' : '#94a3b8', transition:'all 0.12s',
+                }}>{f}</button>
+              );
+            })
+        }
       </div>
     </>
   );
 };
 
-// ─── Nav icon button ──────────────────────────────────────────────────────────
+// ─── Specimen lookup content ──────────────────────────────────────────────────
 
-const IconBtn: React.FC<{ children: React.ReactNode; onClick: () => void; title: string; circle?: boolean }> = ({ children, onClick, title, circle=false }) => (
-  <button onClick={onClick} title={title} style={{ width:42, height:42, borderRadius:circle?'50%':8, background:'transparent', border:'2px solid #0891B2', color:'#0891B2', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontWeight:800, fontSize:14 }}
-    onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.1)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>{children}</button>
-);
+const SPECIMEN_TYPES = [
+  'Biopsy','Resection','Excision','Cytology','FNA',
+  'Molecular','Gross Only','Consult','Autopsy','Other',
+] as const;
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+const SPECIMEN_TYPE_COLOURS: Record<string, string> = {
+  'Biopsy':     '#0891B2',
+  'Resection':  '#6366F1',
+  'Excision':   '#8B5CF6',
+  'Cytology':   '#10B981',
+  'FNA':        '#F59E0B',
+  'Molecular':  '#EC4899',
+  'Gross Only': '#64748b',
+  'Consult':    '#F97316',
+  'Autopsy':    '#EF4444',
+  'Other':      '#94a3b8',
+};
+
+const SpecimenLookupContent: React.FC<{
+  specimens: SpecimenEntry[];
+  selected:  string[];
+  onToggle:  (name: string) => void;
+}> = ({ specimens, selected, onToggle }) => {
+  const [q,          setQ]          = useState('');
+  const [pinnedType, setPinnedType] = useState<string | null>(null);
+
+  const active = specimens.filter(s => s.active);
+  const typesInUse = SPECIMEN_TYPES.filter(t => active.some(s => s.type === t));
+
+  // Results driven by search query (no pill filter applied yet)
+  const searched = (() => {
+    if (q.trim().length < 1) return active;
+    const lq = q.trim().toLowerCase();
+    return active.filter(s =>
+      s.name?.toLowerCase().includes(lq) ||
+      s.normalizedLabel?.toLowerCase().includes(lq) ||
+      (s.synonyms ?? []).some(syn => syn?.toLowerCase().includes(lq)) ||
+      s.type?.toLowerCase().includes(lq) ||
+      s.subspecialty?.toLowerCase().includes(lq)
+    );
+  })();
+
+  // Which types have results right now — drives pill highlight
+  const matchedTypes = new Set(searched.map(s => s.type));
+
+  // Final display — apply pinned filter on top if set
+  const displayed = pinnedType ? searched.filter(s => s.type === pinnedType) : searched;
+
+  return (
+    <>
+      <LookupSearch value={q} onChange={setQ} placeholder="Search by name, procedure, site, or synonym…" />
+
+      {/* Pills — always single row, horizontal scroll, highlight = has results */}
+      <div style={{ display:'flex', flexWrap:'nowrap', overflowX:'auto', gap:5, padding:'4px 24px 12px',
+        borderBottom:'1px solid rgba(255,255,255,0.06)',
+        scrollbarWidth:'none', msOverflowStyle:'none' } as React.CSSProperties}>
+        {(['All', ...typesInUse] as const).map(t => {
+          const isAll    = t === 'All';
+          const colour   = isAll ? '#0891B2' : SPECIMEN_TYPE_COLOURS[t] ?? '#94a3b8';
+          const isPinned = isAll ? pinnedType === null : pinnedType === t;
+          const hasMatch = isAll ? searched.length > 0 : matchedTypes.has(t);
+          const isLit    = hasMatch && (q.trim().length >= 1); // feedback mode when searching
+          return (
+            <button key={t} type="button"
+              onClick={() => setPinnedType(isAll ? null : (pinnedType === t ? null : t))}
+              style={{
+                flexShrink: 0,
+                padding:'4px 12px', borderRadius:999, fontSize:12, fontWeight:600, cursor:'pointer',
+                transition:'all 0.15s',
+                background: isPinned || isLit ? `${colour}25` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${isPinned || isLit ? colour : 'rgba(255,255,255,0.1)'}`,
+                color: isPinned || isLit ? colour : q.trim().length >= 1 && !hasMatch ? 'rgba(148,163,184,0.35)' : '#94a3b8',
+                opacity: q.trim().length >= 1 && !hasMatch && !isAll ? 0.4 : 1,
+              }}>
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
+      {displayed.length === 0
+        ? <LookupEmpty query={q || pinnedType || ''} />
+        : displayed.map(s => {
+            const colour = SPECIMEN_TYPE_COLOURS[s.type] ?? '#94a3b8';
+            return (
+              <LookupItem
+                key={s.id}
+                selected={selected.includes(s.name)}
+                onToggle={() => onToggle(s.name)}
+                primary={s.name}
+                secondary={s.subspecialty}
+                badge={s.type}
+                badgeColor={colour}
+              />
+            );
+          })
+      }
+    </>
+  );
+};
+
+// ─── Unified ICD modal — tabs shown only if active in config ─────────────────
+
+type IcdTab = 'ICD-10' | 'ICD-11' | 'ICD-O-topography' | 'ICD-O-morphology';
+
+const IcdModalContent: React.FC<{
+  selected:    ClinicalCode[];
+  onToggle:    (c: ClinicalCode) => void;
+  icd10Active: boolean;
+  icd11Active: boolean;
+  icdoActive:  boolean;
+}> = ({ selected, onToggle, icd10Active, icd11Active, icdoActive }) => {
+  const allTabs: { id: IcdTab; label: string; active: boolean }[] = [
+    { id:'ICD-10',           label:'ICD-10',           active: icd10Active },
+    { id:'ICD-11',           label:'ICD-11',           active: icd11Active },
+    { id:'ICD-O-topography', label:'ICD-O  Site',      active: icdoActive  },
+    { id:'ICD-O-morphology', label:'ICD-O  Morphology',active: icdoActive  },
+  ];
+  const visibleTabs = allTabs.filter(t => t.active);
+  const [tab, setTab] = useState<IcdTab>(() => visibleTabs[0]?.id ?? 'ICD-10');
+
+  // If active tabs change and current tab is gone, reset to first visible
+  useEffect(() => {
+    if (!visibleTabs.some(t => t.id === tab)) {
+      const first = visibleTabs[0];
+      if (first) setTab(first.id);
+    }
+  }, [icd10Active, icd11Active, icdoActive]);
+
+  if (visibleTabs.length === 0) {
+    return (
+      <div style={{ padding:'48px 24px', textAlign:'center', color:'#64748b', fontSize:14 }}>
+        No ICD systems are enabled.<br />
+        <span style={{ fontSize:12 }}>Enable them in Configuration → System Settings.</span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Tab bar — only shows active systems */}
+      <div style={{ display:'flex', gap:2, padding:'12px 24px 0', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+        {visibleTabs.map(t => (
+          <button key={t.id} type="button" onClick={() => setTab(t.id)} style={{
+            padding:'7px 16px', border:'none', borderRadius:'8px 8px 0 0',
+            fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s',            background: tab === t.id ? 'rgba(8,145,178,0.15)' : 'transparent',
+            color: tab === t.id ? '#7dd3fc' : '#94a3b8',
+            borderBottom: `2px solid ${tab === t.id ? '#0891B2' : 'transparent'}`,
+          }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <CodeLookupContent system={tab} selected={selected} onToggle={onToggle} />
+    </>
+  );
+};
+
+
+// ─── SNOMED CT modal — Big Four axes as tabs ──────────────────────────────────
+
+type SnomedAxis = 'Morphology' | 'Body Structure' | 'Procedure' | 'Specimen';
+
+const SNOMED_AXIS_META: { id: SnomedAxis; label: string; accent: string; placeholder: string }[] = [
+  { id:'Morphology',     label:'Morphology',     accent:'#8B5CF6', placeholder:'Search pathological changes… e.g. adenocarcinoma' },
+  { id:'Body Structure', label:'Body Structure',  accent:'#0891B2', placeholder:'Search anatomical sites… e.g. breast, colon'     },
+  { id:'Procedure',      label:'Procedure',       accent:'#10B981', placeholder:'Search diagnostic acts… e.g. biopsy, resection'  },
+  { id:'Specimen',       label:'Specimen',        accent:'#F59E0B', placeholder:'Search specimen types… e.g. core needle, smear'  },
+];
+
+const SnomedAxisContent: React.FC<{
+  axis:     SnomedAxis;
+  selected: ClinicalCode[];
+  onToggle: (c: ClinicalCode) => void;
+}> = ({ axis, selected, onToggle }) => {
+  const [q,        setQ]        = useState('');
+  const [allCodes, setAllCodes] = useState<ClinicalCode[]>([]);
+  const [loading,  setLoading]  = useState(true);
+
+  const meta = SNOMED_AXIS_META.find(m => m.id === axis)!;
+
+  // Reset search when axis tab changes
+  useEffect(() => { setQ(''); }, [axis]);
+
+  // Load full axis set once — client-side search, no re-fetch on keystroke
+  useEffect(() => {
+    setLoading(true);
+    codeService.search({ system:'SNOMED', category: axis })
+      .then(r => { if (r.ok) setAllCodes(r.data); })
+      .finally(() => setLoading(false));
+  }, [axis]);
+
+  // Stable subgroup list from the full axis set
+  const subgroups = Array.from(new Set(
+    allCodes.map(c => c.category?.includes('|') ? c.category.split('|')[1] : null).filter(Boolean) as string[]
+  ));
+
+  // Displayed results driven purely by search query — no pill filter
+  const isSearching = q.trim().length >= 1;
+  const displayed = isSearching
+    ? allCodes.filter(c =>
+        c.code.toLowerCase().includes(q.toLowerCase()) ||
+        c.display.toLowerCase().includes(q.toLowerCase()) ||
+        c.category?.toLowerCase().includes(q.toLowerCase())
+      )
+    : allCodes;
+
+  // Which subgroups have at least one match — drives pill highlight
+  const matchedSubgroups = new Set(
+    displayed.map(c => c.category?.includes('|') ? c.category.split('|')[1] : null).filter(Boolean) as string[]
+  );
+
+  return (
+    <>
+      <LookupSearch value={q} onChange={setQ} placeholder={meta.placeholder} />
+      {loading
+        ? <div style={{ padding:'32px', textAlign:'center', color:'#94a3b8', fontSize:14 }}>Loading…</div>
+        : <>
+            {/* Subgroup filter pills — only shown while searching, clickable to narrow results */}
+            {isSearching && subgroups.length > 1 && (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:5,
+                padding:'4px 24px 10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                {subgroups.map(sg => {
+                  const matched = matchedSubgroups.has(sg);
+                  return (
+                    <button key={sg} type="button" title={`Filter to ${sg}`} style={{
+                      flexShrink: 0, cursor: matched ? 'pointer' : 'default',
+                      padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:600,
+                      border:'none', transition:'all 0.15s',
+                      background: matched ? `${meta.accent}22` : 'rgba(255,255,255,0.03)',
+                      outline: `1px solid ${matched ? meta.accent : 'rgba(255,255,255,0.07)'}`,
+                      color: matched ? meta.accent : '#334155',
+                    }}>
+                      {sg}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {displayed.length === 0
+              ? <LookupEmpty query={q} />
+              : displayed.map(c => (
+                  <LookupItem
+                    key={c.code}
+                    selected={selected.some(x => x.code === c.code)}
+                    onToggle={() => onToggle(c)}
+                    primary={c.display}
+                    secondary={c.category?.split('|')[1]}
+                    badge={c.code}
+                    badgeColor={meta.accent}
+                  />
+                ))
+            }
+          </>
+      }
+    </>
+  );
+};
+
+const SnomedModalContent: React.FC<{
+  selected: ClinicalCode[];
+  onToggle: (c: ClinicalCode) => void;
+}> = ({ selected, onToggle }) => {
+  const [axis, setAxis] = useState<SnomedAxis>('Morphology');
+
+  return (
+    <>
+      {/* Axis tabs */}
+      <div style={{ display:'flex', gap:0, padding:'12px 24px 0', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+        {SNOMED_AXIS_META.map(m => (
+          <button key={m.id} type="button" onClick={() => setAxis(m.id)} style={{
+            padding:'7px 18px', border:'none', borderRadius:'8px 8px 0 0',
+            fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s',
+            background: axis === m.id ? `${m.accent}18` : 'transparent',
+            color: axis === m.id ? m.accent : '#94a3b8',
+            borderBottom: `2px solid ${axis === m.id ? m.accent : 'transparent'}`,
+          }}>
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <SnomedAxisContent axis={axis} selected={selected} onToggle={onToggle} />
+    </>
+  );
+};
+
+
+
+const CodeLookupContent: React.FC<{
+  system:   CodeModalSystem;
+  selected: ClinicalCode[];
+  onToggle: (c: ClinicalCode) => void;
+}> = ({ system, selected, onToggle }) => {
+  const [q, setQ] = useState('');
+  const [codes, setCodes] = useState<ClinicalCode[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [allCodes,    setAllCodes]    = useState<ClinicalCode[]>([]); // stable full set for pill labels
+
+  const svcSystem  = system === 'SNOMED' ? 'SNOMED' : system === 'ICD-11' ? 'ICD-11' : system.startsWith('ICD-O') ? 'ICD-O' : 'ICD-10';
+  const svcSubtype = system === 'ICD-O-topography' ? 'topography' : system === 'ICD-O-morphology' ? 'morphology' : undefined;
+  const accent     = system === 'SNOMED' ? '#0891B2' : system === 'ICD-11' ? '#F59E0B' : system.startsWith('ICD-O') ? '#10B981' : '#8B5CF6';
+
+  // Load full set once for stable pill labels
+  useEffect(() => {
+    codeService.search({ system: svcSystem, subtype: svcSubtype })
+      .then(r => { if (r.ok) setAllCodes(r.data); });
+  }, [svcSystem, svcSubtype]);
+
+  useEffect(() => {
+    setLoading(true);
+    codeService.search({ system: svcSystem, subtype: svcSubtype, query: q.length >= 2 ? q : undefined })
+      .then(r => { if (r.ok) setCodes(r.data); })
+      .finally(() => setLoading(false));
+  }, [q, svcSystem, svcSubtype]);
+
+  const allCategories  = Array.from(new Set(allCodes.map(c => c.category ?? 'Other')));
+  const matchedCats    = new Set(codes.map(c => c.category ?? 'Other'));
+  const isSearching    = q.trim().length >= 1;
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+
+  // Apply active category filter on top of search results
+  const displayed = activeCat ? codes.filter(c => (c.category ?? 'Other') === activeCat) : codes;
+
+  return (
+    <>
+      <LookupSearch value={q} onChange={setQ} placeholder={`Search ${system} codes or descriptions…`} />
+      {loading
+        ? <div style={{ padding:'32px', textAlign:'center', color:'#94a3b8', fontSize:14 }}>Loading…</div>
+        : <>
+            {/* Category filter pills — clickable, wrap, highlight active/matched */}
+            {allCategories.length > 1 && (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:5,
+                padding:'4px 24px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                {allCategories.map(cat => {
+                  const isActive  = activeCat === cat;
+                  const matched   = !isSearching || matchedCats.has(cat);
+                  return (
+                    <button key={cat} type="button"
+                      onClick={() => setActiveCat(isActive ? null : cat)}
+                      style={{
+                        flexShrink: 0, cursor: 'pointer', border: 'none',
+                        padding:'4px 12px', borderRadius:999, fontSize:12, fontWeight:600,
+                        transition:'all 0.15s',
+                        background: isActive ? accent : matched ? `${accent}22` : 'rgba(255,255,255,0.03)',
+                        outline: `1px solid ${isActive ? accent : matched ? accent : 'rgba(255,255,255,0.07)'}`,
+                        color: isActive ? '#0f172a' : matched ? accent : '#475569',
+                        opacity: isSearching && !matched ? 0.4 : 1,
+                      }}>
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {displayed.length === 0
+              ? <LookupEmpty query={q || activeCat || ''} />
+              : displayed.map(c => (
+                  <LookupItem
+                    key={c.code}
+                    selected={selected.some(x => x.code === c.code)}
+                    onToggle={() => onToggle(c)}
+                    primary={c.display}
+                    badge={c.code}
+                    badgeColor={accent}
+                  />
+                ))
+            }
+          </>
+      }
+    </>
+  );
+};
+
 
 const SearchPage: React.FC = () => {
   const navigate     = useNavigate();
-  const { user }     = useAuth();
   const handleLogout = useLogout();
+  const { dictionary: specimenDictionary } = useSpecimenDictionary();
+  const { config } = useSystemConfig();
 
   const [isLoaded,        setIsLoaded]        = useState(false);
   const [isProfileOpen,   setIsProfileOpen]   = useState(false);
@@ -445,6 +737,7 @@ const SearchPage: React.FC = () => {
   // Lookup modals
   const [snomedModal,    setSnomedModal]    = useState(false);
   const [icdModal,       setIcdModal]       = useState(false);
+  const [specimenModal,  setSpecimenModal]  = useState(false);
   const [synopticModal,  setSynopticModal]  = useState(false);
   const [flagsModal,     setFlagsModal]     = useState(false);
   const [pathModal,      setPathModal]      = useState(false);
@@ -457,6 +750,52 @@ const SearchPage: React.FC = () => {
   const [patientName,  setPatientName]  = useState('');
   const [hospitalId,   setHospitalId]   = useState('');
   const [accessionNo,  setAccessionNo]  = useState('');
+
+  // Smart identifier box
+  const [identifierQuery, setIdentifierQuery] = useState('');
+  type IdentifierType = 'accession' | 'mrn' | 'name' | 'ambiguous' | null;
+  const [detectedType, setDetectedType] = useState<IdentifierType>(null);
+
+  const detectIdentifierType = (val: string): IdentifierType => {
+    if (!val.trim()) return null;
+    const v = val.trim();
+    try {
+      if (new RegExp(config.identifierFormats.accessionPattern, 'i').test(normalizeAccession(v, config.identifierFormats.accessionPattern))) return 'accession';
+      if (new RegExp(config.identifierFormats.mrnPattern).test(v))            return 'mrn';
+    } catch { /* invalid regex in config — fall through */ }
+    // Name heuristic: contains space or comma, OR is a single alphabetic-only word
+    const alphaRatio = (v.match(/[a-zA-Z]/g)?.length ?? 0) / v.length;
+    if (alphaRatio > 0.6) return 'name'; // pure alphabetic = treat as name
+    if ((v.includes(' ') || v.includes(',')) && alphaRatio > 0.5) return 'name';
+    return 'ambiguous';
+  };
+
+  const applyIdentifier = (val: string, type: IdentifierType) => {
+    setPatientName('');  setHospitalId('');  setAccessionNo('');
+    if (type === 'accession') setAccessionNo(normalizeAccession(val.trim(), config.identifierFormats.accessionPattern));
+    else if (type === 'mrn')  setHospitalId(val.trim());
+    else if (type === 'name') setPatientName(val.trim());
+    else { // ambiguous — populate all three so the search casts wide
+      setAccessionNo(val.trim());
+      setHospitalId(val.trim());
+      setPatientName(val.trim());
+    }
+  };
+
+  const handleIdentifierChange = (val: string) => {
+    setIdentifierQuery(val);
+    const type = detectIdentifierType(val);
+    setDetectedType(type);
+    applyIdentifier(val, type);
+  };
+
+  const IDENTIFIER_BADGE: Record<NonNullable<IdentifierType>, { label: string; color: string }> = {
+    accession: { label: 'Accession #',  color: '#8B5CF6' },
+    mrn:       { label: 'MRN',          color: '#0891B2' },
+    name:      { label: 'Patient Name', color: '#10B981' },
+    ambiguous: { label: 'All fields',   color: '#F59E0B' },
+  };
+
   const [dateFrom,     setDateFrom]     = useState(daysAgo(30));
   const [dateTo,       setDateTo]       = useState(today());
 
@@ -470,14 +809,14 @@ const SearchPage: React.FC = () => {
   const [diagnosisList, setDiagnosisList] = useState<string[]>([]);
 
   const [snomedQuery,       setSnomedQuery]       = useState('');
-  const [snomedList,        setSnomedList]        = useState<CodeSuggestion[]>([]);
-  const [snomedSuggestions, setSnomedSuggestions] = useState<CodeSuggestion[]>([]);
+  const [snomedList,        setSnomedList]        = useState<ClinicalCode[]>([]);
+  const [snomedSuggestions, setSnomedSuggestions] = useState<ClinicalCode[]>([]);
   const [showSnomedDrop,    setShowSnomedDrop]    = useState(false);
   const snomedRef = useRef<HTMLDivElement|null>(null);
 
   const [icdQuery,       setIcdQuery]       = useState('');
-  const [icdList,        setIcdList]        = useState<CodeSuggestion[]>([]);
-  const [icdSuggestions, setIcdSuggestions] = useState<CodeSuggestion[]>([]);
+  const [icdCodes,       setIcdCodes]       = useState<ClinicalCode[]>([]);
+  const [icdSuggestions, setIcdSuggestions] = useState<ClinicalCode[]>([]);
   const [showIcdDrop,    setShowIcdDrop]    = useState(false);
   const icdRef = useRef<HTMLDivElement|null>(null);
 
@@ -488,6 +827,12 @@ const SearchPage: React.FC = () => {
   const [submittingNames,setSubmittingNames]= useState<string[]>([]);
   const [statusList,     setStatusList]     = useState<string[]>([]);
   const [priorityList,   setPriorityList]   = useState<string[]>([]);
+  // Patient Demographics
+  const [genderList,     setGenderList]     = useState<string[]>([]);
+  const [dobFrom,        setDobFrom]        = useState('');
+  const [dobTo,          setDobTo]          = useState('');
+  const [ageMin,         setAgeMin]         = useState('');
+  const [ageMax,         setAgeMax]         = useState('');
 
   const [results,     setResults]     = useState<PathologyCase[]|null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -502,15 +847,15 @@ const SearchPage: React.FC = () => {
   // ── Effects ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const returning = sessionStorage.getItem('pathscribe:searchReturn') === '1';
-    sessionStorage.removeItem('pathscribe:searchReturn');
+    const returning = sessionStorage.getItem('formedrix:searchReturn') === '1';
+    sessionStorage.removeItem('formedrix:searchReturn');
     if (!returning) { ssClear(); return; }
     const snap = ssLoad(); if (!snap) return;
     const f = snap.filters;
     setPatientName(f.patientName); setHospitalId(f.hospitalId); setAccessionNo(f.accessionNo);
     setDateFrom(f.dateFrom); setDateTo(f.dateTo);
     setSpecimenList(f.specimenList); setDiagnosisList(f.diagnosisList);
-    setSnomedList(f.snomedList); setIcdList(f.icdList);
+    setSnomedList(f.snomedList); setIcdCodes(f.icdCodes);
     setSynopticIds(f.synopticIds); setFlagsList(f.flagsList);
     setPathologistIds(f.pathologistIds ?? []); setAttendingIds(f.attendingIds ?? []);
     setSubmittingNames(f.submittingNames); setStatusList(f.statusList); setPriorityList(f.priorityList);
@@ -535,45 +880,60 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     if (!specimenQuery || specimenQuery.length < 2) { setSpecimenSuggestions([]); setShowSpecimenDrop(false); return; }
     const q = specimenQuery.toLowerCase();
-    const hits = SPECIMEN_DICTIONARY.filter(s=>s.toLowerCase().includes(q)&&!specimenList.includes(s)).slice(0,8);
-    setSpecimenSuggestions(hits); setShowSpecimenDrop(hits.length>0);
+    const hits = specimenDictionary
+      .filter(s => s.active && (
+        (s.name?.toLowerCase() ?? '').includes(q) ||
+        (s.normalizedLabel?.toLowerCase() ?? '').includes(q) ||
+        (s.synonyms ?? []).some(syn => (syn?.toLowerCase() ?? '').includes(q))
+      ) && !specimenList.includes(s.name))
+      .map(s => s.name)
+      .slice(0, 8);
+    const fallback = hits.length > 0 ? hits :
+      SPECIMEN_DICTIONARY.filter(s => s.toLowerCase().includes(q) && !specimenList.includes(s)).slice(0, 8);
+    setSpecimenSuggestions(fallback); setShowSpecimenDrop(fallback.length > 0);
   }, [specimenQuery, specimenList]);
 
   useEffect(() => {
     if (!snomedQuery || snomedQuery.length < 2) { setSnomedSuggestions([]); setShowSnomedDrop(false); return; }
-    const q = snomedQuery.toLowerCase();
-    const hits = SNOMED_CODES.filter(c=>c.code.toLowerCase().includes(q)||c.display.toLowerCase().includes(q)).slice(0,6);
-    setSnomedSuggestions(hits); setShowSnomedDrop(hits.length>0);
+    codeService.search({ system:'SNOMED', query: snomedQuery }).then(r => {
+      if (r.ok) { const hits = r.data.slice(0,6); setSnomedSuggestions(hits); setShowSnomedDrop(hits.length>0); }
+    });
   }, [snomedQuery]);
 
   useEffect(() => {
     if (!icdQuery || icdQuery.length < 2) { setIcdSuggestions([]); setShowIcdDrop(false); return; }
-    const q = icdQuery.toLowerCase();
-    const hits = ICD_CODES.filter(c=>c.code.toLowerCase().includes(q)||c.display.toLowerCase().includes(q)).slice(0,6);
-    setIcdSuggestions(hits); setShowIcdDrop(hits.length>0);
+    codeService.search({ system:'ICD-10', query: icdQuery }).then(r => {
+      if (r.ok) { const hits = r.data.slice(0,6); setIcdSuggestions(hits); setShowIcdDrop(hits.length>0); }
+    });
   }, [icdQuery]);
 
   useEffect(() => {
     if (!hasSearched) return; void runSearch();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientName,hospitalId,accessionNo,diagnosisList,specimenList,snomedList,icdList,synopticIds,flagsList,pathologistIds,attendingIds,submittingNames,statusList,priorityList,dateFrom,dateTo]);
+  }, [patientName,hospitalId,accessionNo,diagnosisList,specimenList,snomedList,icdCodes,synopticIds,flagsList,pathologistIds,attendingIds,submittingNames,statusList,priorityList,dateFrom,dateTo,genderList,dobFrom,dobTo,ageMin,ageMax]);
 
   // ── Filter helpers ─────────────────────────────────────────────────────────
 
   const currentFilters = (): FilterState => ({
     patientName, hospitalId, accessionNo, diagnosisList, specimenList,
-    snomedList, icdList, synopticIds, flagsList, pathologistIds, attendingIds,
+    snomedList, icdCodes, synopticIds, flagsList, pathologistIds, attendingIds,
     submittingNames, statusList, priorityList, dateFrom, dateTo,
+    genderList: [], dobFrom: '', dobTo: '', ageMin: undefined, ageMax: undefined,
   });
 
   const applyFilters = (f: FilterState) => {
     setPatientName(f.patientName); setHospitalId(f.hospitalId); setAccessionNo(f.accessionNo);
+    // Restore smart identifier box from whichever field was populated
+    const restored = f.accessionNo || f.patientName || f.hospitalId;
+    setIdentifierQuery(restored);
+    setDetectedType(restored ? detectIdentifierType(restored) : null);
     setDiagnosisList(f.diagnosisList); setSpecimenList(f.specimenList);
-    setSnomedList(f.snomedList); setIcdList(f.icdList);
+    setSnomedList(f.snomedList); setIcdCodes(f.icdCodes ?? []);
     setSynopticIds(f.synopticIds); setFlagsList(f.flagsList);
     setPathologistIds(f.pathologistIds ?? []); setAttendingIds(f.attendingIds ?? []);
     setSubmittingNames(f.submittingNames); setStatusList(f.statusList); setPriorityList(f.priorityList);
     setDateFrom(f.dateFrom); setDateTo(f.dateTo);
+    setGenderList([]); setDobFrom(''); setDobTo(''); setAgeMin(''); setAgeMax('');
   };
 
   const toggle = (val: string, list: string[], setter: (v: string[]) => void) =>
@@ -587,11 +947,11 @@ const SearchPage: React.FC = () => {
     const v = diagnosisText.trim(); if (!v) return;
     setDiagnosisList(p=>p.includes(v)?p:[...p,v]); setDiagnosisText('');
   };
-  const addSnomed = (s: CodeSuggestion) => {
-    setSnomedList(p=>p.some(x=>x.code===s.code)?p:[...p,s]); setSnomedQuery(''); setShowSnomedDrop(false);
+  const addSnomed = (s: ClinicalCode) => {
+    setSnomedList((p: any)=>p.some((x: any)=>x.code===s.code)?p:[...p,s]); setSnomedQuery(''); setShowSnomedDrop(false);
   };
-  const addIcd = (s: CodeSuggestion) => {
-    setIcdList(p=>p.some(x=>x.code===s.code)?p:[...p,s]); setIcdQuery(''); setShowIcdDrop(false);
+  const addIcd = (s: ClinicalCode) => {
+    setIcdCodes((p: any)=>p.some((x: any)=>x.code===s.code)?p:[...p,s]); setIcdQuery(''); setShowIcdDrop(false);
   };
 
   const runSearch = async () => {
@@ -603,9 +963,14 @@ const SearchPage: React.FC = () => {
       diagnosisList,
       specimenList,
       snomedCodes:    snomedList.map(s => s.display),
-      icdCodes:       icdList.map(s => s.display),
+      icdCodes:       icdCodes.map(s => s.display),
       statusList:     statusList as CaseFilterParams['statusList'],
       priorityList:   priorityList as CaseFilterParams['priorityList'],
+      genderList:     genderList.length ? genderList as CaseFilterParams['genderList'] : undefined,
+      dobFrom:        dobFrom || undefined,
+      dobTo:          dobTo   || undefined,
+      ageMin:         ageMin  ? parseInt(ageMin)  : undefined,
+      ageMax:         ageMax  ? parseInt(ageMax)  : undefined,
     };
     const result = await caseService.getAll(params);
     if (result.ok) {
@@ -619,12 +984,14 @@ const SearchPage: React.FC = () => {
 
   const handleClear = () => {
     setPatientName(''); setHospitalId(''); setAccessionNo('');
+    setIdentifierQuery(''); setDetectedType(null);
     setDiagnosisText(''); setDiagnosisList([]);
     setSpecimenQuery(''); setSpecimenList([]);
     setSnomedQuery(''); setSnomedList([]);
-    setIcdQuery(''); setIcdList([]);
+    setIcdQuery(''); setIcdCodes([]);
     setSynopticIds([]); setFlagsList([]); setPathologistIds([]); setAttendingIds([]);
     setSubmittingNames([]); setStatusList([]); setPriorityList([]);
+    setGenderList([]); setDobFrom(''); setDobTo(''); setAgeMin(''); setAgeMax('');
     setDateFrom(daysAgo(30)); setDateTo(today());
     setResults(null); setHasSearched(false); setActiveSavedId('');
     ssClear();
@@ -646,12 +1013,74 @@ const SearchPage: React.FC = () => {
     if (activeSavedId===id) setActiveSavedId('');
   };
 
+  // -- Voice: selected result index ----------------------------
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number>(-1);
+
+  // -- Voice: set SEARCH context on mount -------------------------
+  useEffect(() => {
+    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.SEARCH);
+    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+  }, []);
+
+  // -- Voice: table navigation and search action listeners ---------------------
+  useEffect(() => {
+    const resultList = results ?? [];
+    const clamp = (i: number) => Math.max(0, Math.min(i, resultList.length - 1));
+
+    const next     = () => setSelectedResultIndex(i => clamp(i + 1));
+    const previous = () => setSelectedResultIndex(i => clamp(Math.max(0, i) - 1));
+    const pageDown = () => setSelectedResultIndex(i => clamp(i + 10));
+    const pageUp   = () => setSelectedResultIndex(i => clamp(Math.max(0, i) - 10));
+    const first    = () => setSelectedResultIndex(0);
+    const last     = () => setSelectedResultIndex(resultList.length - 1);
+
+    const openSelected = () => {
+      if (selectedResultIndex >= 0 && resultList[selectedResultIndex]) {
+        sessionStorage.setItem('formedrix:navFrom', 'search');
+        navigate(`/case/${resultList[selectedResultIndex].id}/synoptic`);
+      }
+    };
+
+    const clearSearch = () => {
+      handleClear();
+      setSelectedResultIndex(-1);
+    };
+
+    const runVoiceSearch = () => {
+      setHasSearched(true);
+      void runSearch();
+    };
+
+    window.addEventListener('ForMedrix_TABLE_NEXT',          next);
+    window.addEventListener('ForMedrix_TABLE_PREVIOUS',      previous);
+    window.addEventListener('ForMedrix_TABLE_PAGE_DOWN',     pageDown);
+    window.addEventListener('ForMedrix_TABLE_PAGE_UP',       pageUp);
+    window.addEventListener('ForMedrix_TABLE_FIRST',         first);
+    window.addEventListener('ForMedrix_TABLE_LAST',          last);
+    window.addEventListener('ForMedrix_TABLE_OPEN_SELECTED', openSelected);
+    window.addEventListener('ForMedrix_TABLE_CLEAR_SEARCH',  clearSearch);
+    window.addEventListener('ForMedrix_TABLE_SEARCH',        runVoiceSearch);
+
+    return () => {
+      window.removeEventListener('ForMedrix_TABLE_NEXT',          next);
+      window.removeEventListener('ForMedrix_TABLE_PREVIOUS',      previous);
+      window.removeEventListener('ForMedrix_TABLE_PAGE_DOWN',     pageDown);
+      window.removeEventListener('ForMedrix_TABLE_PAGE_UP',       pageUp);
+      window.removeEventListener('ForMedrix_TABLE_FIRST',         first);
+      window.removeEventListener('ForMedrix_TABLE_LAST',          last);
+      window.removeEventListener('ForMedrix_TABLE_OPEN_SELECTED', openSelected);
+      window.removeEventListener('ForMedrix_TABLE_CLEAR_SEARCH',  clearSearch);
+      window.removeEventListener('ForMedrix_TABLE_SEARCH',        runVoiceSearch);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, selectedResultIndex, navigate]);
+
   // ── Style helpers ──────────────────────────────────────────────────────────
 
   const INPUT: React.CSSProperties = {
-    width:'100%', padding:'7px 10px',
+    width:'100%', padding:'6px 10px',
     background:'rgba(15,23,42,0.7)', border:'1px solid rgba(148,163,184,0.25)',
-    borderRadius:7, color:'#e2e8f0', fontSize:12, outline:'none', boxSizing:'border-box',
+    borderRadius:7, color:'#f1f5f9', fontSize:12, outline:'none', boxSizing:'border-box',
     transition:'border-color 0.15s',
   };
 
@@ -668,7 +1097,7 @@ const SearchPage: React.FC = () => {
   const activeCount = [
     patientName, hospitalId, accessionNo,
     ...diagnosisList, ...specimenList,
-    ...snomedList.map(s=>s.code), ...icdList.map(s=>s.code),
+    ...snomedList.map(s=>s.code), ...icdCodes.map(s=>s.code),
     ...synopticIds, ...flagsList, ...pathologistIds, ...attendingIds, ...submittingNames,
     ...statusList, ...priorityList, dateFrom?'df':'', dateTo?'dt':'',
   ].filter(Boolean).length;
@@ -683,8 +1112,6 @@ const SearchPage: React.FC = () => {
 
   const modalOverlay: React.CSSProperties = { position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.85)', backdropFilter:'blur(10px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10000 };
 
-  const sec = (name: string) => ({ active: activeSection===name });
-
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -696,26 +1123,6 @@ const SearchPage: React.FC = () => {
       <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
 
         {/* ── Nav ──────────────────────────────────────────────────────────── */}
-        <nav style={{ padding:'10px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(0,0,0,0.4)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,0.1)', flexShrink:0 }}>
-          <img src="/pathscribe-logo-dark.svg" alt="PathScribe AI" style={{ height:44, cursor:'pointer' }} onClick={()=>navigate('/')} />
-          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, borderRight:'1px solid rgba(255,255,255,0.2)', paddingRight:20 }}>
-              <span style={{ fontSize:17, fontWeight:600 }}>{user?.name||'Dr. Johnson'}</span>
-              <span style={{ fontSize:12, color:'#0891B2', fontWeight:700 }}>MD, FCAP</span>
-            </div>
-            <div style={{ display:'flex', gap:12 }}>
-              <IconBtn circle onClick={()=>setIsProfileOpen(o=>!o)} title="Profile">
-                {(user?.name||'DJ').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
-              </IconBtn>
-              <IconBtn onClick={()=>setIsResourcesOpen(o=>!o)} title="Quick Links">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              </IconBtn>
-              <IconBtn onClick={()=>setShowLogoutModal(true)} title="Sign Out">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              </IconBtn>
-            </div>
-          </div>
-        </nav>
 
         {/* ── Page header ──────────────────────────────────────────────────── */}
         <div style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(12px)', padding:'8px 40px', borderBottom:'1px solid rgba(255,255,255,0.08)', flexShrink:0 }}>
@@ -727,7 +1134,7 @@ const SearchPage: React.FC = () => {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:1 }}>Case Search</div>
-              <div style={{ color:'#64748b', fontSize:12 }}>Search across cases, specimens, diagnoses, and clinical codes</div>
+              <div style={{ color:'#94a3b8', fontSize:12 }}>Search across cases, specimens, diagnoses, and clinical codes</div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', justifyContent:'flex-end', maxWidth:560 }}>
               {savedSearches.map(s => (
@@ -753,16 +1160,17 @@ const SearchPage: React.FC = () => {
         </div>
 
         {/* ── Body ─────────────────────────────────────────────────────────── */}
-        <div style={{ flex:1, minHeight:0, display:'flex', overflow:'hidden' }}>
+        <main style={{ flex:1, minHeight:0, padding:'20px 40px', display:'flex', flexDirection:'column', overflow:'hidden', gap:16 }}>
+          <div style={{ flex:1, minHeight:0, display:'flex', gap:16, overflow:'hidden' }}>
 
           {/* ── Sidebar ──────────────────────────────────────────────────── */}
-          <aside style={{ width:360, flexShrink:0, borderRight:'1px solid rgba(255,255,255,0.06)', background:'rgba(2,6,23,0.65)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <aside style={{ width:360, flexShrink:0, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <form onSubmit={handleSubmit} style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
               {/* Accession Date */}
-              <div style={{ padding:'12px 16px 10px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0, background:'rgba(8,145,178,0.04)' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-                  <SectionLabel title="Accession Date" active={activeSection==='date'} />
+              <div style={{ padding:'10px 16px 8px', borderBottom:'1px solid rgba(255,255,255,0.08)', flexShrink:0 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                  <SectionLabel title="Accession Date" active={activeSection==="date"} />
                   <div style={{ display:'flex', gap:3 }}>
                     {([['7d',7],['30d',30],['90d',90],['1yr',365]] as [string,number][]).map(([label,days])=>(
                       <button key={label} type="button" onClick={()=>{setDateFrom(daysAgo(days));setDateTo(today());}}
@@ -770,126 +1178,185 @@ const SearchPage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
                   <div>
-                    <div style={{ fontSize:10, color:activeSection==='date'?'#7dd3fc':'#475569', marginBottom:3, transition:'color 0.15s' }}>From</div>
+                    <div style={{ fontSize:10, color:activeSection==='date'?'#7dd3fc':'#94a3b8', marginBottom:2, transition:'color 0.15s' }}>From</div>
                     <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onFocus={onF} onBlur={onB} data-section="date" style={{...INPUT, colorScheme:'dark' as any}} />
                   </div>
                   <div>
-                    <div style={{ fontSize:10, color:activeSection==='date'?'#7dd3fc':'#475569', marginBottom:3, transition:'color 0.15s' }}>To</div>
+                    <div style={{ fontSize:10, color:activeSection==='date'?'#7dd3fc':'#94a3b8', marginBottom:2, transition:'color 0.15s' }}>To</div>
                     <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onFocus={onF} onBlur={onB} data-section="date" style={{...INPUT, colorScheme:'dark' as any}} />
                   </div>
                 </div>
               </div>
 
               {/* Scrollable filters */}
-              <div style={{ flex:1, overflowY:'auto', padding:'10px 16px 0', display:'flex', flexDirection:'column', gap:10 }}>
+              <div className="ps-scroll" style={{ flex:1, overflowY:'auto', padding:'8px 12px 0', display:'flex', flexDirection:'column', gap:7, scrollbarWidth:'thin', scrollbarColor:'rgba(148,163,184,0.15) transparent' }}>
 
                 {/* Identifiers */}
+                {/* Identifiers — smart single box */}
                 <div onMouseEnter={()=>setActiveSection('id')} onMouseLeave={()=>setActiveSection(s=>s==='id'?'':s)}>
-                  <SectionLabel title="Identifiers" active={activeSection==='id'} />
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                    <input type="text" value={accessionNo} onChange={e=>setAccessionNo(e.target.value)} onFocus={onF} onBlur={onB} data-section="id" style={INPUT} placeholder="Accession #" />
-                    <input type="text" value={patientName} onChange={e=>setPatientName(e.target.value)} onFocus={onF} onBlur={onB} data-section="id" style={INPUT} placeholder="Patient name" />
-                  </div>
-                  <div style={{ marginTop:5 }}>
-                    <input type="text" value={hospitalId} onChange={e=>setHospitalId(e.target.value)} onFocus={onF} onBlur={onB} data-section="id" style={INPUT} placeholder="MRN / Hospital ID" />
+                  <div style={{marginBottom:4}}><SectionLabel title="Identifier" active={activeSection==='id'} /></div>
+                  <div style={{ position:'relative' }}>
+                    <input
+                      data-capture-hide="true"
+                      type="text"
+                      value={identifierQuery}
+                      onChange={e => handleIdentifierChange(e.target.value)}
+                      onFocus={onF} onBlur={onB} data-section="id"
+                      style={INPUT}
+                      placeholder={`Accession #, patient name, or MRN…`}
+                    />
+                    {detectedType && identifierQuery && (
+                      <div style={{
+                        position:'absolute', right:8, top:'50%', transform:'translateY(-50%)',
+                        background: `${IDENTIFIER_BADGE[detectedType].color}22`,
+                        border: `1px solid ${IDENTIFIER_BADGE[detectedType].color}66`,
+                        color: IDENTIFIER_BADGE[detectedType].color,
+                        borderRadius:999, padding:'1px 8px', fontSize:10, fontWeight:700,
+                        pointerEvents:'none', whiteSpace:'nowrap',
+                      }}>
+                        {IDENTIFIER_BADGE[detectedType].label}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Status + Priority */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                  <div onMouseEnter={()=>setActiveSection('status')} onMouseLeave={()=>setActiveSection(s=>s==='status'?'':s)}>
-                    <SectionLabel title="Status" active={activeSection==='status'} />
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                      {CASE_STATUS_OPTIONS.map(s=><CheckPill key={s} label={s} checked={statusList.includes(s)} onChange={()=>toggle(s,statusList,setStatusList)} />)}
+
+                {/* Patient Demographics */}
+                <div
+                  onMouseEnter={()=>setActiveSection('***REMOVED***graphics')}
+                  onMouseLeave={()=>setActiveSection(s=>s==='***REMOVED***graphics'?'':s)}
+                >
+                  <div style={{ marginBottom:6 }}><SectionLabel title="Patient Demographics" active={activeSection==='***REMOVED***graphics'} /></div>
+
+                  {/* Gender */}
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:10, color:'#64748b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Gender</div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+                      {(['Male','Female','Non-binary','Other','Unknown'] as const).map(g => (
+                        <CheckPill key={g} label={g} checked={genderList.includes(g)} onChange={()=>toggle(g,genderList,setGenderList)} />
+                      ))}
                     </div>
                   </div>
-                  <div onMouseEnter={()=>setActiveSection('priority')} onMouseLeave={()=>setActiveSection(s=>s==='priority'?'':s)}>
-                    <SectionLabel title="Priority" active={activeSection==='priority'} />
-                    <div style={{ display:'flex', gap:4 }}>
-                      {PRIORITY_OPTIONS.map(p=><CheckPill key={p} label={p} checked={priorityList.includes(p)} onChange={()=>toggle(p,priorityList,setPriorityList)} accent={p==='STAT'?'#ef4444':'#0891B2'} />)}
+
+                  {/* Date of Birth range */}
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:10, color:'#64748b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Date of Birth</div>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+                      <div>
+                        <div style={{ fontSize:9, color:'#475569', marginBottom:2 }}>From</div>
+                        <input type="date" value={dobFrom} onChange={e=>setDobFrom(e.target.value)}
+                          style={{...INPUT, colorScheme:'dark' as any, fontSize:11}} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize:9, color:'#475569', marginBottom:2 }}>To</div>
+                        <input type="date" value={dobTo} onChange={e=>setDobTo(e.target.value)}
+                          style={{...INPUT, colorScheme:'dark' as any, fontSize:11}} />
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Age range */}
+                  <div>
+                    <div style={{ fontSize:10, color:'#64748b', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Age (years)</div>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+                      <div>
+                        <div style={{ fontSize:9, color:'#475569', marginBottom:2 }}>Min</div>
+                        <input type="number" min={0} max={130} placeholder="e.g. 40" value={ageMin} onChange={e=>setAgeMin(e.target.value)}
+                          style={{...INPUT, fontSize:12}} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize:9, color:'#475569', marginBottom:2 }}>Max</div>
+                        <input type="number" min={0} max={130} placeholder="e.g. 65" value={ageMax} onChange={e=>setAgeMax(e.target.value)}
+                          style={{...INPUT, fontSize:12}} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status + Priority — single row */}
+                <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <SectionLabel title="Status" active={activeSection==='status'} />
+                    <div style={{ width:1, height:10, background:'rgba(255,255,255,0.1)' }} />
+                    <SectionLabel title="Priority" active={activeSection==='priority'} />
+                  </div>
+                  <div
+                    onMouseEnter={()=>setActiveSection('status')}
+                    onMouseLeave={()=>setActiveSection(s=>s==='status'||s==='priority'?'':s)}
+                    style={{ display:'flex', flexWrap:'wrap', gap:3 }}
+                  >
+                    {CASE_STATUS_OPTIONS.map(s=><CheckPill key={s} label={s} checked={statusList.includes(s)} onChange={()=>toggle(s,statusList,setStatusList)} />)}
+                    <div style={{ width:1, alignSelf:'stretch', background:'rgba(255,255,255,0.1)', margin:'0 2px' }} />
+                    {PRIORITY_OPTIONS.map(p=><CheckPill key={p} label={p} checked={priorityList.includes(p)} onChange={()=>toggle(p,priorityList,setPriorityList)} accent={p==='STAT'?'#ef4444':'#0891B2'} />)}
                   </div>
                 </div>
 
                 {/* Flags */}
                 <div onMouseEnter={()=>setActiveSection('flags')} onMouseLeave={()=>setActiveSection(s=>s==='flags'?'':s)}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
                     <SectionLabel title="Flags" active={activeSection==='flags'} />
                     <BrowseBtn onClick={()=>setFlagsModal(true)} count={ALL_FLAGS.length} />
                   </div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                    {ALL_FLAGS.slice(0,5).map(f=><CheckPill key={f} label={f} checked={flagsList.includes(f)} onChange={()=>toggle(f,flagsList,setFlagsList)} accent="#f59e0b" />)}
-                  </div>
-                  {flagsList.filter(f=>!ALL_FLAGS.slice(0,5).includes(f)).length>0&&(
-                    <div style={{ marginTop:4, display:'flex', flexWrap:'wrap', gap:3 }}>
-                      {flagsList.filter(f=>!ALL_FLAGS.slice(0,5).includes(f)).map(f=><Chip key={f} label={f} onRemove={()=>setFlagsList(p=>p.filter(x=>x!==f))} />)}
-                    </div>
-                  )}
+                  {flagsList.length>0&&<div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{flagsList.map(f=><Chip key={f} label={f} onRemove={()=>setFlagsList(p=>p.filter(x=>x!==f))} />)}</div>}
                 </div>
 
                 {/* Synoptic */}
                 <div onMouseEnter={()=>setActiveSection('synoptic')} onMouseLeave={()=>setActiveSection(s=>s==='synoptic'?'':s)}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
                     <SectionLabel title="Synoptic Protocol" active={activeSection==='synoptic'} />
                     <BrowseBtn onClick={()=>setSynopticModal(true)} count={ALL_SYNOPTICS.length} />
                   </div>
-                  {synopticIds.length>0
-                    ? <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{synopticIds.map(id=>{const t=ALL_SYNOPTICS.find(s=>s.id===id);return t?<Chip key={id} label={t.organ} onRemove={()=>setSynopticIds(p=>p.filter(x=>x!==id))} />:null;})}</div>
-                    : <div style={{ fontSize:11, color:'#374151', fontStyle:'italic' }}>None selected — use Browse to pick protocols</div>
-                  }
+                  {synopticIds.length>0&&<div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{synopticIds.map(id=>{const t=ALL_SYNOPTICS.find(s=>s.id===id);return t?<Chip key={id} label={t.organ} onRemove={()=>setSynopticIds(p=>p.filter(x=>x!==id))} />:null;})}</div>}
                 </div>
 
                 {/* Pathologist */}
                 <div onMouseEnter={()=>setActiveSection('path')} onMouseLeave={()=>setActiveSection(s=>s==='path'?'':s)}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
                     <SectionLabel title="Pathologist" active={activeSection==='path'} />
                     <BrowseBtn onClick={()=>setPathModal(true)} count={ALL_PATHOLOGISTS.length} />
                   </div>
-                  {pathologistIds.length>0
-                    ? <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{pathologistIds.map(id=>{const u=ALL_PATHOLOGISTS.find(x=>x.id===id);return u?<Chip key={id} label={u.name.replace('Dr. ','')} onRemove={()=>setPathologistIds(p=>p.filter(x=>x!==id))} />:null;})}</div>
-                    : <div style={{ fontSize:11, color:'#374151', fontStyle:'italic' }}>None selected</div>
-                  }
+                  {pathologistIds.length>0&&<div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{pathologistIds.map(id=>{const u=ALL_PATHOLOGISTS.find(x=>x.id===id);return u?<Chip key={id} label={u.name.replace('Dr. ','')} onRemove={()=>setPathologistIds(p=>p.filter(x=>x!==id))} />:null;})}</div>}
                 </div>
 
                 {/* Attending Physician */}
                 <div onMouseEnter={()=>setActiveSection('attending')} onMouseLeave={()=>setActiveSection(s=>s==='attending'?'':s)}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
                     <SectionLabel title="Attending Physician" active={activeSection==='attending'} />
                     <BrowseBtn onClick={()=>setAttendingModal(true)} count={ALL_ATTENDINGS.length} />
                   </div>
-                  {attendingIds.length>0
-                    ? <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{attendingIds.map(id=>{const u=ALL_ATTENDINGS.find(x=>x.id===id);return u?<Chip key={id} label={u.name.replace('Dr. ','')} onRemove={()=>setAttendingIds(p=>p.filter(x=>x!==id))} />:null;})}</div>
-                    : <div style={{ fontSize:11, color:'#374151', fontStyle:'italic' }}>None selected</div>
-                  }
+                  {attendingIds.length>0&&<div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>{attendingIds.map(id=>{const u=ALL_ATTENDINGS.find(x=>x.id===id);return u?<Chip key={id} label={u.name.replace('Dr. ','')} onRemove={()=>setAttendingIds(p=>p.filter(x=>x!==id))} />:null;})}</div>}
                 </div>
 
                 {/* Specimen */}
                 <div onMouseEnter={()=>setActiveSection('specimen')} onMouseLeave={()=>setActiveSection(s=>s==='specimen'?'':s)}>
-                  <SectionLabel title="Specimen" active={activeSection==='specimen'} />
-                  <div style={{ position:'relative' }} ref={specimenRef}>
-                    <input type="text" value={specimenQuery} onChange={e=>setSpecimenQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="specimen" style={INPUT} placeholder="Search specimen dictionary…"
-                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(specimenQuery.trim())addSpecimen(specimenQuery);}}} />
-                    {showSpecimenDrop&&(
-                      <div style={DROPDOWN_STYLE}>
-                        {specimenSuggestions.map(s=>(
-                          <button key={s} type="button" onClick={()=>addSpecimen(s)} style={DROP_BTN}
-                            onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>{s}</button>
-                        ))}
-                        {specimenQuery.trim()&&!SPECIMEN_DICTIONARY.some(s=>s.toLowerCase()===specimenQuery.toLowerCase())&&(
-                          <button type="button" onClick={()=>addSpecimen(specimenQuery)} style={{...DROP_BTN,color:'#7dd3fc',borderTop:'1px solid rgba(148,163,184,0.1)'}}
-                            onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>+ Add "{specimenQuery}"</button>
-                        )}
-                      </div>
-                    )}
+                  <div style={{marginBottom:4}}><SectionLabel title="Specimen" active={activeSection==='specimen'} /></div>
+                  <div style={{ display:'flex', gap:4 }} ref={specimenRef}>
+                    <div style={{ position:'relative', flex:1 }}>
+                      <input type="text" value={specimenQuery} onChange={e=>setSpecimenQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="specimen" style={INPUT} placeholder="Search specimen dictionary…"
+                        onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(specimenQuery.trim())addSpecimen(specimenQuery);}}} />
+                      {showSpecimenDrop&&(
+                        <div style={DROPDOWN_STYLE}>
+                          {specimenSuggestions.map(s=>(
+                            <button key={s} type="button" onClick={()=>addSpecimen(s)} style={DROP_BTN}
+                              onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>{s}</button>
+                          ))}
+                          {specimenQuery.trim()&&!SPECIMEN_DICTIONARY.some(s=>s.toLowerCase()===specimenQuery.toLowerCase())&&(
+                            <button type="button" onClick={()=>addSpecimen(specimenQuery)} style={{...DROP_BTN,color:'#7dd3fc',borderTop:'1px solid rgba(148,163,184,0.1)'}}
+                              onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>+ Add "{specimenQuery}"</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <BrowseBtn onClick={()=>setSpecimenModal(true)} count={specimenList.length||undefined} />
                   </div>
                   {specimenList.length>0&&<div style={{ marginTop:4, display:'flex', flexWrap:'wrap', gap:3 }}>{specimenList.map(s=><Chip key={s} label={s} onRemove={()=>setSpecimenList(p=>p.filter(x=>x!==s))} />)}</div>}
                 </div>
 
                 {/* Diagnosis */}
                 <div onMouseEnter={()=>setActiveSection('diagnosis')} onMouseLeave={()=>setActiveSection(s=>s==='diagnosis'?'':s)}>
-                  <SectionLabel title="Diagnosis" active={activeSection==='diagnosis'} />
+                  <div style={{marginBottom:4}}><SectionLabel title="Diagnosis" active={activeSection==='diagnosis'} /></div>
                   <div style={{ display:'flex', gap:4 }}>
                     <input type="text" value={diagnosisText} onChange={e=>setDiagnosisText(e.target.value)} onFocus={onF} onBlur={onB} data-section="diagnosis" style={INPUT} placeholder="e.g. Carcinoma"
                       onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addDiagnosis();}}} />
@@ -900,54 +1367,65 @@ const SearchPage: React.FC = () => {
 
                 {/* SNOMED CT */}
                 <div onMouseEnter={()=>setActiveSection('snomed')} onMouseLeave={()=>setActiveSection(s=>s==='snomed'?'':s)}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
-                    <SectionLabel title="SNOMED CT" active={activeSection==='snomed'} />
-                    <BrowseBtn onClick={()=>setSnomedModal(true)} count={SNOMED_CODES.length} />
+                  <div style={{marginBottom:4}}><SectionLabel title="SNOMED CT" active={activeSection==='snomed'} /></div>
+                  <div style={{ display:'flex', gap:4 }} ref={snomedRef}>
+                    <div style={{ position:'relative', flex:1 }}>
+                      <input type="text" value={snomedQuery} onChange={e=>setSnomedQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="snomed" style={INPUT} placeholder="Search concept or description…" />
+                      {showSnomedDrop&&(
+                        <div style={DROPDOWN_STYLE}>
+                          {snomedSuggestions.map(s=>(
+                            <button key={s.code} type="button" onClick={()=>addSnomed(s)} style={DROP_BTN}
+                              onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                              <span style={{ fontFamily:'monospace', color:'#7dd3fc', marginRight:5, fontSize:11 }}>{s.code}</span>
+                              <span style={{ color:'#cbd5e1', fontSize:11 }}>{s.display.substring(0,38)}…</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <BrowseBtn onClick={()=>setSnomedModal(true)} count={snomedList.length||undefined} />
                   </div>
-                  <div style={{ position:'relative' }} ref={snomedRef}>
-                    <input type="text" value={snomedQuery} onChange={e=>setSnomedQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="snomed" style={INPUT} placeholder="Search code or description…" />
-                    {showSnomedDrop&&(
-                      <div style={DROPDOWN_STYLE}>
-                        {snomedSuggestions.map(s=>(
-                          <button key={s.code} type="button" onClick={()=>addSnomed(s)} style={DROP_BTN}
-                            onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                            <span style={{ fontFamily:'monospace', color:'#7dd3fc', marginRight:5, fontSize:11 }}>{s.code}</span>
-                            <span style={{ color:'#94a3b8', fontSize:10 }}>{s.display.substring(0,38)}…</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {snomedList.length>0&&<div style={{ marginTop:3, display:'flex', flexWrap:'wrap', gap:3 }}>{snomedList.map(s=><Chip key={s.code} label={s.code} onRemove={()=>setSnomedList(p=>p.filter(x=>x.code!==s.code))} />)}</div>}
+                  {snomedList.length>0&&(
+                    <div style={{ marginTop:4, display:'flex', flexWrap:'wrap', gap:3 }}>
+                      {snomedList.map(s=><Chip key={s.code} label={s.code} title={`SNOMED CT: ${s.display}`} onRemove={()=>setSnomedList(p=>p.filter(x=>x.code!==s.code))} accent='#8B5CF6' />)}
+                    </div>
+                  )}
                 </div>
 
-                {/* ICD-10 */}
-                <div onMouseEnter={()=>setActiveSection('icd')} onMouseLeave={()=>setActiveSection(s=>s==='icd'?'':s)} style={{ paddingBottom:10 }}>
-                  <div style={{ display:'flex', alignItems:'center', marginBottom:5 }}>
-                    <SectionLabel title="ICD-10" active={activeSection==='icd'} />
-                    <BrowseBtn onClick={()=>setIcdModal(true)} count={ICD_CODES.length} />
+                {/* ICD Codes — unified ICD-10 / ICD-11 / ICD-O */}
+                <div onMouseEnter={()=>setActiveSection('icd')} onMouseLeave={()=>setActiveSection(s=>s==='icd'?'':s)} style={{ paddingBottom:8 }}>
+                  <div style={{marginBottom:4}}><SectionLabel title="ICD Codes" active={activeSection==='icd'} /></div>
+                  <div style={{ display:'flex', gap:4 }} ref={icdRef}>
+                    <div style={{ position:'relative', flex:1 }}>
+                      <input type="text" value={icdQuery} onChange={e=>setIcdQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="icd" style={INPUT} placeholder="Search ICD-10 code or description…" />
+                      {showIcdDrop&&(
+                        <div className="ps-scroll" style={DROPDOWN_STYLE}>
+                          {icdSuggestions.map(s=>(
+                            <button key={s.code} type="button" onClick={()=>addIcd(s)} style={DROP_BTN}
+                              onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                              <span style={{ fontFamily:'monospace', color:'#c4b5fd', marginRight:5, fontSize:11 }}>{s.code}</span>
+                              <span style={{ color:'#cbd5e1', fontSize:11 }}>{s.display.substring(0,38)}…</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <BrowseBtn onClick={()=>setIcdModal(true)} count={icdCodes.length||undefined} />
                   </div>
-                  <div style={{ position:'relative' }} ref={icdRef}>
-                    <input type="text" value={icdQuery} onChange={e=>setIcdQuery(e.target.value)} onFocus={onF} onBlur={onB} data-section="icd" style={INPUT} placeholder="Search code or description…" />
-                    {showIcdDrop&&(
-                      <div style={DROPDOWN_STYLE}>
-                        {icdSuggestions.map(s=>(
-                          <button key={s.code} type="button" onClick={()=>addIcd(s)} style={DROP_BTN}
-                            onMouseEnter={e=>(e.currentTarget.style.background='rgba(8,145,178,0.15)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                            <span style={{ fontFamily:'monospace', color:'#c4b5fd', marginRight:5, fontSize:11 }}>{s.code}</span>
-                            <span style={{ color:'#94a3b8', fontSize:10 }}>{s.display.substring(0,38)}…</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {icdList.length>0&&<div style={{ marginTop:3, display:'flex', flexWrap:'wrap', gap:3 }}>{icdList.map(s=><Chip key={s.code} label={s.code} onRemove={()=>setIcdList(p=>p.filter(x=>x.code!==s.code))} />)}</div>}
+                  {icdCodes.length>0&&(
+                    <div style={{ marginTop:4, display:'flex', flexWrap:'wrap', gap:3 }}>
+                      {icdCodes.map(s=>{
+                        const icdAccent = s.system==='ICD-11'?'#F59E0B':s.system?.startsWith('ICD-O')?'#10B981':'#8B5CF6';
+                        return <Chip key={`${s.system}-${s.code}`} label={`${s.system} ${s.code}`} title={s.display} onRemove={()=>setIcdCodes(p=>p.filter(x=>x.code!==s.code))} accent={icdAccent} />;
+                      })}
+                    </div>
+                  )}
                 </div>
 
               </div>{/* end scrollable filters */}
 
               {/* Action buttons */}
-              <div style={{ padding:'10px 16px 14px', borderTop:'1px solid rgba(255,255,255,0.05)', flexShrink:0, display:'flex', gap:8 }}>
+              <div style={{ padding:'10px 16px 12px', borderTop:'1px solid rgba(255,255,255,0.05)', flexShrink:0, display:'flex', gap:8 }}>
                 <button type="button" onClick={handleClear} style={{ flex:1, borderRadius:8, border:'1px solid rgba(148,163,184,0.3)', background:'transparent', color:'#64748b', padding:'8px', fontSize:12, cursor:'pointer' }}>Clear</button>
                 <button type="submit" disabled={isSearching} style={{ flex:2.5, borderRadius:8, border:'none', background:isSearching?'#0f172a':'#22c55e', color:isSearching?'#64748b':'#022c22', padding:'8px', fontSize:13, fontWeight:700, cursor:isSearching?'default':'pointer' }}>
                   {isSearching?'Searching…':'Search Cases'}
@@ -958,13 +1436,13 @@ const SearchPage: React.FC = () => {
           </aside>
 
           {/* ── Results pane ─────────────────────────────────────────────── */}
-          <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div data-capture-hide="true" style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', overflow:'hidden', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12 }}>
 
             {/* Summary bar */}
-            <div style={{ padding:'9px 24px', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.05)', background:'rgba(2,6,23,0.5)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+            <div style={{ padding:'9px 20px', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.02)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
               {summary ? (
                 <p style={{ margin:0, fontSize:12, color:'#94a3b8', lineHeight:1.5, flex:1 }}>
-                  <span style={{ color:'#374151', marginRight:6 }}>🔍</span>
+                  <span style={{ color:'#94a3b8', marginRight:6 }}>🔍</span>
                   {summary.split(' · ').map((part,i,arr)=>(
                     <React.Fragment key={i}>
                       <span style={{ color:i===0?'#cbd5e1':'#7dd3fc', fontWeight:i===0?400:500 }}>{part}</span>
@@ -973,63 +1451,96 @@ const SearchPage: React.FC = () => {
                   ))}
                 </p>
               ) : (
-                <p style={{ margin:0, fontSize:12, color:'#374151' }}>Set filters and press <strong style={{ color:'#22c55e' }}>Search Cases</strong> to begin</p>
+                <p style={{ margin:0, fontSize:12, color:'#94a3b8' }}>Set filters and press <strong style={{ color:'#22c55e' }}>Search Cases</strong> to begin</p>
               )}
               <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-                {results!==null&&<span style={{ fontSize:12, color:'#475569' }}>{results.length} case{results.length!==1?'s':''}</span>}
+                {results!==null&&<span style={{ fontSize:12, color:'#94a3b8' }}>{results.length} case{results.length!==1?'s':''}</span>}
                 {results!==null&&results.length>0&&(
                   <button type="button" style={{ border:'1px solid rgba(148,163,184,0.2)', background:'transparent', color:'#64748b', borderRadius:6, padding:'3px 10px', fontSize:11, cursor:'pointer' }}>Export CSV</button>
                 )}
               </div>
             </div>
 
-            {/* Result table — VirtualWorklist owns its scroll */}
-            <div style={{ flex:1, minHeight:0 }}>
+            {/* Result table — WorklistTable owns its own internal scroll */}
+            <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
               {hasSearched
-                ? <VirtualWorklist cases={results??[]} onBeforeNavigate={()=>sessionStorage.setItem('pathscribe:navFrom','search')} />
+                ? <WorklistTable key={results?.length ?? 0} cases={results??[]} activeFilter="all" selectedIndex={selectedResultIndex} onRowSelect={setSelectedResultIndex} onBeforeNavigate={(_caseId)=>sessionStorage.setItem('formedrix:navFrom','search')} />
                 : <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'#1e293b', fontSize:13 }}>No search run yet</div>
               }
             </div>
           </div>
-        </div>
+          </div>{/* end inner flex row */}
+        </main>
       </div>
 
       {/* ── Lookup modals ─────────────────────────────────────────────────────── */}
 
+      {specimenModal&&(
+        <LookupModal
+          title="Specimen Dictionary"
+          subtitle={`${specimenDictionary.filter(s=>s.active).length} specimens across ${[...new Set(specimenDictionary.map(s=>s.type))].length} types`}
+          selectedCount={specimenList.length}
+          onClose={()=>setSpecimenModal(false)}
+        >
+          <SpecimenLookupContent
+            specimens={specimenDictionary}
+            selected={specimenList}
+            onToggle={name => setSpecimenList(p => p.includes(name) ? p.filter(x=>x!==name) : [...p, name])}
+          />
+        </LookupModal>
+      )}
+
       {snomedModal&&(
-        <LookupModal title="SNOMED CT" subtitle="Select one or more clinical findings or morphology codes" onClose={()=>setSnomedModal(false)}>
-          <CodeLookupContent system="SNOMED" codes={SNOMED_CODES} selected={snomedList}
-            onToggle={s=>setSnomedList(p=>p.some(x=>x.code===s.code)?p.filter(x=>x.code!==s.code):[...p,s])} />
+        <LookupModal
+          title="SNOMED CT"
+          subtitle={`Search across ${SNOMED_AXIS_META.length} axes: ${SNOMED_AXIS_META.map(m=>m.label).join(", ")}`}
+          selectedCount={snomedList.length}
+          onClose={()=>setSnomedModal(false)}
+        >
+          <SnomedModalContent
+            selected={snomedList}
+            onToggle={c=>setSnomedList(p=>p.some(x=>x.code===c.code)?p.filter(x=>x.code!==c.code):[...p,c])}
+          />
         </LookupModal>
       )}
 
       {icdModal&&(
-        <LookupModal title="ICD-10" subtitle="Select one or more diagnosis codes" onClose={()=>setIcdModal(false)}>
-          <CodeLookupContent system="ICD" codes={ICD_CODES} selected={icdList}
-            onToggle={s=>setIcdList(p=>p.some(x=>x.code===s.code)?p.filter(x=>x.code!==s.code):[...p,s])} />
+        <LookupModal
+          title="ICD Codes"
+          subtitle="Select codes across active ICD systems"
+          selectedCount={icdCodes.length}
+          onClose={()=>setIcdModal(false)}
+        >
+          <IcdModalContent
+            selected={icdCodes}
+            onToggle={c=>setIcdCodes(p=>p.some(x=>x.code===c.code)?p.filter(x=>x.code!==c.code):[...p,c])}
+            icd10Active={config.terminologyConfig.icd10.active}
+            icd11Active={config.terminologyConfig.icd11.active}
+            icdoActive={config.terminologyConfig.icdo.active}
+          />
         </LookupModal>
       )}
 
       {synopticModal&&(
-        <LookupModal title="Synoptic Protocol" subtitle={`${ALL_SYNOPTICS.length} protocols across ${Array.from(new Set(ALL_SYNOPTICS.map(s=>s.category))).length} categories`} onClose={()=>setSynopticModal(false)}>
+        <LookupModal title="Synoptic Protocol" subtitle={`${ALL_SYNOPTICS.length} protocols across ${Array.from(new Set(ALL_SYNOPTICS.map(s=>s.category))).length} categories`} selectedCount={synopticIds.length} onClose={()=>setSynopticModal(false)}>
           <SynopticLookupContent selected={synopticIds} onToggle={id=>toggle(id,synopticIds,setSynopticIds)} />
         </LookupModal>
       )}
 
       {flagsModal&&(
-        <LookupModal title="Case Flags" subtitle={`${ALL_FLAGS.length} available flags`} onClose={()=>setFlagsModal(false)}>
+        <LookupModal title="Case Flags" subtitle={`${ALL_FLAGS.length} available flags`} selectedCount={flagsList.length} onClose={()=>setFlagsModal(false)}>
           <FlagsLookupContent selected={flagsList} onToggle={f=>toggle(f,flagsList,setFlagsList)} />
         </LookupModal>
       )}
 
       {pathModal&&(
-        <LookupModal title="Pathologist" subtitle="Filter by assigned pathologist" onClose={()=>setPathModal(false)}>
+        <LookupModal title="Pathologist" subtitle="Filter by assigned pathologist" selectedCount={pathologistIds.length} onClose={()=>setPathModal(false)}>
           <UserLookupContent users={ALL_PATHOLOGISTS} selected={pathologistIds} onToggle={id=>toggle(id,pathologistIds,setPathologistIds)} />
         </LookupModal>
       )}
 
       {attendingModal&&(
-        <LookupModal title="Attending Physician" subtitle="Filter by referring or attending physician" onClose={()=>setAttendingModal(false)}>
+        <LookupModal title="Attending Physician" subtitle="Filter by referring or attending physician" selectedCount={attendingIds.length} onClose={()=>setAttendingModal(false)}>
           <UserLookupContent users={ALL_ATTENDINGS} selected={attendingIds} onToggle={id=>toggle(id,attendingIds,setAttendingIds)} accent="#10B981" />
         </LookupModal>
       )}
@@ -1065,13 +1576,14 @@ const SearchPage: React.FC = () => {
         </div>
       )}
 
+
       {/* ── Logout modal ──────────────────────────────────────────────────── */}
       {showLogoutModal&&(
         <div style={modalOverlay}>
           <div style={{ width:400, backgroundColor:'#111', padding:40, borderRadius:28, textAlign:'center', border:'1px solid rgba(255,255,255,0.1)' }}>
             <div style={{ fontSize:48, marginBottom:20 }}>⚠️</div>
             <h2 style={{ fontSize:24, fontWeight:800, color:'#fff', margin:'0 0 12px' }}>Sign out?</h2>
-            <p style={{ color:'#94a3b8', marginBottom:30, lineHeight:1.6, fontSize:15 }}>You'll be signed out of PathScribeAI.</p>
+            <p style={{ color:'#94a3b8', marginBottom:30, lineHeight:1.6, fontSize:15 }}>You'll be signed out of ForMedrixAI.</p>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <button onClick={()=>setShowLogoutModal(false)} style={{ padding:16, borderRadius:12, background:'#0891B2', border:'none', color:'#fff', fontWeight:700, fontSize:16, cursor:'pointer' }}>← Stay on Search</button>
               <button onClick={handleLogout} style={{ padding:16, borderRadius:12, background:'transparent', border:'2px solid #F59E0B', color:'#F59E0B', fontWeight:600, fontSize:15, cursor:'pointer' }}
@@ -1086,3 +1598,6 @@ const SearchPage: React.FC = () => {
 };
 
 export default SearchPage;
+
+
+

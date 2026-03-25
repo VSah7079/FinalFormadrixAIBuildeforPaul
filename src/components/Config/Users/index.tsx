@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { VOICE_PROFILES, type VoiceProfileId } from '../../../constants/voiceProfiles';
+import '../../../formedrix.css';
 import { useSubspecialties } from '../../../contexts/useSubspecialties';
 import RoleDictionary, { Role, DEFAULT_ROLES } from './RoleDictionary';
 import { userService } from '../../../services';
@@ -6,6 +8,7 @@ import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
   cancelButtonStyle, applyButtonStyle,
 } from '../../Common/modalStyles';
+import { ServiceResult } from '../../../services/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface StaffUser {
@@ -20,10 +23,9 @@ export interface StaffUser {
   department: string;
   signatureUrl?: string;
   status: 'Active' | 'Inactive';
+  // Add | null here to match the service
+  voiceProfile?: string | null; 
 }
-
-// Users loaded from service — see useEffect in StaffMembers
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const roleStyle: Record<string, React.CSSProperties> = {
   Pathologist: { color: '#8AB4F8', background: 'rgba(138,180,248,0.15)', border: '1px solid rgba(138,180,248,0.25)' },
@@ -87,8 +89,8 @@ const SignatureUpload = ({ url, onChange }: { url?: string; onChange: (url: stri
 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-type Draft = { firstName: string; lastName: string; email: string; roles: string[]; npi: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean };
-const emptyDraft: Draft = { firstName: '', lastName: '', email: '', roles: [], npi: '', license: '', phone: '', department: '', signatureUrl: '', active: true };
+type Draft = { firstName: string; lastName: string; email: string; roles: string[]; npi: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean; voiceProfile: string;};
+const emptyDraft: Draft = { firstName: '', lastName: '', email: '', roles: [], npi: '', license: '', phone: '', department: '', signatureUrl: '', active: true, voiceProfile: '' };
 
 interface StaffModalProps {
   mode: 'add' | 'edit';
@@ -100,7 +102,7 @@ interface StaffModalProps {
 
 const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onClose }) => {
   const [draft, setDraft] = useState<Draft>(
-    user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, roles: [...user.roles], npi: user.npi, license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active' }
+    user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, roles: [...user.roles], npi: user.npi, license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active', voiceProfile: user.voiceProfile || '' }
          : emptyDraft
   );
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
@@ -123,7 +125,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
   };
 
   return (
-    <div style={overlay}>
+    <div data-capture-hide="true" style={overlay}>
       <div style={{ ...modalBox, maxWidth: 600, maxHeight: '95vh', padding: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ ...modalHeaderStyle, padding: '20px 24px 0', flexShrink: 0 }}>
           {mode === 'add' ? 'Add Staff Member' : `Edit — ${user?.firstName} ${user?.lastName}`}
@@ -135,12 +137,12 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
             <div style={FIELD}>
               <label style={LABEL}>First Name <span style={{ color: '#ef4444' }}>*</span></label>
               <input style={{ ...INPUT, borderColor: errors.firstName ? '#ef4444' : '#374151' }} value={draft.firstName} onChange={e => set('firstName', e.target.value)} placeholder="First name" />
-              {errors.firstName && <span style={{ fontSize: 11, color: '#ef4444' }}>{errors.firstName}</span>}
+              {errors.firstName && <span style={{ fontSize: 11, color: '#ef4444' }} data-phi="name">{errors.firstName}</span>}
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Last Name <span style={{ color: '#ef4444' }}>*</span></label>
               <input style={{ ...INPUT, borderColor: errors.lastName ? '#ef4444' : '#374151' }} value={draft.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Last name" />
-              {errors.lastName && <span style={{ fontSize: 11, color: '#ef4444' }}>{errors.lastName}</span>}
+              {errors.lastName && <span style={{ fontSize: 11, color: '#ef4444' }} data-phi="name">{errors.lastName}</span>}
             </div>
           </div>
 
@@ -152,7 +154,6 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Role <span style={{ color: '#ef4444' }}>*</span></label>
-              {/* Selected role pills */}
               {draft.roles.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                   {draft.roles.map(rName => {
@@ -167,7 +168,6 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
                   })}
                 </div>
               )}
-              {/* Dropdown */}
               <div style={{ position: 'relative' }}>
                 <select
                   value=""
@@ -196,6 +196,48 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
               <label style={LABEL}>License Number</label>
               <input style={INPUT} value={draft.license} onChange={e => set('license', e.target.value)} placeholder="State license #" />
             </div>
+          </div>
+
+          <div style={FIELD}>
+            <label style={LABEL}>Personal Voice Profile (Linguistic Override)</label>
+            <div style={{ position: 'relative' }}>
+              <select 
+                value={draft.voiceProfile} 
+                onChange={e => set('voiceProfile', e.target.value)}
+                style={{ 
+                  ...INPUT, 
+                  cursor: 'pointer',
+                  borderColor: '#374151', 
+                  background: '#0f0f0f',
+                  appearance: 'none',
+                  paddingRight: '32px'
+                }}
+              >
+                <option value="" style={{ background: '#0f0f0f', color: '#8AB4F8' }}>System Default (Inherited)</option>
+                {VOICE_PROFILES.map((profile) => (
+                  <option key={profile.id} value={profile.id} style={{ background: '#0f0f0f' }}>
+                    {profile.label}
+                  </option>
+                ))}
+              </select>
+              <div style={{ 
+                position: 'absolute', 
+                right: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                pointerEvents: 'none', 
+                color: '#9ca3af', 
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                opacity: 0.8
+              }}>
+                <span style={{ transform: 'scaleX(1.2)' }}>▼</span>
+              </div>
+            </div>
+            <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+              Leave as "System Default" to use the facility-wide accent setting.
+            </p>
           </div>
 
           <div style={ROW}>
@@ -241,12 +283,20 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
   const [roleFilter,  setRoleFilter] = useState('All');
   const [modal,       setModal]     = useState<{ mode: 'add' | 'edit'; user?: StaffUser } | null>(null);
 
-  React.useEffect(() => {
-    userService.getAll().then(res => {
-      if (res.ok) setUsers(res.data);
-      setLoading(false);
-    });
-  }, []);
+React.useEffect(() => {
+  // 1. Add the type here to fix "implicitly has an any type"
+  userService.getAll().then((res: ServiceResult<StaffUser[]>) => {
+    
+    // 2. Use a type guard to handle the Union (Success vs Error)
+    if ('ok' in res && res.ok) {
+      setUsers(res.data || []);
+    } else if ('error' in res) {
+      console.error(res.error);
+    }
+    
+    setLoading(false);
+  });
+}, []);
 
   const userSubsMap: Record<string, string[]> = {};
   subspecialties.forEach(sub => {
@@ -272,6 +322,7 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
       roles: draft.roles, npi: draft.npi, license: draft.license, phone: draft.phone,
       department: draft.department, signatureUrl: draft.signatureUrl,
       status: (draft.active ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+      voiceProfile: draft.voiceProfile === '' ? undefined : (draft.voiceProfile as VoiceProfileId),
     };
     if (modal?.mode === 'add') {
       const res = await userService.add(payload);
@@ -298,7 +349,7 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
         >+ Add Staff</button>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
+      <div data-capture-hide="true" style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
         <input type="text" placeholder="Search staff..." value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, padding: '9px 14px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', fontSize: '14px', color: '#DEE4E7', outline: 'none' }} />
         <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
@@ -311,7 +362,7 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
         </select>
       </div>
 
-      <div style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px', overflow: 'hidden' }}>
+      <div data-capture-hide="true" style={{ border: '1px solid rgba(255,255,255,0.10)', borderRadius: '12px', overflow: 'hidden' }}>
         <div style={{ maxHeight: 'calc(100vh - 480px)', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
@@ -333,7 +384,7 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
                         <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(138,180,248,0.2)', border: '1.5px solid rgba(138,180,248,0.5)', color: '#8AB4F8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
                           {initials(u)}
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#DEE4E7' }}>{fullName(u)}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#DEE4E7' }} data-phi="name">{fullName(u)}</span>
                       </div>
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: '13px', color: '#9AA0A6' }}>{u.email}</td>
@@ -386,8 +437,6 @@ const StaffMembers: React.FC<{ roles: Role[] }> = ({ roles }) => {
   );
 };
 
-
-
 // ─── Staff Shell (sub-tabs) ───────────────────────────────────────────────────
 type StaffSubTab = 'members' | 'roles';
 
@@ -409,7 +458,6 @@ const StaffTab: React.FC = () => {
 
   return (
     <div>
-      {/* Sub-tab bar */}
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #1f2937', marginBottom: 0, paddingLeft: 24 }}>
         <button style={tabStyle('members')} onClick={() => setSubTab('members')}>Staff Members</button>
         <button style={tabStyle('roles')}   onClick={() => setSubTab('roles')}>Role Dictionary</button>

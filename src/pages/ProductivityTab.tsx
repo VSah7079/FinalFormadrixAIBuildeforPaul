@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { pathScribeTheme as theme } from "@theme/pathScribeTheme";
+import { ForMedrixTheme as theme } from "@theme/ForMedrixTheme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -10,11 +10,6 @@ interface MonthlyData {
   cumulativeRvus: number;
 }
 
-interface DailyData {
-  day: string;
-  cases: number;
-  rvus: number;
-}
 
 type ChartMetric = "cases" | "rvus" | "combined";
 type DateRange   = "ytd" | "6m" | "3m" | "1m";
@@ -32,13 +27,6 @@ const mockMonthly: MonthlyData[] = [
   { month: "Aug", cases: 132, rvus: 422, cumulativeRvus: 2970 },
 ];
 
-const mockDaily: DailyData[] = [
-  { day: "Mon", cases: 22, rvus: 70 },
-  { day: "Tue", cases: 28, rvus: 89 },
-  { day: "Wed", cases: 31, rvus: 99 },
-  { day: "Thu", cases: 26, rvus: 83 },
-  { day: "Fri", cases: 25, rvus: 80 },
-];
 
 const mockPeerData = {
   you:      2970,
@@ -215,44 +203,6 @@ const LineChart: React.FC<{
   );
 };
 
-// ─── Weekly Chart ─────────────────────────────────────────────────────────────
-
-const WeeklyChart: React.FC<{ metric: ChartMetric }> = ({ metric }) => {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const maxC = Math.max(...mockDaily.map(d => d.cases));
-  const maxR = Math.max(...mockDaily.map(d => d.rvus));
-
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "120px" }}>
-      {mockDaily.map((d, i) => {
-        const cH = (d.cases / maxC) * 90;
-        const rH = (d.rvus  / maxR) * 90;
-        const isHov = hovered === i;
-        return (
-          <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative", cursor: "pointer" }}
-            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
-            {isHov && (
-              <Tooltip>
-                <div style={{ fontWeight: 700, color: theme.colors.text.primary }}>{d.day}</div>
-                {(metric === "cases" || metric === "combined") && <div style={{ color: theme.colors.chart.cases }}>{d.cases} cases</div>}
-                {(metric === "rvus"  || metric === "combined") && <div style={{ color: theme.colors.chart.rvu   }}>{d.rvus} RVUs</div>}
-              </Tooltip>
-            )}
-            <div style={{ width: "100%", height: "90px", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "2px" }}>
-              {(metric === "cases" || metric === "combined") && (
-                <div style={{ width: metric === "combined" ? "44%" : "65%", height: `${cH}px`, background: theme.colors.chart.cases, borderRadius: "4px 4px 0 0", opacity: isHov ? 1 : 0.85, transition: "height 0.25s ease" }} />
-              )}
-              {(metric === "rvus" || metric === "combined") && (
-                <div style={{ width: metric === "combined" ? "44%" : "65%", height: `${rH}px`, background: theme.gradients.amberVertical, borderRadius: "4px 4px 0 0", opacity: isHov ? 1 : 0.85, transition: "height 0.25s ease" }} />
-              )}
-            </div>
-            <div style={{ fontSize: "11px", color: theme.colors.text.muted, marginTop: "4px" }}>{d.day}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 // ─── RVU Summary Tile ─────────────────────────────────────────────────────────
 

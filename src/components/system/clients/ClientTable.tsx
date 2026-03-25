@@ -12,7 +12,8 @@
  */
 
 import { useState, useMemo } from "react";
-import { Client, ClientType } from "../../../context/useClientDictionary";
+import '../../../formedrix.css';
+import { Client } from "../../../contexts/useClientDictionary";
 
 interface ClientTableProps {
   clients: Client[];
@@ -226,13 +227,13 @@ export const ClientTable: React.FC<ClientTableProps> = ({
                       fontWeight: 700,
                       padding: "2px 8px",
                       borderRadius: "10px",
-                      ...(c.clientType === "internal"
+                      ...(client.clientType === "internal"
                         ? { background: "#ede9fe", color: "#5b21b6" }
                         : { background: "#e0f2fe", color: "#0369a1" }),
                     }}>
-                      {c.clientType === "internal" ? "Internal" : "External"}
+                      {client.clientType === "internal" ? "Internal" : "External"}
                     </span>
-                    {c.parentId && (
+                    {client.parentId && (
                       <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "3px" }}>
                         ↳ affiliate
                       </div>

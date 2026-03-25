@@ -1,4 +1,4 @@
-# PathScribe AI - Frontend Application
+# ForMedrix AI - Frontend Application
 
 AI-Powered CAP Synoptic Reporting System for Pathologists
 
@@ -23,17 +23,17 @@ The app will be available at `http://localhost:5173`
 ### Demo Credentials
 
 **Pathologist Account:**
-- Email: `***REMOVED***@pathscribe.ai`
+- Email: `***REMOVED***@formedrix.ai`
 - Password: `***REMOVED***`
 
 **Admin Account:**
-- Email: `***REMOVED***@pathscribe.ai`
+- Email: `***REMOVED***@formedrix.ai`
 - Password: `***REMOVED***`
 
 ## 📁 Project Structure
 
 ```
-pathscribe-ai/
+formedrix-ai/
 ├── src/
 │   ├── App.tsx              # Main app with routing
 │   ├── AuthContext.tsx      # Authentication state management
@@ -157,7 +157,7 @@ The build output will be in the `dist/` directory.
 
 1. **Backend Integration**
    - Replace mock auth with real API
-   - Connect to PathScribe AI backend
+   - Connect to ForMedrix AI backend
    - Real-time case updates via WebSocket
 
 2. **Additional Pages**
@@ -200,10 +200,10 @@ The build output will be in the `dist/` directory.
 
 ## 📞 Support
 
-For questions or issues, contact the PathScribe AI development team.
+For questions or issues, contact the ForMedrix AI development team.
 
 ---
 
 **Version:** 1.0.0  
 **Last Updated:** February 12, 2026  
-**License:** Proprietary - PathScribe AI
+**License:** Proprietary - ForMedrix AI

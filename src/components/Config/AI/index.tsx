@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../../../formedrix.css';
 import { aiBehaviorService, AIBehaviorConfig } from '../../../services';
 
 const card: React.CSSProperties = {

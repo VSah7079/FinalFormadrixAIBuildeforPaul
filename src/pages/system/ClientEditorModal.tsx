@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import '../../formedrix.css';
 import {
   Client,
   ClientInput,
@@ -30,6 +31,7 @@ interface ClientEditorModalProps {
 
 const blank = (): ClientInput => ({
   name: "",
+  clientType: "external" as const,
   code: "",
   contactName: "",
   contactEmail: "",
@@ -37,7 +39,7 @@ const blank = (): ClientInput => ({
   address: "",
   active: true,
   hl7: {
-    sendingFacility: "PATHSCRIBE",
+    sendingFacility: "ForMedrix",
     receivingFacility: "",
     hl7Version: "2.5.1",
     enabled: false,
@@ -390,7 +392,7 @@ export const ClientEditorModal: React.FC<ClientEditorModalProps> = ({
                       value={form.hl7.sendingFacility}
                       onChange={(e) => setHL7("sendingFacility", e.target.value)}
                       onFocus={onF} onBlur={onB}
-                      placeholder="PATHSCRIBE"
+                      placeholder="ForMedrix"
                     />
                   </Field>
                   <Field label="Receiving Facility (MSH-6)">

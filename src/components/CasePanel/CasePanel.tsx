@@ -2,6 +2,7 @@ import React from 'react';
 import { useCasePreview } from '../../hooks/useCasePreview';
 import { CasePreviewDrawer } from './CasePreviewDrawer';
 import { useNavigate } from "react-router-dom";
+import '../../formedrix.css';
 
 export interface SimilarCase {
   accession: string;
@@ -20,6 +21,11 @@ interface CasePanelProps {
   onRefineSearch: () => void;
 }
 
+// ── AI star mark — filled Unicode star in ForMedrix teal ────────────────────
+const AiStar = ({ size = 13 }: { size?: number }) => (
+  <span style={{ color: '#0891B2', fontSize: `${size}px`, marginLeft: '5px', verticalAlign: 'middle', lineHeight: 1 }}>★</span>
+);
+
 const CasePanel: React.FC<CasePanelProps> = ({
   isOpen,
   onClose,
@@ -29,8 +35,6 @@ const CasePanel: React.FC<CasePanelProps> = ({
   similarCases,
   onRefineSearch,
 }) => {
-
-  // ⭐ MUST be inside the component
   const navigate = useNavigate();
 
   const {
@@ -42,260 +46,103 @@ const CasePanel: React.FC<CasePanelProps> = ({
 
   if (!isOpen) return null;
 
-
-
   return (
     <>
-      {/* Main modal */}
+      {/* Main panel */}
       <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.75)',
-          backdropFilter: 'blur(6px)',
-          zIndex: 20000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        data-capture-hide="true"
+        className="ps-overlay"
+        style={{ zIndex: 20000, backdropFilter: 'blur(6px)', background: 'rgba(0,0,0,0.75)' }}
         onClick={onClose}
       >
         <div
           onClick={e => e.stopPropagation()}
-          style={{
-            width: '960px',
-            maxHeight: '80vh',
-            background: '#0b1120',
-            borderRadius: '18px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
-            border: '1px solid rgba(148,163,184,0.4)',
-          }}
+          className="ps-research-modal"
+          style={{ width: '980px', maxHeight: '85vh', minHeight: '560px' }}
         >
           {/* Header */}
-          <div
-            style={{
-              padding: '18px 22px',
-              borderBottom: '1px solid rgba(51,65,85,0.9)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background:
-                'radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 55%)',
-            }}
-          >
+          <div className="ps-research-header">
             <div>
-              <div
-                style={{
-                  fontSize: '13px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: '#64748b',
-                  marginBottom: '4px',
-                }}
-              >
-                Similar cases
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#e5e7eb' }}>
-                {patientName}{' '}
-                <span style={{ color: '#64748b', fontWeight: 500 }}>· MRN {mrn}</span>
+              <div className="ps-research-eyebrow">Patient History</div>
+              <div className="ps-research-title" style={{ display: 'block' }}>
+                {patientName}
+                <span style={{ color: '#64748b', fontWeight: 500, fontSize: '15px' }}> · MRN {mrn}</span>
               </div>
             </div>
-
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '22px',
-                color: '#64748b',
-              }}
-            >
-              ✕
-            </button>
+            <button onClick={onClose} className="ps-research-close">✕</button>
           </div>
 
           {/* Body */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1.3fr)',
-              gap: '0',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)',
               flex: 1,
               minHeight: 0,
+              overflow: 'hidden',
             }}
           >
             {/* Left: Patient history */}
-            <div
-              style={{
-                padding: '18px 20px',
-                borderRight: '1px solid rgba(30,41,59,0.9)',
-                background:
-                  'radial-gradient(circle at top, rgba(30,64,175,0.35), transparent 60%)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#cbd5f5',
-                  marginBottom: '8px',
-                }}
-              >
-                Patient history
-              </div>
-
-              <div
-                style={{
-                  fontSize: '13px',
-                  color: '#e5e7eb',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {patientHistory || 'No patient history available.'}
+            <div className="ps-research-left">
+              <div className="ps-research-label">Prior Pathology</div>
+              <div className="ps-research-body" style={{ whiteSpace: 'pre-wrap' }}>
+                {patientHistory || (
+                  <span style={{ color: '#334155', fontStyle: 'italic' }}>No patient history available.</span>
+                )}
               </div>
             </div>
 
-            {/* Right: Similar cases */}
-            <div
-              style={{
-                padding: '18px 20px',
-                background:
-                  'radial-gradient(circle at top right, rgba(8,47,73,0.7), transparent 60%)',
-                overflowY: 'auto',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#cbd5f5',
-                  marginBottom: '12px',
-                }}
-              >
-                Matched cases ({similarCases.length})
-              </h3>
+            {/* Right: AI Matched Cases */}
+            <div className="ps-research-right" style={{ minHeight: '420px' }}>
+              {/* Section title */}
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#cbd5f5', margin: 0 }}>
+                  AI Matched Cases<AiStar size={14} />
+                </h3>
+                <span style={{ marginLeft: '8px', fontSize: '11px', color: '#475569', fontWeight: 500 }}>
+                  {similarCases.length} result{similarCases.length !== 1 ? 's' : ''}
+                </span>
+              </div>
 
               {similarCases.length === 0 ? (
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#9ca3af',
-                    padding: '18px',
-                    borderRadius: '10px',
-                    border: '1px dashed rgba(75,85,99,0.9)',
-                    background: 'rgba(15,23,42,0.8)',
-                    textAlign: 'center',
-                  }}
-                >
-                  No similar cases found for the current context.
+                <div style={{ fontSize: '13px', color: '#475569', padding: '24px', borderRadius: '10px', border: '1px dashed rgba(51,65,85,0.8)', textAlign: 'center' }}>
+                  No matched cases found for the current context.
                 </div>
               ) : (
-                similarCases.map(sc => {
-                  const similarityPercent = Math.round(sc.similarity * 100);
+                similarCases.map((sc) => {
+                  const pct = Math.round(sc.similarity * 100);
+                  const barColor = pct >= 80 ? '#0ea5e9' : pct >= 60 ? '#0891B2' : '#334155';
 
                   return (
                     <button
                       key={sc.accession}
-                      onClick={() => openPreview(sc)} // NEW: open preview drawer
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 12px',
-                        marginBottom: '8px',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(51,65,85,0.9)',
-                        background: 'rgba(15,23,42,0.9)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        transition: 'all 0.15s',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = '#38bdf8';
-                        e.currentTarget.style.background = 'rgba(15,23,42,1)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = 'rgba(51,65,85,0.9)';
-                        e.currentTarget.style.background = 'rgba(15,23,42,0.9)';
-                      }}
+                      onClick={() => openPreview(sc)}
+                      className="ps-card-dark"
+                      style={{ width: '100%', textAlign: 'left', marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}
                     >
-                      {/* Accession + similarity */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#e5e7eb',
-                          }}
-                        >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#e5e7eb' }} data-phi="accession">
                           {sc.accession}
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            color: '#9ca3af',
-                          }}
-                        >
-                          {similarityPercent}% match
-                        </div>
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                          {pct}% match
+                        </span>
                       </div>
 
-                      {/* Diagnosis */}
                       {sc.diagnosis && (
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            color: '#cbd5f5',
-                            lineHeight: 1.4,
-                          }}
-                        >
+                        <div style={{ fontSize: '12px', color: '#cbd5f5', lineHeight: 1.4 }}>
                           {sc.diagnosis}
                         </div>
                       )}
 
-                      {/* Match reason */}
                       {sc.matchReason && (
-                        <div
-                          style={{
-                            fontSize: '11px',
-                            color: '#94a3b8',
-                            fontStyle: 'italic',
-                          }}
-                        >
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
                           Matched on: {sc.matchReason}
                         </div>
                       )}
 
-                      {/* Confidence bar */}
-                      <div
-                        style={{
-                          marginTop: '2px',
-                          height: '5px',
-                          background: 'rgba(31,41,55,1)',
-                          borderRadius: '999px',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${similarityPercent}%`,
-                            height: '100%',
-                            background: '#0ea5e9',
-                          }}
-                        />
+                      <div className="ps-similarity-bar">
+                        <div className="ps-similarity-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
                       </div>
                     </button>
                   );
@@ -305,45 +152,30 @@ const CasePanel: React.FC<CasePanelProps> = ({
           </div>
 
           {/* Footer */}
-          <div
-            style={{
-              padding: '12px 18px',
-              borderTop: '1px solid rgba(30,41,59,0.9)',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '10px',
-              background: 'rgba(15,23,42,0.98)',
-            }}
-          >
+          <div style={{ padding: '12px 18px', borderTop: '1px solid rgba(30,41,59,0.9)', display: 'flex', justifyContent: 'flex-end', background: 'rgba(15,23,42,0.98)', flexShrink: 0 }}>
             <button
               onClick={onRefineSearch}
               style={{
-                padding: '7px 14px',
-                background: '#0ea5e9',
-                color: '#0f172a',
-                border: 'none',
-                borderRadius: '999px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '13px',
-              }}
+                }}
+              className="ps-btn-pill"
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#38bdf8'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#0ea5e9'}
             >
-              Refine search
+              Refine search <AiStar size={12} />
             </button>
           </div>
         </div>
       </div>
 
-{/* NEW: Preview Drawer */}
-<CasePreviewDrawer
-  report={selectedCase}
-  isOpen={drawerOpen}
-  onClose={closePreview}
-  onOpenFull={() => {
-    console.log("Open full report for", selectedCase?.accession);
-    navigate(`/report/${selectedCase?.accession}`);
-  }}
-/>
+      {/* Preview Drawer */}
+      <CasePreviewDrawer
+        report={selectedCase}
+        isOpen={drawerOpen}
+        onClose={closePreview}
+        onOpenFull={() => {
+          navigate(`/report/${selectedCase?.accession}`);
+        }}
+      />
     </>
   );
 };

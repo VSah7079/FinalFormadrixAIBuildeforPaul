@@ -30,8 +30,8 @@ const SEED_CLIENTS: Client[] = [
   { id: 'c5', name: 'Eastpark Oncology',        code: 'EPO',  address: '500 East Park Dr', phone: '555-2009', fax: '555-2010', email: 'lab@eastpark.org',      status: 'Inactive' },
 ];
 
-const load = () => storageGet<Client[]>('pathscribe_clients', SEED_CLIENTS);
-const persist = (data: Client[]) => storageSet('pathscribe_clients', data);
+const load = () => storageGet<Client[]>('formedrix_clients', SEED_CLIENTS);
+const persist = (data: Client[]) => storageSet('formedrix_clients', data);
 let MOCK_CLIENTS: Client[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

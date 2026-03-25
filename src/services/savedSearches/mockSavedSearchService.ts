@@ -42,8 +42,8 @@ const SEED_SEARCHES: SavedSearch[] = [
   },
 ];
 
-const load    = () => storageGet<SavedSearch[]>('pathscribe_savedSearches', SEED_SEARCHES);
-const persist = (data: SavedSearch[]) => storageSet('pathscribe_savedSearches', data);
+const load    = () => storageGet<SavedSearch[]>('formedrix_savedSearches', SEED_SEARCHES);
+const persist = (data: SavedSearch[]) => storageSet('formedrix_savedSearches', data);
 let MOCK_SEARCHES: SavedSearch[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

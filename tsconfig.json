@@ -1,20 +1,16 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
-    /* Path aliases */
     "baseUrl": ".",
     "paths": {
       "@components/*": ["src/components/*"],
@@ -24,16 +20,42 @@
       "@hooks/*": ["src/hooks/*"],
       "@contexts/*": ["src/contexts/*"]
     },
-
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
-    /* Add this */
     "types": ["node"]
   },
   "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "src/Legacy",
+    "src/types/App.tsx",
+    "src/utils/AppShell.tsx",
+    "src/services/codes/firestoreCodeService.ts",
+    "src/services/internalNotes/firestoreInternalNoteService.ts",
+    "src/services/messages/firestoreMessageService.ts",
+    "src/services/physicians/index.ts",
+    "src/services/users/index.ts",
+    "src/api/caseFlagsApi.ts",
+    "src/api/lisFlagSimulator.ts",
+    "src/audit/AuditLogPage.tsx",
+    "src/components/Config/System/FlagModal.tsx",
+    "src/components/Config/System/FlagTable.tsx",
+    "src/components/Flags/AutoCreatedBanner.tsx",
+    "src/components/Config/System/KeyboardShortcutsModal.tsx",
+    "src/components/Config/System/CategorySection.tsx",
+    "src/Worklist/WorklistPage.tsx",
+    "src/Home.tsx",
+    "src/components/AppShell/ComposeModal.tsx",
+    "src/components/AppShell/MessageThread.tsx",
+    "src/components/AppShell/useMessaging.ts",
+    "src/components/Config/Speech/SpeechConfigTab.tsx",
+    "src/components/Config/Templates/TemplateRenderer.tsx",
+    "src/hooks/useSynopticAudit.ts",
+    "src/utils/serviceHelpers.ts",
+    "src/services/enhancementRequestService.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
+

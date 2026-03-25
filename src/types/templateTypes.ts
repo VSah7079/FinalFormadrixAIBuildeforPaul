@@ -2,7 +2,7 @@
 // Template + Audit Types
 // ------------------------------------------------------------------
 // Shared model definitions for templates, questions, sections,
-// and audit events used throughout PathScribeAI.
+// and audit events used throughout ForMedrixAI.
 // ------------------------------------------------------------------
 
 // Template lifecycle states

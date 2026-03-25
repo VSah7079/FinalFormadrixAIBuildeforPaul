@@ -1,9 +1,40 @@
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect } from "react";
+import '../../formedrix.css';
+import { useParams, useNavigate } from "react-router-dom";
 import { getMockReport } from "../../mock/mockReports";
+import { VoiceCommandOverlay } from "../../components/Voice/VoiceCommandOverlay";
+import { VoiceMissPrompt }     from "../../components/Voice/VoiceMissPrompt";
+import { mockActionRegistryService } from "../../services/actionRegistry/mockActionRegistryService";
+import { VOICE_CONTEXT } from "../../constants/systemActions";
 
 const PatientReportPage: React.FC = () => {
   const { accession } = useParams();
+  const navigate = useNavigate();
+
+  // ── Voice: CASE_VIEW context — outside AppShell so mounts overlays directly
+  useEffect(() => {
+    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.CASE_VIEW);
+    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
+  }, []);
+
+  useEffect(() => {
+    const goBack   = () => navigate(-1);
+    const goForward= () => navigate(1);
+    const nextCase = () => navigate(1);
+    const prevCase = () => navigate(-1);
+
+    window.addEventListener('ForMedrix_GO_BACK',           goBack);
+    window.addEventListener('ForMedrix_GO_FORWARD',        goForward);
+    window.addEventListener('ForMedrix_NAV_NEXT_CASE',     nextCase);
+    window.addEventListener('ForMedrix_NAV_PREVIOUS_CASE', prevCase);
+
+    return () => {
+      window.removeEventListener('ForMedrix_GO_BACK',           goBack);
+      window.removeEventListener('ForMedrix_GO_FORWARD',        goForward);
+      window.removeEventListener('ForMedrix_NAV_NEXT_CASE',     nextCase);
+      window.removeEventListener('ForMedrix_NAV_PREVIOUS_CASE', prevCase);
+    };
+  }, [navigate]);
 
   if (!accession) {
     return <div style={{ color: "white" }}>Invalid report ID.</div>;
@@ -16,11 +47,17 @@ const PatientReportPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: "2rem", color: "white" }}>
-      <h1>{report.accession}</h1>
-      <p>{report.diagnosis}</p>
-      <p>Last Updated: {report.lastUpdated}</p>
-    </div>
+    <>
+      <div style={{ padding: "2rem", color: "white" }}>
+        <h1 data-phi="accession">{report.accession}</h1>
+        <p data-phi="diagnosis">{report.diagnosis}</p>
+        <p>Last Updated: {report.lastUpdated}</p>
+      </div>
+
+      {/* Voice overlays — outside AppShell so mounted directly here */}
+      <VoiceCommandOverlay showSuccess={import.meta.env.DEV} />
+      <VoiceMissPrompt />
+    </>
   );
 };
 

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import '../../formedrix.css';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
 import { useLogout } from "@hooks/useLogout";
-import { getAuditLog, clearAuditLog, logEvent } from "../audit/auditLogger";
-import { AuditEvent } from "../types/AuditEvent";
+import { getAuditLog, clearAuditLog, logEvent } from "../../audit/auditLogger";
+import { AuditEvent } from "../../types/AuditEvent";
 
 export const AuditLogViewer: React.FC = () => {
   const navigate      = useNavigate();
@@ -29,7 +30,7 @@ export const AuditLogViewer: React.FC = () => {
   };
 
   const load = () => {
-    setEvents(getAuditLog().sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
+    setEvents(getAuditLog().sort((a: AuditEvent, b: AuditEvent) => b.timestamp.localeCompare(a.timestamp)));
   };
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export const AuditLogViewer: React.FC = () => {
   }, []);
 
   const handleClear = () => {
-    logEvent({ user: "System", category: "system", action: "clear_audit_log", templateId: "system" });
+    logEvent({ user: "System", category: "system", action: "clear_audit_log", templateId: "system", detail: "Audit log cleared by user" });
     clearAuditLog();
     load();
   };
@@ -89,8 +90,8 @@ export const AuditLogViewer: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <img
-              src="/pathscribe-logo-dark.svg"
-              alt="PathScribe AI"
+              src="/formedrix-logo.svg"
+              alt="ForMedrix AI"
               style={{ height: '60px', width: 'auto', cursor: 'pointer' }}
               onClick={handleNavigateHome}
             />

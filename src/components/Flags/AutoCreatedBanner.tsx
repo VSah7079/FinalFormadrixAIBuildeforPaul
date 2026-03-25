@@ -1,5 +1,6 @@
 import React from "react";
-import { FlagDefinition } from "../types/FlagDefinition";
+import '../../formedrix.css';
+import { FlagDefinition } from "../../types/FlagDefinition";
 
 interface Props {
   flags: FlagDefinition[];
