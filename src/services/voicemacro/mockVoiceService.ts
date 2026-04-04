@@ -3,7 +3,7 @@ import { VoiceMacro } from '../../types/voiceMacros';
 import { PATHOLOGY_DEFAULTS } from '../../constants/defaultMacros';
 
 export class MockVoiceMacroService implements IVoiceMacroService {
-  private STORAGE_KEY = 'formedrix_voice_macros';
+  private STORAGE_KEY = 'pathscribe_voice_macros';
 
   private getStoredMacros(): VoiceMacro[] {
     const data = localStorage.getItem(this.STORAGE_KEY);

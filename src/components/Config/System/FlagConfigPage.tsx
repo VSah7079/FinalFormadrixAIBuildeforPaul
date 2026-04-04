@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { FlagDefinition } from "../../../types/FlagDefinition";
 import { flagService } from "../../../services";
 

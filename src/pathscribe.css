@@ -1,6 +1,6 @@
 /* ============================================================
-   formedrix.css
-   Shared component classes for ForMedrix AI.
+   pathscribe.css
+   Shared component classes for pathscribe AI.
    Import AFTER index.css.
 
    Structure:
@@ -1681,3 +1681,830 @@
   border: 1px solid rgba(8, 145, 178, 0.25);
 }
 
+
+/* =========================================================
+   WORKLIST TABLE
+   ─────────────────────────────────────────────────────────
+   INFORMATION HIERARCHY (top → bottom priority):
+     1. Case ID          — primary action target    teal / red-urgent
+     2. Patient Name     — who                      bright white
+     3. Status           — workflow state           semantic colour
+     4. Flags            — needs attention          semantic colour
+     5. Specimens        — context chips            muted slate
+     6. Physician / Date — reference                dim
+
+   To resize everything: adjust --ps-text-* tokens above.
+   ========================================================= */
+
+/* ── Case ID: primary action target ────────────────────── */
+.wl-case-id {
+  font-size: var(--ps-text-md);
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Patient name: equally important as case ID ─────────── */
+.wl-patient-name {
+  font-size: var(--ps-text-md);
+  font-weight: 600;
+  color: #e2e8f0;                  /* bright slate-200 — clear and readable */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* ── Patient ***REMOVED***graphics: sex · DOB · MRN (PPID) ──────── */
+/* Two independent identifiers required for positive patient  */
+/* identification per CAP/Joint Commission accreditation.     */
+.wl-patient-***REMOVED*** {
+  font-size: var(--ps-text-xs);
+  font-weight: 400;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Specimen chips: context, not primary ───────────────── */
+.wl-specimen-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border-radius: 20px;       /* pill shape — matches flag chips */
+  font-size: var(--ps-text-xs);  /* same size as flag chips — pill provides visual weight */
+  font-weight: 400;              /* lighter than flags (700) — specimens are context, not alerts */
+  background: rgba(100, 116, 139, 0.15);
+  border: 1px solid rgba(100, 116, 139, 0.28);
+  color: #b0bec5;                  /* 9.37:1 contrast — clear inside pill */
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+
+/* Label letter (A · B ·) slightly brighter for quick scanning */
+.wl-specimen-chip__label {
+  color: #cbd5e1;      /* slate-300 */
+  font-weight: 600;
+}
+
+.wl-specimen-chip__sep {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+/* ── Flag chips: attention layer ────────────────────────── */
+.wl-flag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: var(--ps-text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Accession date: reference info ─────────────────────── */
+.wl-accession-date {
+  font-size: var(--ps-text-sm);
+  font-weight: 500;
+  color: #94a3b8;                  /* slate-400 — readable but secondary */
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Physician: reference info ──────────────────────────── */
+.wl-physician {
+  font-size: var(--ps-text-sm);
+  font-weight: 400;
+  color: #94a3b8;                  /* same level as date */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Status dot: semantic colour with tooltip ────────────── */
+/* Text label removed — dot + tooltip saves column space.    */
+/* Colours: draft=slate, in-progress=teal, finalized=green,  */
+/*          pending-review=amber, amended=purple, closed=grey */
+
+
+/* ── Worklist internal scroll ───────────────────────────── */
+.wl-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  /* Custom scrollbar — subtle on dark bg */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100,116,139,0.4) transparent;
+}
+.wl-scroll::-webkit-scrollbar { width: 6px; }
+.wl-scroll::-webkit-scrollbar-track { background: transparent; }
+.wl-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100,116,139,0.4);
+  border-radius: 3px;
+}
+.wl-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(100,116,139,0.6);
+}
+
+/* ── Section divider labels (URGENT N / ALL CASES N) ─────── */
+.wl-section-label {
+  font-size: var(--ps-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #8899aa;                  /* 6.1:1 — passes WCAG AA */
+}
+
+/* ── Column header ──────────────────────────────────────── */
+.wl-col-header {
+  /* font styling applied inline on the button element */
+  display: flex;
+  align-items: center;
+}
+
+/* ── Row separators ─────────────────────────────────────── */
+.wl-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   23. FLAG MANAGER MODAL
+   Uses .ps-research-* for the Patient History gradient look.
+   Only flag-specific elements are defined here.
+   ============================================================ */
+
+/* Overlay */
+.fm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 10, 18, 0.78);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal shell — reuses ps-research-modal sizing */
+.fm-modal {
+  width: min(940px, 95vw);
+  height: 740px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header eyebrow label */
+.fm-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+/* Header title row */
+.fm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fm-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.fm-accession {
+  font-size: 14px;
+  font-weight: 400;
+  color: #cbd5e1;
+}
+
+/* Active flags badge */
+.fm-active-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
+/* Body flex row */
+.fm-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Left panel — target list */
+.fm-left {
+  width: 340px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(30, 41, 59, 0.9);
+  background: var(--ps-grad-left), var(--ps-navy-left);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0 12px;
+}
+
+/* Right panel — flag catalog */
+.fm-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--ps-grad-right), var(--ps-navy-right);
+}
+
+/* Section label */
+.fm-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  padding: 0 14px 10px;
+}
+
+/* Target row button */
+.fm-target-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+  font-family: 'Inter', sans-serif;
+}
+
+.fm-target-row:hover { background: rgba(255, 255, 255, 0.03); }
+
+.fm-target-row.active {
+  background: rgba(56, 189, 248, 0.06);
+  border-left-color: #38bdf8;
+  color: #e5e7eb;
+}
+
+/* Count badge on target row */
+.fm-count-badge {
+  margin-left: auto;
+  background: #38bdf8;
+  color: #03111e;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+
+/* Applied flag chip inside left panel */
+.fm-flag-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 28px;
+  background: rgba(56, 189, 248, 0.06);
+  border-left: 2px solid rgba(56, 189, 248, 0.2);
+  margin-bottom: 2px;
+}
+
+.fm-flag-chip-name {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 500;
+  color: #cbd5e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fm-chip-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.fm-chip-remove-btn:hover { color: #ef4444; }
+
+.fm-no-flags-note {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 2px 14px 6px 28px;
+}
+
+/* Divider */
+.fm-divider {
+  height: 1px;
+  background: rgba(30, 41, 59, 0.9);
+  margin: 8px 14px;
+}
+
+/* Search bar */
+.fm-search-bar {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.fm-search-icon {
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  color: #94a3b8;
+}
+
+.fm-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(11, 17, 32, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-radius: 7px;
+  padding: 8px 32px 8px 32px;
+  font-size: 13px;
+  color: #e2e8f0;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.15s;
+}
+
+.fm-search-input::placeholder { color: #94a3b8; }
+.fm-search-input:focus { border-color: rgba(56, 189, 248, 0.4); }
+
+.fm-search-clear {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.fm-search-clear:hover { color: #e2e8f0; }
+
+/* Column header row */
+.fm-col-header {
+  display: grid;
+  grid-template-columns: 76px 1fr 90px;
+  gap: 12px;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+  flex-shrink: 0;
+}
+
+.fm-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.fm-col-label-note {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #94a3b8;
+}
+
+/* Flag list scroll area */
+.fm-flag-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100,116,139,0.3) transparent;
+}
+
+/* Flag card row */
+.fm-flag-card {
+  display: grid;
+  grid-template-columns: 76px 1fr 90px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: rgba(15, 23, 42, 0.7);
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.fm-flag-card:hover {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(100, 116, 139, 0.8);
+}
+
+.fm-flag-card.applied {
+  background: rgba(52, 211, 153, 0.07);
+  border-color: rgba(52, 211, 153, 0.22);
+  cursor: default;
+}
+
+.fm-flag-card.applied:hover {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+/* LIS code chip */
+.fm-code-chip {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.fm-code-chip.applied {
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+}
+
+/* Flag name + description */
+.fm-flag-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.fm-flag-name-row { display: flex; align-items: center; gap: 6px; }
+
+.fm-sev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fm-flag-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fm-flag-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Apply / applied action */
+.fm-apply-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0891B2;
+  flex-shrink: 0;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.fm-flag-card:hover .fm-apply-btn {
+  color: #38bdf8;
+}
+.fm-apply-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0ea5e9;
+  text-align: right;
+  display: block;
+}
+
+.fm-applied-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #34d399;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* Empty states */
+.fm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.fm-empty-heading {
+  font-size: 14px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.fm-empty-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Footer */
+.fm-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(30, 41, 59, 0.9);
+  background: var(--ps-grad-header), #0b1120;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.fm-footer-status { font-size: 12px; color: #94a3b8; }
+.fm-footer-status.dirty { color: #f59e0b; font-weight: 600; }
+
+.fm-btn-cancel {
+  background: none;
+  border: 1px solid rgba(100, 116, 139, 0.8);
+  border-radius: 7px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.fm-btn-cancel:hover { border-color: #94a3b8; color: #e2e8f0; }
+
+.fm-btn-save {
+  background: #0ea5e9;
+  border: none;
+  border-radius: 7px;
+  color: #03111e;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 20px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.15s;
+}
+
+.fm-btn-save:hover { background: #38bdf8; }
+.fm-btn-save:disabled { background: #334155; color: #475569; cursor: default; }
+
+/* Invalid combo warning */
+.fm-invalid-warn {
+  margin: 8px 14px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #f87171;
+}
+
+/* Confirm / scope dialog shell */
+.fm-dialog {
+  background: var(--ps-grad-header), #0b1120;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-radius: 10px;
+  padding: 32px 36px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+.fm-dialog-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.fm-dialog-icon.danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.fm-dialog-icon.info {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.fm-dialog-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.fm-dialog-body {
+  color: #94a3b8;
+  font-size: 13px;
+  margin: 0 0 4px;
+  line-height: 1.6;
+}
+
+.fm-dialog-body strong { color: #e2e8f0; }
+
+.fm-dialog-hint {
+  font-size: 12px;
+  color: #475569;
+  margin: 0 0 24px;
+}
+
+.fm-dialog-option {
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.1s, border-color 0.1s;
+  width: 100%;
+}
+
+.fm-dialog-option.neutral {
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0;
+}
+
+.fm-dialog-option.neutral:hover { background: rgba(15, 23, 42, 0.95); }
+
+.fm-dialog-option.danger {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+}
+
+.fm-dialog-option.danger:hover { background: rgba(239, 68, 68, 0.14); }
+
+.fm-dialog-option.ghost {
+  border: none;
+  background: none;
+  color: #475569;
+  text-align: center;
+}
+
+.fm-dialog-option.ghost:hover { color: #64748b; }
+
+/* Strikethrough state for pending-deleted flag chips */
+.fm-flag-chip.deleted {
+  background: rgba(239, 68, 68, 0.05);
+  border-left-color: rgba(239, 68, 68, 0.2);
+}
+
+.fm-flag-chip-name.strikethrough {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.fm-chip-undo-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.fm-chip-undo-btn:hover { color: #7dd3fc; }
+
+/* ── Sidebar status dot ─────────────────────────────────────────────────────── */
+.ps-status-dot-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.ps-status-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ── Sidebar specimen comment button ─────────────────────────────────────────── */
+.ps-specimen-comment-btn {
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+/* ── Modern scrollbars ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.65);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Fullscreen specimen pills ───────────────────────────────────────────────── */
+.ps-specimen-pill {
+  transition: all 0.15s ease;
+}
+
+.ps-specimen-pill:hover {
+  transform: translateY(1px);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.4);
+}
+
+.ps-specimen-pill.warning:hover {
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { ACTION_GROUPS, DEFAULT_ROLE_PERMISSIONS, ActionId, PermissionSet } from '../../../constants/systemActions';
 import { roleService } from '../../../services';
 import {

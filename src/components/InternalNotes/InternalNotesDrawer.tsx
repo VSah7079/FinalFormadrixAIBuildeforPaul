@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { internalNoteService, INTERNAL_NOTE_TYPE_LABELS } from '../../services';
 import type { InternalNote, InternalNoteType, InternalNoteVisibility } from '../../services';
 import { useVoice, reportDictationCorrection } from '../../contexts/VoiceProvider';
@@ -134,22 +134,22 @@ const InternalNotesDrawer: React.FC<Props> = ({
     const cancelNote      = () => { handleCancel(); };
     const closeDrawer     = () => onClose();
 
-    window.addEventListener('ForMedrix_NOTE_ADD',              addNote);
-    window.addEventListener('ForMedrix_NOTE_DICTATE',          dictate);
-    window.addEventListener('ForMedrix_NOTE_VISIBILITY_PRIVATE', visPrivate);
-    window.addEventListener('ForMedrix_NOTE_VISIBILITY_SHARED',  visShared);
-    window.addEventListener('ForMedrix_NOTE_SAVE',             saveNote);
-    window.addEventListener('ForMedrix_NOTE_CANCEL',           cancelNote);
-    window.addEventListener('ForMedrix_NOTE_CLOSE',            closeDrawer);
+    window.addEventListener('PATHSCRIBE_NOTE_ADD',              addNote);
+    window.addEventListener('PATHSCRIBE_NOTE_DICTATE',          dictate);
+    window.addEventListener('PATHSCRIBE_NOTE_VISIBILITY_PRIVATE', visPrivate);
+    window.addEventListener('PATHSCRIBE_NOTE_VISIBILITY_SHARED',  visShared);
+    window.addEventListener('PATHSCRIBE_NOTE_SAVE',             saveNote);
+    window.addEventListener('PATHSCRIBE_NOTE_CANCEL',           cancelNote);
+    window.addEventListener('PATHSCRIBE_NOTE_CLOSE',            closeDrawer);
 
     return () => {
-      window.removeEventListener('ForMedrix_NOTE_ADD',               addNote);
-      window.removeEventListener('ForMedrix_NOTE_DICTATE',           dictate);
-      window.removeEventListener('ForMedrix_NOTE_VISIBILITY_PRIVATE', visPrivate);
-      window.removeEventListener('ForMedrix_NOTE_VISIBILITY_SHARED',  visShared);
-      window.removeEventListener('ForMedrix_NOTE_SAVE',              saveNote);
-      window.removeEventListener('ForMedrix_NOTE_CANCEL',            cancelNote);
-      window.removeEventListener('ForMedrix_NOTE_CLOSE',             closeDrawer);
+      window.removeEventListener('PATHSCRIBE_NOTE_ADD',               addNote);
+      window.removeEventListener('PATHSCRIBE_NOTE_DICTATE',           dictate);
+      window.removeEventListener('PATHSCRIBE_NOTE_VISIBILITY_PRIVATE', visPrivate);
+      window.removeEventListener('PATHSCRIBE_NOTE_VISIBILITY_SHARED',  visShared);
+      window.removeEventListener('PATHSCRIBE_NOTE_SAVE',              saveNote);
+      window.removeEventListener('PATHSCRIBE_NOTE_CANCEL',            cancelNote);
+      window.removeEventListener('PATHSCRIBE_NOTE_CLOSE',             closeDrawer);
     };
   }, [isAdding, startDictation, stopDictation, handleAdd, handleCancel, onClose]);
 

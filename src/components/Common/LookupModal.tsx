@@ -1,7 +1,7 @@
 /**
  * LookupModal.tsx — src/components/Common/LookupModal.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Shared full-screen search-and-select modal used across ForMedrix.
+ * Shared full-screen search-and-select modal used across pathscribe.
  * Currently used by: SearchPage (SNOMED, ICD-10, ICD-O, Specimen, Synoptic,
  *                                Flags, Pathologist, Attending)
  *
@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 

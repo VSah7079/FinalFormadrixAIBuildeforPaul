@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // systemActions.ts
-// Single source of truth for ALL system actions in ForMedrix AI.
+// Single source of truth for ALL system actions in PathScribe AI.
 //
 // INTERNAL KEY DESIGN
 // ───────────────────

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import '../../formedrix.css';
-import type { CaseData, SpecimenSynoptic, SynopticReportNode, SynopticField, CaseRole } from './synopticTypes';
-
-import { ROLE_META } from './synopticUtils';
+import '../../../pathscribe.css';
+import type { CaseData, ActivePath, SpecimenSynoptic, SynopticReportNode } from '../synopticTypes';
 
 const SPEC_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -16,7 +14,7 @@ const ReportPreviewModal: React.FC<{
   const now        = new Date();
   const reportDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const reportTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const allFinalized = caseData.synoptics.every((s: SpecimenSynoptic) => s.reports.every((r: SynopticReportNode) => r.status === 'finalized'));
+  const allFinalized = caseData.synoptics.every(s => s.reports.every(r => r.status === 'finalized'));
 
   // ── Scroll-spy: update active anchor on scroll ─────────────────────────────
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -45,7 +43,7 @@ const ReportPreviewModal: React.FC<{
   // Uses the first non-empty tumor field value as the primary diagnosis text.
   const getDiagnosisSummary = (specimen: SpecimenSynoptic): string => {
     for (const report of specimen.reports) {
-      const primary = report.tumorFields.find((f: any) => f.type !== 'comment' && f.value.trim());
+      const primary = report.tumorFields.find(f => f.type !== 'comment' && f.value.trim());
       if (primary) return primary.value;
     }
     return '— pending —';
@@ -70,9 +68,9 @@ const ReportPreviewModal: React.FC<{
 
   // ── Render a synoptic node (recursive, preserves tree) ────────────────────
   const renderNode = (node: SynopticReportNode, depth = 0): React.ReactNode => {
-    const tumorRows     = node.tumorFields.filter((f: SynopticField)     => f.type !== 'comment' && (f.value || f.required));
-    const marginRows    = node.marginFields.filter((f: SynopticField)    => f.type !== 'comment' && (f.value || f.required));
-    const biomarkerRows = node.biomarkerFields.filter((f: any) => f.type !== 'comment' && (f.value || f.required));
+    const tumorRows     = node.tumorFields.filter(f     => f.type !== 'comment' && (f.value || f.required));
+    const marginRows    = node.marginFields.filter(f    => f.type !== 'comment' && (f.value || f.required));
+    const biomarkerRows = node.biomarkerFields.filter(f => f.type !== 'comment' && (f.value || f.required));
     const hasAnyField   = tumorRows.length + marginRows.length + biomarkerRows.length > 0;
 
     // Visual weight scales with depth: depth-0 is a major section, depth-1+ is a subsection
@@ -136,17 +134,17 @@ const ReportPreviewModal: React.FC<{
         )}
 
         {/* Children — indented, in order */}
-        {node.children.map((child: SynopticReportNode) => renderNode(child, depth + 1))}
+        {node.children.map(child => renderNode(child, depth + 1))}
       </div>
     );
   };
 
   // ── Render diagnostic codes for a specimen ────────────────────────────────
   const renderCodes = (specimen: SpecimenSynoptic) => {
-    const codes  = specimen.reports.flatMap((r: SynopticReportNode) => r.codes);
+    const codes  = specimen.reports.flatMap(r => r.codes);
     if (!codes.length) return null;
-    const snomed = codes.filter((c: any) => c.system === 'SNOMED');
-    const icd    = codes.filter((c: any) => c.system === 'ICD');
+    const snomed = codes.filter(c => c.system === 'SNOMED');
+    const icd    = codes.filter(c => c.system === 'ICD');
     return (
       <div style={{ marginTop: '12px', padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontFamily: 'Inter, sans-serif' }}>
         <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>Diagnostic Codes</div>
@@ -154,7 +152,7 @@ const ReportPreviewModal: React.FC<{
           {snomed.length > 0 && (
             <div>
               <div style={{ fontSize: '9px', fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>SNOMED CT</div>
-              {snomed.map((c: any) => (
+              {snomed.map(c => (
                 <div key={c.id} style={{ fontSize: '11px', color: '#1e293b', marginBottom: '3px', display: 'flex', gap: '8px' }}>
                   <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f766e', flexShrink: 0 }}>{c.code}</span>
                   <span>{c.display}</span>
@@ -165,7 +163,7 @@ const ReportPreviewModal: React.FC<{
           {icd.length > 0 && (
             <div>
               <div style={{ fontSize: '9px', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>ICD-10</div>
-              {icd.map((c: any) => (
+              {icd.map(c => (
                 <div key={c.id} style={{ fontSize: '11px', color: '#1e293b', marginBottom: '3px', display: 'flex', gap: '8px' }}>
                   <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0369a1', flexShrink: 0 }}>{c.code}</span>
                   <span>{c.display}</span>
@@ -231,11 +229,11 @@ const ReportPreviewModal: React.FC<{
             </button>
 
             {/* Specimen links */}
-            {caseData.synoptics.map((spec: SpecimenSynoptic, si: number) => {
+            {caseData.synoptics.map((spec, si) => {
               const letter  = SPEC_LETTERS[si] ?? `${si + 1}`;
               const anchor  = `spec-${si}`;
               const active  = activeAnchor === anchor;
-              const allFin  = spec.reports.every((r: SynopticReportNode) => r.status === 'finalized');
+              const allFin  = spec.reports.every(r => r.status === 'finalized');
               return (
                 <div key={spec.specimenId}>
                   <button onClick={() => scrollTo(anchor)} style={{ width: '100%', textAlign: 'left', padding: '7px 16px', background: active ? 'rgba(8,145,178,0.15)' : 'transparent', border: 'none', borderLeft: `2px solid ${active ? '#0891B2' : 'transparent'}`, color: active ? '#7dd3fc' : '#e2e8f0', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.1s' }}
@@ -247,7 +245,7 @@ const ReportPreviewModal: React.FC<{
                     {!allFin && <span style={{ fontSize: '8px', color: '#f59e0b', flexShrink: 0 }}>●</span>}
                   </button>
                   {/* Report sub-links */}
-                  {spec.reports.map((r: SynopticReportNode, ri: number) => {
+                  {spec.reports.map((r, ri) => {
                     const rAnchor = `report-${si}-${ri}`;
                     const rActive = activeAnchor === rAnchor;
                     return (
@@ -289,7 +287,7 @@ const ReportPreviewModal: React.FC<{
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', paddingBottom: '20px', borderBottom: '3px double #0f172a' }}>
               <div>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.5px' }}>
-                  ForMedrix<span style={{ color: '#0891B2', fontSize: '0.55em', verticalAlign: 'super' }}>AI</span>
+                  PathScribe<span style={{ color: '#0891B2', fontSize: '0.55em', verticalAlign: 'super' }}>AI</span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', fontFamily: 'Inter, sans-serif', marginTop: '3px' }}>Department of Anatomic Pathology</div>
                 <div style={{ fontSize: '11px', color: '#64748b', fontFamily: 'Inter, sans-serif' }}>University Medical Center · (555) 000-1234</div>
@@ -325,10 +323,10 @@ const ReportPreviewModal: React.FC<{
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  {caseData.synoptics.map((spec: SpecimenSynoptic, si: number) => {
+                  {caseData.synoptics.map((spec, si) => {
                     const letter  = SPEC_LETTERS[si] ?? `${si + 1}`;
                     const dx      = getDiagnosisSummary(spec);
-                    const isDraft = spec.reports.some((r: SynopticReportNode) => r.status === 'draft');
+                    const isDraft = spec.reports.some(r => r.status === 'draft');
                     return (
                       <tr key={spec.specimenId} style={{ borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' }}>
                         <td style={{ padding: '5px 12px 5px 0', fontFamily: 'Inter, sans-serif', width: '28px' }}>
@@ -349,7 +347,7 @@ const ReportPreviewModal: React.FC<{
             </div>
 
             {/* ── SPECIMEN SECTIONS ── */}
-            {caseData.synoptics.map((specimen: SpecimenSynoptic, si: number) => {
+            {caseData.synoptics.map((specimen, si) => {
               const letter = SPEC_LETTERS[si] ?? `${si + 1}`;
               return (
                 <div key={specimen.specimenId} data-anchor={`spec-${si}`} style={{ marginBottom: '36px' }}>
@@ -372,7 +370,7 @@ const ReportPreviewModal: React.FC<{
 
                   {/* Synoptic reports — tree preserved, not flattened */}
                   <div style={{ border: '1.5px solid #0f172a', borderTop: 'none', borderRadius: '0 0 4px 4px', padding: '20px 18px 14px' }}>
-                    {specimen.reports.map((report: SynopticReportNode, ri: number) => (
+                    {specimen.reports.map((report, ri) => (
                       <div key={report.instanceId} data-anchor={`report-${si}-${ri}`}>
                         {renderNode(report, 0)}
                       </div>
@@ -424,7 +422,7 @@ const ReportPreviewModal: React.FC<{
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a' }}>{reportDate}</div>
                 <div style={{ fontSize: '11px', color: '#64748b' }}>{reportTime}</div>
-                <div style={{ marginTop: '8px', fontSize: '9px', color: '#94a3b8' }}>ForMedrix AI · v1.0.0 · {caseData.protocol}</div>
+                <div style={{ marginTop: '8px', fontSize: '9px', color: '#94a3b8' }}>PathScribe AI · v1.0.0 · {caseData.protocol}</div>
               </div>
             </div>
 
@@ -438,4 +436,3 @@ const ReportPreviewModal: React.FC<{
 // ─── Save toast ───────────────────────────────────────────────────────────────
 
 export { ReportPreviewModal };
-

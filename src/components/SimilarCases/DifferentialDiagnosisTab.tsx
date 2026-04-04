@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { SimilarCaseSummary } from '../../Legacy/CasePanel_similarcases_legacy';
 
 interface DifferentialDiagnosisTabProps {

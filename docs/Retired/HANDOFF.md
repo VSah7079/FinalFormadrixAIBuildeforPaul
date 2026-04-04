@@ -9,24 +9,24 @@
 
 | Location | Bad reference | Correct reference |
 |---|---|---|
-| `mockCaseMix` | `ForMedrixTheme.colors.caseMixBreast` | `ForMedrixTheme.colors.caseMix.breast` |
-| `mockCaseMix` | `ForMedrixTheme.colors.caseMixGI` | `ForMedrixTheme.colors.caseMix.gi` |
-| `mockCaseMix` | `ForMedrixTheme.colors.caseMixGU` | `ForMedrixTheme.colors.caseMix.gu` |
-| `mockCaseMix` | `ForMedrixTheme.colors.caseMixDerm` | `ForMedrixTheme.colors.caseMix.derm` |
-| `mockCaseMix` | `ForMedrixTheme.colors.caseMixOther` | `ForMedrixTheme.colors.caseMix.other` |
-| Avatar, modal borders | `ForMedrixTheme.colors.buttonSubtle` | `ForMedrixTheme.colors.button.subtle` |
-| Avatar, modal borders | `ForMedrixTheme.colors.buttonBorder` | `ForMedrixTheme.colors.button.border` |
-| Breadcrumb, KPI delta, modal text | `ForMedrixTheme.colors.textPrimary` | `ForMedrixTheme.colors.text.primary` |
-| Placeholder tiles | `ForMedrixTheme.colors.border.faint` | `ForMedrixTheme.colors.border.subtle` (`.faint` does not exist) |
+| `mockCaseMix` | `pathscribeTheme.colors.caseMixBreast` | `pathscribeTheme.colors.caseMix.breast` |
+| `mockCaseMix` | `pathscribeTheme.colors.caseMixGI` | `pathscribeTheme.colors.caseMix.gi` |
+| `mockCaseMix` | `pathscribeTheme.colors.caseMixGU` | `pathscribeTheme.colors.caseMix.gu` |
+| `mockCaseMix` | `pathscribeTheme.colors.caseMixDerm` | `pathscribeTheme.colors.caseMix.derm` |
+| `mockCaseMix` | `pathscribeTheme.colors.caseMixOther` | `pathscribeTheme.colors.caseMix.other` |
+| Avatar, modal borders | `pathscribeTheme.colors.buttonSubtle` | `pathscribeTheme.colors.button.subtle` |
+| Avatar, modal borders | `pathscribeTheme.colors.buttonBorder` | `pathscribeTheme.colors.button.border` |
+| Breadcrumb, KPI delta, modal text | `pathscribeTheme.colors.textPrimary` | `pathscribeTheme.colors.text.primary` |
+| Placeholder tiles | `pathscribeTheme.colors.border.faint` | `pathscribeTheme.colors.border.subtle` (`.faint` does not exist) |
 
-### 2. Token paths that do not exist in `ForMedrixTheme` at all
+### 2. Token paths that do not exist in `pathscribeTheme` at all
 
 | Bad token | Resolution |
 |---|---|
-| `ForMedrixTheme.colors.accentTeal` | âœ… Resolved. `accentTeal`, `accentTealSubtle`, and `accentTealBorder` added to `ForMedrixTheme.ts`. All stand-ins replaced in the dashboard. |
-| `ForMedrixTheme.gradients.tealVertical` | âœ… Resolved. `gradients` namespace added to `ForMedrixTheme.ts` with `tealVertical`, `tealHorizontal`, `amberVertical`, and `surfaceFade`. TAT histogram bars now use `gradients.tealVertical`. |
-| `ForMedrixTheme.colors.severityHigh/Medium/Low` and `*Subtle` variants | No severity namespace exists. Mapped to `ForMedrixTheme.colors.semantic.*` (success/warning/info). Subtle backgrounds are computed inline as `rgba()` tints at 12% opacity â€” see `severityBg` helper object at the top of the file. |
-| `ForMedrixTheme.colors.warning` (top-level) | Moved to `ForMedrixTheme.colors.semantic.warning`. |
+| `pathscribeTheme.colors.accentTeal` | âœ… Resolved. `accentTeal`, `accentTealSubtle`, and `accentTealBorder` added to `pathscribeTheme.ts`. All stand-ins replaced in the dashboard. |
+| `pathscribeTheme.gradients.tealVertical` | âœ… Resolved. `gradients` namespace added to `pathscribeTheme.ts` with `tealVertical`, `tealHorizontal`, `amberVertical`, and `surfaceFade`. TAT histogram bars now use `gradients.tealVertical`. |
+| `pathscribeTheme.colors.severityHigh/Medium/Low` and `*Subtle` variants | No severity namespace exists. Mapped to `pathscribeTheme.colors.semantic.*` (success/warning/info). Subtle backgrounds are computed inline as `rgba()` tints at 12% opacity â€” see `severityBg` helper object at the top of the file. |
+| `pathscribeTheme.colors.warning` (top-level) | Moved to `pathscribeTheme.colors.semantic.warning`. |
 
 ### 3. Token references trapped inside string literals (rendered as literal text, not values)
 
@@ -34,48 +34,48 @@ Every one of the following patterns was present in the original file. All are no
 
 **Pattern A â€” plain string wrapping a token path:**
 ```tsx
-// BEFORE (wrong â€” renders the string "ForMedrixTheme.colors.text.muted" as CSS)
-color: "ForMedrixTheme.colors.text.muted"
+// BEFORE (wrong â€” renders the string "pathscribeTheme.colors.text.muted" as CSS)
+color: "pathscribeTheme.colors.text.muted"
 
 // AFTER (correct)
-color: ForMedrixTheme.colors.text.muted
+color: pathscribeTheme.colors.text.muted
 ```
 
 **Pattern B â€” template-literal syntax inside a plain string:**
 ```tsx
-// BEFORE (wrong â€” renders the literal text "${ForMedrixTheme.colors.textPrimary}")
-color: "${ForMedrixTheme.colors.textPrimary}"
+// BEFORE (wrong â€” renders the literal text "${pathscribeTheme.colors.textPrimary}")
+color: "${pathscribeTheme.colors.textPrimary}"
 
 // AFTER (correct)
-color: ForMedrixTheme.colors.text.primary
+color: pathscribeTheme.colors.text.primary
 ```
 
 **Pattern C â€” token path inside a border string instead of a template literal:**
 ```tsx
 // BEFORE (wrong)
-border: "1px solid ForMedrixTheme.colors.buttonBorder"
+border: "1px solid pathscribeTheme.colors.buttonBorder"
 
 // AFTER (correct)
-border: `1px solid ${ForMedrixTheme.colors.button.border}`
+border: `1px solid ${pathscribeTheme.colors.button.border}`
 ```
 
 **Pattern D â€” boxShadow string with embedded token path:**
 ```tsx
 // BEFORE (wrong)
-boxShadow: "0 25px 50px -12px ForMedrixTheme.colors.overlay"
+boxShadow: "0 25px 50px -12px pathscribeTheme.colors.overlay"
 
 // AFTER (correct)
-boxShadow: `0 25px 50px -12px ${ForMedrixTheme.colors.overlay}`
+boxShadow: `0 25px 50px -12px ${pathscribeTheme.colors.overlay}`
 ```
 
 ### 4. Remaining hard-coded hex values
 
 | Value | Location | Replacement |
 |---|---|---|
-| `#475569` (breadcrumb separator) | Line 101 | `ForMedrixTheme.colors.text.muted` |
-| `#64748b` (KPI unit, placeholder text) | Lines 269, 497, 533, 569 | `ForMedrixTheme.colors.text.muted` |
-| `#0f172a` (modal backgrounds) | Lines 585, 649, 733 | `ForMedrixTheme.colors.background.base` |
-| `#111` (warning card) | Line 816 | `ForMedrixTheme.colors.background.base` |
+| `#475569` (breadcrumb separator) | Line 101 | `pathscribeTheme.colors.text.muted` |
+| `#64748b` (KPI unit, placeholder text) | Lines 269, 497, 533, 569 | `pathscribeTheme.colors.text.muted` |
+| `#0f172a` (modal backgrounds) | Lines 585, 649, 733 | `pathscribeTheme.colors.background.base` |
+| `#111` (warning card) | Line 816 | `pathscribeTheme.colors.background.base` |
 
 ### 5. Structural issues
 
@@ -86,7 +86,7 @@ boxShadow: `0 25px 50px -12px ${ForMedrixTheme.colors.overlay}`
 
 ## What the Fixed File Does
 
-- Every color value is a live JS reference to `ForMedrixTheme`.
+- Every color value is a live JS reference to `pathscribeTheme`.
 - Every border that interpolates a token uses a template literal.
 - Every `boxShadow` that interpolates a token uses a template literal.
 - No string contains a token path as text.
@@ -101,8 +101,8 @@ Run these searches in VS Code on the delivered file. Every result should come ba
 
 | Search term | What it catches |
 |---|---|
-| `"ForMedrixTheme` | Token path trapped inside a string literal |
-| `${ForMedrixTheme` (inside `"` double-quote string) | Template syntax inside a plain string |
+| `"pathscribeTheme` | Token path trapped inside a string literal |
+| `${pathscribeTheme` (inside `"` double-quote string) | Template syntax inside a plain string |
 | `rgba(` | Residual raw rgba values (only `severityBg` helper should remain, which is intentional) |
 | `#0f172a` | Hard-coded background color |
 | `#111` | Hard-coded background color |
@@ -125,7 +125,7 @@ After search verification:
 ## Files Delivered
 
 `src/pages/ContributionDashboardPage.tsx` â€” drop-in replacement, fully theme-driven, no hard-coded values remaining.  
-`src/theme/ForMedrixTheme.ts` â€” updated with `accentTeal`, `accentTealSubtle`, `accentTealBorder`, and the `gradients` namespace (`tealVertical`, `tealHorizontal`, `amberVertical`, `surfaceFade`).  
+`src/theme/pathscribeTheme.ts` â€” updated with `accentTeal`, `accentTealSubtle`, `accentTealBorder`, and the `gradients` namespace (`tealVertical`, `tealHorizontal`, `amberVertical`, `surfaceFade`).  
 `src/types/ContributionDashboard.ts` â€” new shared type definitions for all dashboard data shapes.  
 `src/components/Dashboard/FlagRow.tsx` â€” new extracted component for quality flag rows.  
 `src/components/Dashboard/CaseMixTile.tsx` â€” new extracted component for the case mix bar chart.  
@@ -146,7 +146,7 @@ During the props extraction work (Pass 8), two components were pulled out of `Co
 
 `components/` root (flat) â€” works with two files but does not scale. As the Productivity, Quality, and AI tabs are built out, each will produce its own extracted components. Without a subfolder they accumulate at the top level of `components/` with no clear ownership.
 
-`primitives/` or `ui/` â€” these names imply components that are fully generic and domain-agnostic. `FlagRow` and `CaseMixTile` do not meet that bar. Both import `ForMedrixTheme` directly, both reference ForMedrix domain types (`Severity`, `CaseMixData`), and `CaseMixTile` knows the names of specific pathology categories. A true primitive would receive colors and labels as raw props and know nothing about the domain.
+`primitives/` or `ui/` â€” these names imply components that are fully generic and domain-agnostic. `FlagRow` and `CaseMixTile` do not meet that bar. Both import `pathscribeTheme` directly, both reference pathscribe domain types (`Severity`, `CaseMixData`), and `CaseMixTile` knows the names of specific pathology categories. A true primitive would receive colors and labels as raw props and know nothing about the domain.
 
 **What was chosen and why:**
 
@@ -185,7 +185,7 @@ As the placeholder tabs are built out, the following components are likely candi
 
 ### Path aliases â€” `tsconfig.json` and `vite.config.ts`
 
-The project now uses absolute path aliases throughout. Relative imports (`../../../theme/ForMedrixTheme`) are no longer needed and should not be used in new files.
+The project now uses absolute path aliases throughout. Relative imports (`../../../theme/pathscribeTheme`) are no longer needed and should not be used in new files.
 
 **Why this was added:**  
 When `ContributionDashboardPage.tsx` was moved into `src/pages/`, its relative imports to `../components/Dashboard/FlagRow` broke immediately. Rather than patch the paths and have the same problem happen again the next time a file moves, path aliases were configured project-wide. This was a deliberate, permanent fix â€” not a workaround.
@@ -205,11 +205,11 @@ When `ContributionDashboardPage.tsx` was moved into `src/pages/`, its relative i
 
 ```ts
 // Before (fragile â€” breaks when files move)
-import { ForMedrixTheme } from "../../theme/ForMedrixTheme";
+import { pathscribeTheme } from "../../theme/pathscribeTheme";
 import FlagRow from "../components/Dashboard/FlagRow";
 
 // After (stable â€” never needs updating when files move)
-import { ForMedrixTheme } from "@theme/ForMedrixTheme";
+import { pathscribeTheme } from "@theme/pathscribeTheme";
 import FlagRow from "@components/Dashboard/FlagRow";
 ```
 

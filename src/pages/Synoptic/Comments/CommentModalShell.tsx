@@ -1,5 +1,5 @@
-import React from 'react';
-import '../../../formedrix.css';
+import React, { useState, useRef, useEffect } from 'react';
+import '../../../pathscribe.css';
 
 const CommentModalShell: React.FC<{
   title: string;

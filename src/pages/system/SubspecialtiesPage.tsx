@@ -1,14 +1,23 @@
 // src/pages/system/SubspecialtiesPage.tsx
 import { useState } from "react";
-import { useSubspecialties } from "../../contexts/useSubspecialties"; // Updated import
+// Import the actual Type from your context file
+import { useSubspecialties, Subspecialty } from "../../contexts/useSubspecialties"; 
 import { SubspecialtyTable } from "../../components/system/subspecialties/SubspecialtyTable";
 import { SubspecialtyEditorModal } from "../../components/system/subspecialties/SubspecialtyEditorModal";
 
 export const SubspecialtiesPage = () => {
-  const { subspecialties, addSubspecialty, updateSubspecialty, deleteSubspecialty } = useSubspecialties();
+  const { 
+    subspecialties, 
+    addSubspecialty, 
+    updateSubspecialty, 
+    deleteSubspecialty 
+  } = useSubspecialties();
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
+
+  // Find the actual subspecialty object if we are editing
+  const editingData = subspecialties.find(s => s.id === editingSubId);
 
   const handleAdd = () => {
     setEditingSubId(null);
@@ -26,7 +35,7 @@ export const SubspecialtiesPage = () => {
         <div>
           <h2 className="text-2xl font-semibold text-white">Subspecialties</h2>
           <p className="text-gray-400 mt-1">
-            Manage clinical divisions, assigned staff, and associated specimen types.
+            Manage clinical divisions, assigned staff, and institutional workgroups.
           </p>
         </div>
 
@@ -46,13 +55,23 @@ export const SubspecialtiesPage = () => {
         />
       </div>
 
-<SubspecialtyEditorModal
-  isOpen={isEditorOpen}
-  onClose={() => setIsEditorOpen(false)}
-  subId={editingSubId}
-  onSave={(id, updates) => updateSubspecialty({ id, ...updates } as any)}
-  onAdd={addSubspecialty}      // This handles the "Create" logic (Data only)
-/>
+      <SubspecialtyEditorModal
+        isOpen={isEditorOpen}
+        onClose={() => {
+          setIsEditorOpen(false);
+          setEditingSubId(null);
+        }}
+        subId={editingSubId}
+        initialData={editingData} // Pass the full object to the modal
+        onSave={(id, updates) => {
+          updateSubspecialty({ id, ...updates } as Subspecialty);
+          setIsEditorOpen(false);
+        }}
+        onAdd={(newSub) => {
+          addSubspecialty(newSub);
+          setIsEditorOpen(false);
+        }}
+      />
     </div>
   );
 };

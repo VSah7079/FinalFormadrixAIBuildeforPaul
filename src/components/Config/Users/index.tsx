@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { VOICE_PROFILES, type VoiceProfileId } from '../../../constants/voiceProfiles';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSubspecialties } from '../../../contexts/useSubspecialties';
 import RoleDictionary, { Role, DEFAULT_ROLES } from './RoleDictionary';
 import { userService } from '../../../services';

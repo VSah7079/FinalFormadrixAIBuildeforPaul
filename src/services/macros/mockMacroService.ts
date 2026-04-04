@@ -59,8 +59,8 @@ const SEED_MACROS: Macro[] = [
   },
 ];
 
-const load = () => storageGet<Macro[]>('formedrix_macros', SEED_MACROS);
-const persist = (data: Macro[]) => storageSet('formedrix_macros', data);
+const load = () => storageGet<Macro[]>('pathscribe_macros', SEED_MACROS);
+const persist = (data: Macro[]) => storageSet('pathscribe_macros', data);
 let MOCK_MACROS: Macro[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

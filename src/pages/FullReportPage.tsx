@@ -1,7 +1,7 @@
 // src/pages/FullReportPage.tsx
 
 import React, { useState, useEffect } from "react";
-import '../formedrix.css';
+import '../pathscribe.css';
 import { useParams, useNavigate } from "react-router-dom";
 import { getMockReport, FullReport, MinimalReport } from "../mock/mockReports";
 import { useAuth } from "../contexts/AuthContext";
@@ -101,16 +101,16 @@ export default function FullReportPage() {
     const nextCase  = () => navigate(1);   // navigate forward in history
     const prevCase  = () => navigate(-1);  // navigate back in history
 
-    window.addEventListener('ForMedrix_GO_BACK',            goBack);
-    window.addEventListener('ForMedrix_GO_FORWARD',         goForward);
-    window.addEventListener('ForMedrix_NAV_NEXT_CASE',      nextCase);
-    window.addEventListener('ForMedrix_NAV_PREVIOUS_CASE',  prevCase);
+    window.addEventListener('PATHSCRIBE_GO_BACK',            goBack);
+    window.addEventListener('PATHSCRIBE_GO_FORWARD',         goForward);
+    window.addEventListener('PATHSCRIBE_NAV_NEXT_CASE',      nextCase);
+    window.addEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE',  prevCase);
 
     return () => {
-      window.removeEventListener('ForMedrix_GO_BACK',            goBack);
-      window.removeEventListener('ForMedrix_GO_FORWARD',         goForward);
-      window.removeEventListener('ForMedrix_NAV_NEXT_CASE',      nextCase);
-      window.removeEventListener('ForMedrix_NAV_PREVIOUS_CASE',  prevCase);
+      window.removeEventListener('PATHSCRIBE_GO_BACK',            goBack);
+      window.removeEventListener('PATHSCRIBE_GO_FORWARD',         goForward);
+      window.removeEventListener('PATHSCRIBE_NAV_NEXT_CASE',      nextCase);
+      window.removeEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE',  prevCase);
     };
   }, [navigate]);
 

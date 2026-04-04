@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMessaging } from '../../contexts/MessagingContext';
 import { EnhancementRequestButton } from '../EnhancementRequest/EnhancementRequestButton';
@@ -7,6 +7,8 @@ import { loadEnhancementConfig } from '../../services/enhancementRequestService'
 import { VoiceToggleButton } from '../Voice/VoiceToggleButton';
 import { VoiceCommandOverlay } from '../Voice/VoiceCommandOverlay';
 import { VoiceMissPrompt } from '../Voice/VoiceMissPrompt';
+
+console.log("Vite MODE:", import.meta.env.MODE);
 
 // Show success toasts in dev, hide in production
 const VOICE_SHOW_SUCCESS = import.meta.env.DEV;
@@ -49,11 +51,11 @@ const NavBar: React.FC<NavBarProps> = ({
       const btn = document.querySelector<HTMLElement>('[data-voice-target="testing-feedback"] button');
       btn?.click();
     };
-    window.addEventListener('ForMedrix_HOME_OPEN_ENHANCEMENT_REQUEST', openEnhancement);
-    window.addEventListener('ForMedrix_HOME_OPEN_TESTING_FEEDBACK',    openFeedback);
+    window.addEventListener('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST', openEnhancement);
+    window.addEventListener('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK',    openFeedback);
     return () => {
-      window.removeEventListener('ForMedrix_HOME_OPEN_ENHANCEMENT_REQUEST', openEnhancement);
-      window.removeEventListener('ForMedrix_HOME_OPEN_TESTING_FEEDBACK',    openFeedback);
+      window.removeEventListener('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST', openEnhancement);
+      window.removeEventListener('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK',    openFeedback);
     };
   }, []);
 
@@ -61,26 +63,16 @@ const NavBar: React.FC<NavBarProps> = ({
     <>
       <nav style={navBarStyle}>
         {/* Left: Logo & Dev Tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
           <img
-            src="/formedrix-logo.svg"
-            alt="ForMedrix AI"
+            src="/pathscribe-logo-dark.svg"
+            alt="PathScribe AI"
             style={{ height: logoHeight, cursor: 'pointer' }}
             onClick={onLogoClick}
           />
           <div style={dividerStyle} />
-          
-          {/* Sub-container to control icon-to-icon spacing specifically */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}> 
-            <span data-voice-target="enhancement-request">
-              <EnhancementRequestButton />
-            </span>
-            {qaEnabled && (
-              <span data-voice-target="testing-feedback">
-                <EnhancementRequestButton mode="qa" />
-              </span>
-            )}
-          </div>
+          <span data-voice-target="enhancement-request"><EnhancementRequestButton /></span>
+          {qaEnabled && <span data-voice-target="testing-feedback"><EnhancementRequestButton mode="qa" /></span>}
         </div>
 
         {/* Right: Profile & Voice */}

@@ -17,12 +17,12 @@ const SEED_USERS: StaffUser[] = [
 ];
 
 const load = () => {
-  const data = storageGet<StaffUser[]>('formedrix_users', SEED_USERS);
+  const data = storageGet<StaffUser[]>('pathscribe_users', SEED_USERS);
   // Migration: Ensure all loaded users have a default voice profile if missing
   return data.map(u => ({ ...u, voiceProfile: u.voiceProfile || 'EN-US' }));
 };
 
-const persist = (data: StaffUser[]) => storageSet('formedrix_users', data);
+const persist = (data: StaffUser[]) => storageSet('pathscribe_users', data);
 let MOCK_USERS: StaffUser[] = load();
 
 const ok  = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

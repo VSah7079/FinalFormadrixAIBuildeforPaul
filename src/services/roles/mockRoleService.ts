@@ -10,8 +10,8 @@ const SEED_ROLES: Role[] = [
   { id: 'physician',   name: 'Physician',   description: 'External ordering physician. Directory only — no app access.',                   color: '#C084FC', caseAccess: false, configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Physician'],   builtIn: true  },
 ];
 
-const load = () => storageGet<Role[]>('formedrix_roles', SEED_ROLES);
-const persist = (data: Role[]) => storageSet('formedrix_roles', data);
+const load = () => storageGet<Role[]>('pathscribe_roles', SEED_ROLES);
+const persist = (data: Role[]) => storageSet('pathscribe_roles', data);
 let MOCK_ROLES: Role[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

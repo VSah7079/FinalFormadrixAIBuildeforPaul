@@ -1,7 +1,7 @@
 /**
  * src/types/systemConfig.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Pure type definitions and default values for ForMedrix system configuration.
+ * Pure type definitions and default values for PathScribe system configuration.
  * No React, no side effects — safe to import anywhere.
  *
  * Single source of truth for:
@@ -151,10 +151,10 @@ export interface SystemConfig {
   lisIntegrationEnabled:           boolean;
   /** LIS FHIR/HL7 endpoint URL. */
   lisEndpoint:                     string;
-  /** When true, case statuses are owned by the LIS — ForMedrix treats them read-only. */
+  /** When true, case statuses are owned by the LIS — PathScribe treats them read-only. */
   lisOwnsStatuses:                 boolean;
-  /** Allow ForMedrix post-finalization actions (addendum, amendment) even when LIS is active. */
-  allowForMedrixPostFinalActions: boolean;
+  /** Allow PathScribe post-finalization actions (addendum, amendment) even when LIS is active. */
+  allowPathScribePostFinalActions: boolean;
 
   // ── Typography ─────────────────────────────────────────────────────────────
   /** Fonts available in the report editor. */
@@ -200,7 +200,7 @@ export interface SystemConfig {
  * saved config (new fields added in later versions).
  *
  * Design principles:
- *   - LIS off by default       → ForMedrix works standalone out of the box
+ *   - LIS off by default       → PathScribe works standalone out of the box
  *   - Post-final actions on    → pathologist has full capability by default
  *   - Jurisdiction US          → safe default; overridden at deployment
  *   - All terminology mock     → no Firestore dependency until seeded
@@ -213,7 +213,7 @@ export const DEFAULT_SYSTEM_CONFIG: SystemConfig = {
   lisIntegrationEnabled:           false,
   lisEndpoint:                     '',
   lisOwnsStatuses:                 true,
-  allowForMedrixPostFinalActions: true,
+  allowPathScribePostFinalActions: true,
 
   // Typography
   approvedFonts: ['Arial', 'Times New Roman', 'Courier New'],

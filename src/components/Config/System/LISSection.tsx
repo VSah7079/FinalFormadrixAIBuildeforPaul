@@ -14,7 +14,7 @@
  *   - The LIS endpoint URL / display name
  *   - Whether the LIS owns major case statuses
  *   - Whether pathologists can initiate Addendum/Amendment directly in
- *     ForMedrix (vs. being directed to the LIS)
+ *     pathscribe (vs. being directed to the LIS)
  *
  * State:
  *   Reads from and writes to SystemConfigContext via useSystemConfig().
@@ -30,12 +30,12 @@
  *   types/systemConfig.ts               ← SystemConfig interface + defaults
  *   contexts/SystemConfigContext.tsx    ← provider + useSystemConfig hook
  *   pages/SynopticReportPage.tsx        ← reads lisIntegrationEnabled,
- *                                          allowForMedrixPostFinalActions
+ *                                          allowpathscribePostFinalActions
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSystemConfig } from '../../../contexts/SystemConfigContext';
 
 // ─── Small reusable toggle ────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ const LISSection: React.FC = () => {
   const {
     lisIntegrationEnabled,
     lisOwnsStatuses,
-    allowForMedrixPostFinalActions,
+    allowpathscribePostFinalActions,
   } = config;
 
   // Derived: post-final action toggle is only meaningful when LIS is enabled
@@ -161,8 +161,8 @@ const LISSection: React.FC = () => {
           🔗 LIS Integration
         </h2>
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
-          Configure how ForMedrix interacts with your Laboratory Information System.
-          When LIS integration is enabled, ForMedrix sends status updates to the LIS
+          Configure how pathscribe interacts with your Laboratory Information System.
+          When LIS integration is enabled, pathscribe sends status updates to the LIS
           at key workflow events so both systems stay in sync.
         </p>
       </div>
@@ -173,7 +173,7 @@ const LISSection: React.FC = () => {
       {/* ── Master toggle ── */}
       <SettingRow
         label="LIS Integration Enabled"
-        description="Connect ForMedrix to your Laboratory Information System. Enables status synchronisation, endpoint configuration, and post-finalization workflow options below."
+        description="Connect pathscribe to your Laboratory Information System. Enables status synchronisation, endpoint configuration, and post-finalization workflow options below."
       >
         <Toggle
           enabled={lisIntegrationEnabled}
@@ -233,7 +233,7 @@ const LISSection: React.FC = () => {
       {/* ── LIS owns statuses ── */}
       <SettingRow
         label="LIS Owns Case Statuses"
-        description="When enabled, the LIS is the authoritative source for all major case statuses (Received, In Progress, Signed Out, Amended). ForMedrix sends notifications but does not independently set these statuses."
+        description="When enabled, the LIS is the authoritative source for all major case statuses (Received, In Progress, Signed Out, Amended). pathscribe sends notifications but does not independently set these statuses."
         indented
         dimmed={!lisIntegrationEnabled}
       >
@@ -257,31 +257,31 @@ const LISSection: React.FC = () => {
         </div>
         <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
           Controls whether Addendum and Amendment actions can be initiated directly
-          in ForMedrix after a case is signed out. Only relevant when LIS integration
-          is enabled — without a LIS, ForMedrix always owns these workflows.
+          in pathscribe after a case is signed out. Only relevant when LIS integration
+          is enabled — without a LIS, pathscribe always owns these workflows.
         </div>
       </div>
 
-      {/* ── Allow ForMedrix to initiate Addendum / Amendment ── */}
+      {/* ── Allow pathscribe to initiate Addendum / Amendment ── */}
       <SettingRow
-        label="Allow ForMedrix to Initiate Addendum / Amendment"
+        label="Allow pathscribe to Initiate Addendum / Amendment"
         description={
           lisIntegrationEnabled
-            ? "When on: pathologists can start Addendum and Amendment workflows in ForMedrix. ForMedrix notifies the LIS so statuses stay in sync. When off: these buttons are hidden — pathologists must initiate post-finalization actions in the LIS."
-            : "Only applicable when LIS integration is enabled. Without a LIS, ForMedrix always owns Addendum and Amendment workflows."
+            ? "When on: pathologists can start Addendum and Amendment workflows in pathscribe. pathscribe notifies the LIS so statuses stay in sync. When off: these buttons are hidden — pathologists must initiate post-finalization actions in the LIS."
+            : "Only applicable when LIS integration is enabled. Without a LIS, pathscribe always owns Addendum and Amendment workflows."
         }
         indented
         dimmed={postFinalDimmed}
       >
         <Toggle
-          enabled={allowForMedrixPostFinalActions}
-          onChange={val => updateConfig({ allowForMedrixPostFinalActions: val })}
+          enabled={allowpathscribePostFinalActions}
+          onChange={val => updateConfig({ allowpathscribePostFinalActions: val })}
           disabled={!lisIntegrationEnabled}
         />
       </SettingRow>
 
       {/* ── Contextual note when LIS is on but actions are disabled ── */}
-      {lisIntegrationEnabled && !allowForMedrixPostFinalActions && (
+      {lisIntegrationEnabled && !allowpathscribePostFinalActions && (
         <div style={{
           marginLeft: '20px',
           padding: '10px 14px',
@@ -296,7 +296,7 @@ const LISSection: React.FC = () => {
       )}
 
       {/* ── Contextual note when LIS is on and actions are enabled ── */}
-      {lisIntegrationEnabled && allowForMedrixPostFinalActions && (
+      {lisIntegrationEnabled && allowpathscribePostFinalActions && (
         <div style={{
           marginLeft: '20px',
           padding: '10px 14px',
@@ -305,7 +305,7 @@ const LISSection: React.FC = () => {
           border: '1px solid rgba(8,145,178,0.2)',
           fontSize: '12px', color: '#7dd3fc', lineHeight: '1.5',
         }}>
-          ✓ ForMedrix will send a status update to the LIS when an Addendum
+          ✓ pathscribe will send a status update to the LIS when an Addendum
           or Amendment is signed out. Ensure your LIS endpoint above is correctly
           configured to receive these notifications.
         </div>

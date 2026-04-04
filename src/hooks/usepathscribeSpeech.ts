@@ -19,7 +19,7 @@ export type { DictationTarget };
  * the toggle button.
  *
  * Example:
- *   const { startDictation } = useForMedrixSpeech();
+ *   const { startDictation } = usepathscribeSpeech();
  *
  *   useEffect(() => {
  *     const handler = () => startDictation({
@@ -32,7 +32,7 @@ export type { DictationTarget };
  *     return () => window.removeEventListener('VOICE_ACTION_ENTER_GROSS', handler);
  *   }, [startDictation]);
  */
-export const useForMedrixSpeech = () => {
+export const usepathscribeSpeech = () => {
   const voice = useVoice();
 
   return {

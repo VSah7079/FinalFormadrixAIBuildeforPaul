@@ -9,7 +9,7 @@
  *
  * Usage — add to components/Config/System/index.tsx:
  *   import IdentifierFormatsSection from './IdentifierFormatsSection';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
  *   // Inside your System tab render:
  *   <IdentifierFormatsSection />
  * ─────────────────────────────────────────────────────────────────────────────

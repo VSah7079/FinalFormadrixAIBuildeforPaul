@@ -1,12 +1,12 @@
 /**
  * FontsSection.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Manages the list of fonts approved for use in the ForMedrixEditor toolbar.
+ * Manages the list of fonts approved for use in the PathScribeEditor toolbar.
  *
  * Architecture role:
  *   One of the focused section components in the System config tab.
  *   Reads and writes approvedFonts via SystemConfigContext so changes are
- *   immediately available to ForMedrixEditor anywhere in the app.
+ *   immediately available to PathScribeEditor anywhere in the app.
  *
  * Behaviour:
  *   - AVAILABLE_FONTS defines the full pool of fonts that can be approved.
@@ -24,12 +24,12 @@
  * Related files:
  *   types/systemConfig.ts            ← approvedFonts: string[] field
  *   contexts/SystemConfigContext.tsx ← useSystemConfig hook
- *   components/Editor/ForMedrixEditor.tsx ← reads approvedFonts for toolbar
+ *   components/Editor/PathScribeEditor.tsx ← reads approvedFonts for toolbar
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSystemConfig } from '../../../contexts/SystemConfigContext';
 
 // ─── Full available font pool ─────────────────────────────────────────────────
@@ -137,7 +137,7 @@ const FontsSection: React.FC = () => {
           🔤 Approved Fonts
         </h2>
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 8px', lineHeight: '1.5' }}>
-          Toggle fonts on or off to control what appears in the ForMedrixEditor
+          Toggle fonts on or off to control what appears in the PathScribeEditor
           toolbar. Disabled fonts are preserved here but hidden from pathologists.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

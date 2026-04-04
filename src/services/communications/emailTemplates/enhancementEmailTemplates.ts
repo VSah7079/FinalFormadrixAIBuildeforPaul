@@ -12,7 +12,7 @@ import { EnhancementRequestPayload } from '../../enhancementRequestService';
 export function buildEnhancementSubject(payload: EnhancementRequestPayload): string {
   const tag      = payload.mode === 'qa' ? 'QA Feedback' : 'Enhancement Request';
   const priority = payload.priority ? ` [${payload.priority}]` : '';
-  return `[ForMedrix] ${tag}${priority} — ${payload.title}`;
+  return `[pathscribe] ${tag}${priority} — ${payload.title}`;
 }
 
 export function buildEnhancementHtml(payload: EnhancementRequestPayload): string {
@@ -56,7 +56,7 @@ export function buildEnhancementHtml(payload: EnhancementRequestPayload): string
         <td style="background-color:${accentHex};padding:20px 28px;border-radius:8px 8px 0 0;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
             <td style="font-size:20px;font-weight:bold;color:#ffffff;font-family:Arial,sans-serif;">
-              ForMedrix <span style="font-size:11px;font-weight:normal;color:#e0f2fe;">AI</span>
+              pathscribe <span style="font-size:11px;font-weight:normal;color:#e0f2fe;">AI</span>
             </td>
             <td align="right" style="font-size:11px;color:#e0f2fe;font-family:Arial,sans-serif;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">
               ${tagLabel}
@@ -123,7 +123,7 @@ export function buildEnhancementHtml(payload: EnhancementRequestPayload): string
       <tr>
         <td style="background-color:#f8fafc;padding:14px 28px;border-top:1px solid #e2e8f0;border-radius:0 0 8px 8px;">
           <p style="margin:0;font-size:11px;color:#94a3b8;font-family:Arial,sans-serif;">
-            Sent via ForMedrix AI &nbsp;·&nbsp; ${isQA ? 'QA team + ***REMOVED*** notified' : 'Product team notified'}
+            Sent via pathscribe AI &nbsp;·&nbsp; ${isQA ? 'QA team + ***REMOVED*** notified' : 'Product team notified'}
           </p>
         </td>
       </tr>
@@ -140,7 +140,7 @@ export function buildEnhancementText(payload: EnhancementRequestPayload): string
   const isQA = payload.mode === 'qa';
   const tag  = isQA ? 'QA / Testing Feedback' : 'Enhancement Request';
   return [
-    `ForMedrix — ${tag}`,
+    `pathscribe — ${tag}`,
     '='.repeat(40),
     '',
     `Title    : ${payload.title}`,

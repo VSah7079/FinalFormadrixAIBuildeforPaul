@@ -1,13 +1,13 @@
-# ForMedrix AI - Project Structure
+# pathscribe AI - Project Structure
 
 ## Directory Layout
 
 ```
-formedrix-ai/
+pathscribe-ai/
 ├── public/                          # Static assets (create this folder)
-│   ├── formedrix-logo.svg         # Main logo (light theme)
-│   ├── formedrix-logo.svg    # Dark theme logo
-│   └── formedrix-icon.svg         # Favicon
+│   ├── pathscribe-logo.svg         # Main logo (light theme)
+│   ├── pathscribe-logo.svg    # Dark theme logo
+│   └── pathscribe-icon.svg         # Favicon
 │
 ├── src/                             # Source code (create this folder)
 │   ├── App.tsx                     # Main app with routing ✓
@@ -31,8 +31,8 @@ formedrix-ai/
 
 ### 1. Create Project Directory
 ```bash
-mkdir formedrix-ai
-cd formedrix-ai
+mkdir pathscribe-ai
+cd pathscribe-ai
 ```
 
 ### 2. Create Required Folders
@@ -75,16 +75,16 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` and login with:
-- **Pathologist**: ***REMOVED***@formedrix.ai / ***REMOVED***
-- **Admin**: ***REMOVED***@formedrix.ai / ***REMOVED***
+- **Pathologist**: ***REMOVED***@pathscribe.ai / ***REMOVED***
+- **Admin**: ***REMOVED***@pathscribe.ai / ***REMOVED***
 
 ## Missing Assets
 
 You'll need to create or obtain these SVG files for the `/public` folder:
 
-1. **formedrix-logo.svg** - Main logo for light theme
-2. **formedrix-logo.svg** - Logo for dark theme
-3. **formedrix-icon.svg** - Favicon
+1. **pathscribe-logo.svg** - Main logo for light theme
+2. **pathscribe-logo.svg** - Logo for dark theme
+3. **pathscribe-icon.svg** - Favicon
 
 The app will work without these but the logos won't display correctly. The code currently has inline SVG logos that will work as fallbacks.
 

@@ -1,5 +1,5 @@
 import React from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { FlagDefinition } from "../../types/FlagDefinition";
 
 interface Props {

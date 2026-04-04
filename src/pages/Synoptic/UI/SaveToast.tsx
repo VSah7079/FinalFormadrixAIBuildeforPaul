@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 
 const SaveToast: React.FC<{ message: string; visible: boolean }> = ({ message, visible }) => (
   <div style={{

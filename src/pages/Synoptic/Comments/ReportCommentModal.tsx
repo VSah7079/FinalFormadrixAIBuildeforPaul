@@ -1,6 +1,6 @@
 import React from 'react';
-import '../../../formedrix.css';
-import ForMedrixEditor from '../../../components/Editor/ForMedrixEditor';
+import '../../../pathscribe.css';
+import PathScribeEditor from '../../../components/Editor/PathScribeEditor';
 import { CommentModalShell } from './CommentModalShell';
 
 interface ReportCommentModalProps {
@@ -37,7 +37,7 @@ const ReportCommentModal: React.FC<ReportCommentModalProps> = ({
       editorMode
       footerLeft="Sent to LIS on finalization. Protocol-defined fields are in the Tumor, Margins & Biomarkers tabs."
     >
-      <ForMedrixEditor
+      <PathScribeEditor
         key={`modal-report-comment-${specimenId}`}
         content={content}
         placeholder={`Start typing your report comment for ${titleName}…`}

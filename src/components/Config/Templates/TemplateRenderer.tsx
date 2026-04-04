@@ -43,7 +43,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockDcisTemplate } from '../../../templates/mockDcisTemplate';
 import { InlineCommentThread } from '../../../components/Comments/InlineCommentThread';
@@ -429,8 +429,8 @@ export const TemplateRenderer: React.FC = () => {
           </h1>
           <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', gap: '10px' }}>
             <span>Version {(template as any).version ?? (template as any).sourceVersion}</span>
-            <span>&bull;</span><span>{template.source}</span>
-            <span>&bull;</span><span>{registryEntry?.category ?? ""}</span>
+            <span>•</span><span>{template.source}</span>
+            <span>•</span><span>{registryEntry?.category ?? ""}</span>
           </div>
         </div>
 

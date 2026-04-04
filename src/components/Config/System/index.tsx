@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import FlagConfigPage    from './FlagConfigPage';
 import SpecimenDictionary from './SpecimenDictionary';
 import SubspecialtiesSection from './SubspecialtiesSection';

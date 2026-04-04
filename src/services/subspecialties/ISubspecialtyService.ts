@@ -1,10 +1,16 @@
+// src/services/subspecialties/ISubspecialtyService.ts
 import { ServiceResult, ID } from '../types';
 
 export interface Subspecialty {
   id: ID;
   name: string;
-  userIds: string[];
+  description?: string;        // Administrative notes
+  userIds: string[];           // Members / assigned physicians
   specimenIds: string[];
+  clientIds: string[];         // Linked institutions/clients
+  isWorkgroup: boolean;        // false = Standard, true = Pool/Workgroup
+  isWorkgroupEnabled: boolean;
+  active: boolean;             // replaces status for consistency with UI
   status: 'Active' | 'Inactive';
 }
 

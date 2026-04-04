@@ -3,7 +3,6 @@ import React, {
 } from 'react';
 import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
 import { useSystemConfig } from './SystemConfigContext';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type VoicePhase = 'standby' | 'ai' | 'local' | 'dictate';
 
@@ -206,6 +205,7 @@ Context: ${context}
 Raw: "${text}"`;
 
   try {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const result = await model.generateContent(prompt);
@@ -226,7 +226,7 @@ export const VoiceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!GEMINI_API_KEY && (import.meta as any).env?.DEV) {
       console.warn(
-        '[ForMedrix] VITE_GEMINI_API_KEY is not set.\n' +
+        '[PathScribe] VITE_GEMINI_API_KEY is not set.\n' +
         'AI dictation refinement is disabled — voice will use local mode only.\n' +
         'Set the key in your .env file to enable Gemini-powered transcription.'
       );

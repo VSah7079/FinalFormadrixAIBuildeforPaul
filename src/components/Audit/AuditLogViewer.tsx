@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
 import { useLogout } from "@hooks/useLogout";
@@ -90,8 +90,8 @@ export const AuditLogViewer: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <img
-              src="/formedrix-logo.svg"
-              alt="ForMedrix AI"
+              src="/pathscribe-logo-dark.svg"
+              alt="PathScribe AI"
               style={{ height: '60px', width: 'auto', cursor: 'pointer' }}
               onClick={handleNavigateHome}
             />

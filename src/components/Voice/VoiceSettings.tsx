@@ -41,7 +41,7 @@ const VoiceSettings: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* Deployment-level voice toggle — ForMedrix staff */}
+      {/* Deployment-level voice toggle — PathScribe staff */}
       <VoiceSection />
 
       {/* Divider */}

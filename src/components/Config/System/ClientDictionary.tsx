@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { clientService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,

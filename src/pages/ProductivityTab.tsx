@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ForMedrixTheme as theme } from "@theme/ForMedrixTheme";
+import { pathScribeTheme as theme } from "@theme/pathscribeTheme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

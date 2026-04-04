@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -318,7 +318,7 @@ export const EnhancementRequestModal: React.FC<Props> = ({ onClose, mode = 'enha
                 <div style={{ fontSize: '12px', color: T.dim, marginTop: '3px' }}>
                   {isQA
                     ? 'Report bugs, test failures, or unexpected behaviour'
-                    : 'Help shape the future of ForMedrix AI'}
+                    : 'Help shape the future of pathscribe AI'}
                 </div>
               </div>
               <button onClick={onClose}

@@ -2,7 +2,7 @@
  * services/phiSelectors.ts
  * ─────────────────────────────────────────────────────────────────────────────
  * Central registry of DOM selectors that identify PHI (Protected Health
- * Information) and PII elements in the ForMedrix UI.
+ * Information) and PII elements in the pathscribe UI.
  *
  * Used by useScreenCapture to redact sensitive data before a screenshot
  * is captured for enhancement request submissions.
@@ -50,7 +50,7 @@ export const PHI_SELECTORS: string[] = [
   '[data-pii="name"]',
   '[data-pii="email"]',
 
-  // ForMedrix-specific class names — add as you build components
+  // pathscribe-specific class names — add as you build components
   '.patient-name',
   '.patient-dob',
   '.patient-mrn',
@@ -66,7 +66,7 @@ export const PHI_SELECTORS: string[] = [
 // Applied as an absolutely-positioned overlay during capture, then removed.
 
 export const REDACTION_STYLE = {
-  backgroundColor: '#1e293b',   // matches ForMedrix surface colour
+  backgroundColor: '#1e293b',   // matches pathscribe surface colour
   borderRadius:    '4px',
   display:         'inline-block',
   minWidth:        '80px',

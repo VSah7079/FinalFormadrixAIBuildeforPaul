@@ -17,7 +17,7 @@ button. Key features:
   - User presses actual key combo while modal is open — system captures it
   - Conflict detection: warns if combo already assigned to another command
   - Cancel button always works (was broken in previous version)
-  - Saves to localStorage (formedrix_shortcuts_v1) on every change
+  - Saves to localStorage (pathscribe_shortcuts_v1) on every change
   - "✓ Saved" flash confirmation
   - Reset to Defaults button
 
@@ -204,7 +204,7 @@ KNOWN PENDING ITEMS
 
 7. SystemShortcutsSection — KeyboardShortcutsModal compatibility
    Old modal (used in editor toolbar) and new inline section both use
-   formedrix_shortcuts_v1 localStorage key — they share state correctly.
+   pathscribe_shortcuts_v1 localStorage key — they share state correctly.
    But if KeyboardShortcutsModal is ever refactored, ensure it still reads
    from the same key.
 

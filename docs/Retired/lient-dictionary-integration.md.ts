@@ -47,7 +47,7 @@ export type ClientInput = Omit<Client, "id" | "createdAt" | "updatedAt">;
 
 // â”€â”€â”€ localStorage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const LS_KEY = "formedrix:clientDictionary";
+const LS_KEY = "pathscribe:clientDictionary";
 
 const load = (): Client[] => {
   try {
@@ -77,7 +77,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "4400 Medical Parkway, Seattle, WA 98101",
     active: true,
     hl7: {
-      sendingFacility: "ForMedrix",
+      sendingFacility: "pathscribe",
       receivingFacility: "NWOG",
       hl7Version: "2.5.1",
       enabled: true,
@@ -101,7 +101,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "220 Wellness Blvd, Portland, OR 97201",
     active: true,
     hl7: {
-      sendingFacility: "ForMedrix",
+      sendingFacility: "pathscribe",
       receivingFacility: "VWH",
       hl7Version: "2.5.1",
       enabled: false,
@@ -125,7 +125,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "7700 Summit Drive, Denver, CO 80201",
     active: true,
     hl7: {
-      sendingFacility: "ForMedrix",
+      sendingFacility: "pathscribe",
       receivingFacility: "SRMC",
       hl7Version: "2.5.1",
       enabled: true,
@@ -149,7 +149,7 @@ const DEMO_CLIENTS: Client[] = [
     address: "1100 Eastside Ave, Bellevue, WA 98004",
     active: false,
     hl7: {
-      sendingFacility: "ForMedrix",
+      sendingFacility: "pathscribe",
       receivingFacility: "EDP",
       hl7Version: "2.4",
       enabled: false,

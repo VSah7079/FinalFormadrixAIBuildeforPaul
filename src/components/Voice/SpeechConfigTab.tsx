@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Trash2, Plus, Search, Upload, Loader2 } from 'lucide-react';
 import { VoiceMacro } from '../../types/voiceMacros';
 import { MockVoiceMacroService } from '../../services/voicemacro/mockVoiceService';
-import { useForMedrixSpeech }   from '../../hooks/useForMedrixSpeech';
+import { usepathscribeSpeech }   from '../../hooks/usepathscribeSpeech';
 
 // Initialize the service instance
 const macroService = new MockVoiceMacroService();
@@ -16,7 +16,7 @@ const SpeechConfigTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // 1. Hook into the Voice Engine here
-  const { isListening, transcript, startListening } = useForMedrixSpeech();
+  const { isListening, transcript, startListening } = usepathscribeSpeech();
   
   // Hover states for UI feedback
   const [hoveredEditId, setHoveredEditId] = useState<string | null>(null);

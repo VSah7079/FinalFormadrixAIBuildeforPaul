@@ -91,7 +91,7 @@ const collectionKey = (system: CodeSystem, jurisdiction: Jurisdiction): string =
  */
 const getJurisdiction = (): Jurisdiction => {
   try {
-    const raw = localStorage.getItem('formedrix_system_config_v1');
+    const raw = localStorage.getItem('pathscribe_system_config_v1');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed?.jurisdiction) return parsed.jurisdiction as Jurisdiction;

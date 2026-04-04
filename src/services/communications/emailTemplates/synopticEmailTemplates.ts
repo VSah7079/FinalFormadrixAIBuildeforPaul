@@ -11,15 +11,15 @@ import { SynopticAuditEvent } from '../../../types/SynopticAuditEvents';
 export function buildSubject(event: SynopticAuditEvent): string {
   const name = event.templateName ?? event.templateId;
   switch (event.action) {
-    case 'sync.new_template_found':       return `[ForMedrix] New ${event.source ?? 'standard'} checklist available — ${name}`;
-    case 'sync.template_updated':         return `[ForMedrix] Checklist updated — ${name} v${event.version ?? ''}`;
-    case 'sync.auto_failed':              return `[ForMedrix] ⚠️ Nightly protocol sync failed`;
-    case 'sync.manual_upload':            return `[ForMedrix] Protocol manually uploaded — ${name}`;
-    case 'template.submitted_for_review': return `[ForMedrix] Protocol submitted for review — ${name}`;
-    case 'template.needs_changes':        return `[ForMedrix] Changes requested — ${name}`;
-    case 'template.approved':             return `[ForMedrix] Protocol approved — ${name}`;
-    case 'template.published':            return `[ForMedrix] Protocol published — ${name} is now live`;
-    default:                              return `[ForMedrix] Synoptic library update — ${name}`;
+    case 'sync.new_template_found':       return `[pathscribe] New ${event.source ?? 'standard'} checklist available — ${name}`;
+    case 'sync.template_updated':         return `[pathscribe] Checklist updated — ${name} v${event.version ?? ''}`;
+    case 'sync.auto_failed':              return `[pathscribe] ⚠️ Nightly protocol sync failed`;
+    case 'sync.manual_upload':            return `[pathscribe] Protocol manually uploaded — ${name}`;
+    case 'template.submitted_for_review': return `[pathscribe] Protocol submitted for review — ${name}`;
+    case 'template.needs_changes':        return `[pathscribe] Changes requested — ${name}`;
+    case 'template.approved':             return `[pathscribe] Protocol approved — ${name}`;
+    case 'template.published':            return `[pathscribe] Protocol published — ${name} is now live`;
+    default:                              return `[pathscribe] Synoptic library update — ${name}`;
   }
 }
 
@@ -78,7 +78,7 @@ export function buildHtml(event: SynopticAuditEvent, baseUrl: string): string {
       <tr>
         <td style="background:linear-gradient(135deg,#0c4a6e,#0e7490);padding:22px 32px;">
           <table width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td><span style="font-size:20px;font-weight:800;color:#f0f9ff;letter-spacing:-0.02em;">ForMedrix</span><span style="font-size:11px;color:#7dd3fc;margin-left:6px;font-weight:600;">AI</span></td>
+            <td><span style="font-size:20px;font-weight:800;color:#f0f9ff;letter-spacing:-0.02em;">pathscribe</span><span style="font-size:11px;color:#7dd3fc;margin-left:6px;font-weight:600;">AI</span></td>
             <td align="right"><span style="font-size:10px;color:#7dd3fc;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Synoptic Library</span></td>
           </tr></table>
         </td>
@@ -87,7 +87,7 @@ export function buildHtml(event: SynopticAuditEvent, baseUrl: string): string {
       <!-- Body -->
       <tr><td style="padding:28px 32px;">
         <div style="display:inline-block;background:rgba(8,145,178,0.15);border:1px solid rgba(8,145,178,0.3);border-radius:6px;padding:3px 12px;font-size:11px;font-weight:700;color:#38bdf8;font-family:monospace;margin-bottom:16px;">${chip}</div>
-        <h2 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 12px;line-height:1.3;">${buildSubject(event).replace('[ForMedrix] ', '')}</h2>
+        <h2 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 12px;line-height:1.3;">${buildSubject(event).replace('[pathscribe] ', '')}</h2>
         <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 24px;">${copy}</p>
         <table cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
           <tr><td style="border-radius:8px;border:1px solid ${cta.color}40;background:${cta.color}15;">
@@ -105,7 +105,7 @@ export function buildHtml(event: SynopticAuditEvent, baseUrl: string): string {
       <!-- Footer -->
       <tr><td style="background:#0f172a;padding:14px 32px;border-top:1px solid #1e293b;">
         <p style="font-size:11px;color:#334155;margin:0;line-height:1.6;">
-          Sent to ***REMOVED***s and clinical leads in ForMedrix. &nbsp;·&nbsp;
+          Sent to ***REMOVED***s and clinical leads in pathscribe. &nbsp;·&nbsp;
           <a href="${baseUrl}/configuration?tab=system" style="color:#475569;">Manage notification preferences</a>
         </p>
       </td></tr>
@@ -119,7 +119,7 @@ export function buildHtml(event: SynopticAuditEvent, baseUrl: string): string {
 export function buildText(event: SynopticAuditEvent, baseUrl: string): string {
   const cta = buildCta(event, baseUrl);
   return [
-    'ForMedrix — Synoptic Library Notification',
+    'pathscribe — Synoptic Library Notification',
     '===========================================',
     '',
     `Protocol : ${event.templateName ?? event.templateId}`,

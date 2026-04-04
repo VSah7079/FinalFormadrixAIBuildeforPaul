@@ -1,4 +1,4 @@
-﻿# ForMedrix AI â€” Developer Handoff
+﻿# pathscribe AI â€” Developer Handoff
 **Version:** March 2026 Â· Synoptic Template Editor sprint  
 **Prepared for:** Dev / QA team  
 **Contact:** [your name / email]
@@ -172,7 +172,7 @@ Expected Review Queue after reset:
 - **0 Approved**
 - **5 Active Protocols:** Breast DCIS, Breast Invasive, Colon Resection, Prostatectomy, Lung Adenocarcinoma
 
-See `ForMedrix_TesterGuide_v3.docx` for full test plans.
+See `pathscribe_TesterGuide_v3.docx` for full test plans.
 
 ---
 

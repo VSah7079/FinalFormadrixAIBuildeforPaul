@@ -2,7 +2,7 @@ import React from 'react';
 import { useCasePreview } from '../../hooks/useCasePreview';
 import { CasePreviewDrawer } from './CasePreviewDrawer';
 import { useNavigate } from "react-router-dom";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 
 export interface SimilarCase {
   accession: string;
@@ -21,7 +21,7 @@ interface CasePanelProps {
   onRefineSearch: () => void;
 }
 
-// ── AI star mark — filled Unicode star in ForMedrix teal ────────────────────
+// ── AI star mark — filled Unicode star in pathscribe teal ────────────────────
 const AiStar = ({ size = 13 }: { size?: number }) => (
   <span style={{ color: '#0891B2', fontSize: `${size}px`, marginLeft: '5px', verticalAlign: 'middle', lineHeight: 1 }}>★</span>
 );

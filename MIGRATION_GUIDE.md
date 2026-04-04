@@ -1,4 +1,4 @@
-﻿# ForMedrix CSS Refactor â€” Migration Guide
+﻿# pathscribe CSS Refactor â€” Migration Guide
 
 ## What's been delivered
 
@@ -6,7 +6,7 @@
 | File | Purpose |
 |------|---------|
 | `src/index.css` | Global reset, Inter font, CSS tokens (:root variables), scrollbars, animations |
-| `src/formedrix.css` | Shared component classes for all repeating patterns |
+| `src/pathscribe.css` | Shared component classes for all repeating patterns |
 
 ### Fully refactored (inline styles â†’ CSS classes)
 | File | Before | After |
@@ -20,7 +20,7 @@
 | `Home.tsx` | 64 | ~56 |
 
 ### CSS import added (ready for class migration)
-All 74 TSX files now import `formedrix.css`. The import is a no-op until 
+All 74 TSX files now import `pathscribe.css`. The import is a no-op until 
 className attributes are added â€” no visual regressions.
 
 ---

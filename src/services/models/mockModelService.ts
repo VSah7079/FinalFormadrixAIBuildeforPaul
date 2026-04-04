@@ -4,33 +4,33 @@ import { storageGet, storageSet } from '../mockStorage';
 
 const SEED_MODELS: AIModel[] = [
   {
-    id: 'psv32', name: 'ForMedrix', version: 'v3.2',
+    id: 'psv32', name: 'pathscribe', version: 'v3.2',
     type: 'Gross + Micro', accuracy: 94.2, casesProcessed: 12487,
     releaseDate: '2025-06-01', status: 'Active', isDefault: true,
     subspecialtyIds: [], notes: 'Current production model.',
   },
   {
-    id: 'psv33', name: 'ForMedrix', version: 'v3.3',
+    id: 'psv33', name: 'pathscribe', version: 'v3.3',
     type: 'Gross + Micro', accuracy: 96.1, casesProcessed: 842,
     releaseDate: '2026-01-15', status: 'Beta', isDefault: false,
     subspecialtyIds: [], notes: 'Beta — enhanced microscopic suggestion accuracy. Enrolling pilot labs.',
   },
   {
-    id: 'psv31', name: 'ForMedrix', version: 'v3.1',
+    id: 'psv31', name: 'pathscribe', version: 'v3.1',
     type: 'Gross Only', accuracy: 91.8, casesProcessed: 45210,
     releaseDate: '2024-11-01', retiredDate: '2025-06-01', status: 'Retired', isDefault: false,
     subspecialtyIds: [], notes: 'Retired on v3.2 release. Gross-only model.',
   },
   {
-    id: 'psv30', name: 'ForMedrix', version: 'v3.0',
+    id: 'psv30', name: 'pathscribe', version: 'v3.0',
     type: 'Gross Only', accuracy: 88.4, casesProcessed: 98341,
     releaseDate: '2024-04-01', retiredDate: '2024-11-01', status: 'Retired', isDefault: false,
     subspecialtyIds: [], notes: 'First production release.',
   },
 ];
 
-const load = () => storageGet<AIModel[]>('formedrix_models', SEED_MODELS);
-const persist = (data: AIModel[]) => storageSet('formedrix_models', data);
+const load = () => storageGet<AIModel[]>('pathscribe_models', SEED_MODELS);
+const persist = (data: AIModel[]) => storageSet('pathscribe_models', data);
 let MOCK_MODELS: AIModel[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,35 +67,41 @@ export function saveRegistryOverride(patch: Partial<Protocol> & { id: string }):
 
 export let PROTOCOL_REGISTRY: Protocol[] = [
   {
-    id: 'breast_dcis_resection', name: 'Breast DCIS – Resection',
-    category: 'BREAST', version: '4.4.0.0', source: 'CAP', type: 'Base template',
-    status: 'published', fields: 38, snomedPct: 91, icdPct: 85,
-    lastModified: '2025-10-18', owner: 'Dr. A. Mensah',
+    // CAP v4.10.0.0 — 6 sections, 35 fields (real eCC JSON)
+    id: 'breast_invasive', name: 'CAP Breast Invasive Carcinoma — Resection',
+    category: 'BREAST', version: '4.10.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 35, snomedPct: 89, icdPct: 84,
+    lastModified: '2026-03-30', owner: 'Dr. A. Mensah',
   },
   {
-    id: 'breast_invasive', name: 'CAP Breast Invasive Carcinoma',
-    category: 'BREAST', version: '1.0.0', source: 'CAP', type: 'Base template',
-    status: 'published', fields: 42, snomedPct: 89, icdPct: 84,
-    lastModified: '2025-10-20', owner: 'Dr. A. Mensah',
+    // CAP v4.3.0.2 — 6 sections, 20 fields (real eCC JSON)
+    id: 'breast_dcis_resection', name: 'CAP Breast DCIS — Resection',
+    category: 'BREAST', version: '4.3.0.2', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 20, snomedPct: 88, icdPct: 82,
+    lastModified: '2026-03-30', owner: 'Dr. A. Mensah',
   },
   {
-    id: 'colon_resection', name: 'CAP Colon Resection',
-    category: 'COLON', version: '4.1.0', source: 'CAP', type: 'Base template',
-    status: 'published', fields: 47, snomedPct: 91, icdPct: 88,
-    lastModified: '2025-11-02', owner: 'Dr. K. Patel',
+    // CAP v4.4.0.1 (September 2025) — 9 sections, 46 fields (real eCC JSON)
+    id: 'colon_resection', name: 'CAP Colon & Rectum Carcinoma — Resection',
+    category: 'COLON', version: '4.4.0.1', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 46, snomedPct: 91, icdPct: 88,
+    lastModified: '2026-03-30', owner: 'Dr. K. Patel',
+    reviewedBy: 'Dr. A. Mensah', reviewedAt: '2026-03-30T00:00:00Z',
   },
   {
-    id: 'prostate_prostatectomy', name: 'CAP Prostatectomy',
-    category: 'PROSTATE', version: '3.0.0', source: 'CAP', type: 'Base template',
-    status: 'published', fields: 52, snomedPct: 95, icdPct: 90,
-    lastModified: '2025-10-30', owner: 'Dr. R. Singh',
+    // CAP v4.2.0.0 — 9 sections, 34 fields (real eCC JSON)
+    id: 'lung_adeno', name: 'CAP Lung — Resection',
+    category: 'LUNG', version: '4.2.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 34, snomedPct: 78, icdPct: 70,
+    lastModified: '2026-03-30', owner: 'Dr. M. Chen',
+    reviewedBy: 'Dr. K. Patel', reviewedAt: '2026-03-30T00:00:00Z',
   },
   {
-    id: 'lung_adeno', name: 'Lung Adenocarcinoma',
-    category: 'LUNG', version: '1.1.0', source: 'ICCR', type: 'Base template',
-    status: 'published', fields: 44, snomedPct: 78, icdPct: 70,
-    lastModified: '2025-11-28', owner: 'Dr. M. Chen',
-    reviewedBy: 'Dr. K. Patel', reviewedAt: '2025-11-28T14:32:00Z',
+    // CAP v1.1.0.0 — 9 sections, 34 fields (real eCC JSON)
+    id: 'prostate_needle_biopsy', name: 'CAP Prostate — Needle Biopsy',
+    category: 'PROSTATE', version: '1.1.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 34, snomedPct: 82, icdPct: 75,
+    lastModified: '2026-03-30', owner: 'Dr. R. Singh',
   },
   {
     id: 'liver_biopsy_medical', name: 'Liver Biopsy — Medical (Native)',

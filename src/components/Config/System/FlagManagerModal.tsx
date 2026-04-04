@@ -1,17 +1,20 @@
 // src/components/FlagManagerModal.tsx
 //
 // Layout:
-//   LEFT (280px) — target pills (Case, All Specimens, Sp.1…) stacked vertically.
-//                  Each selected pill expands to show its applied flags with 🗑 to remove.
+//   LEFT (260px) — target rows (Case, All Specimens, Sp.1…) with applied flag chips.
 //   RIGHT        — search + flag catalog filtered by selected target level.
-//                  Click a row to apply to all selected targets.
 //   FOOTER       — Cancel (reverts all changes) | Save (commits + closes)
+//
+// Styling: 100% via pathscribe.css classes (section 23 — Flag Manager).
+// Gradients match the Patient History modal (.ps-research-* system).
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import "../../../formedrix.css";
+import "../../../pathscribe.css";
 import { FlagDefinition } from "../../../types/FlagDefinition";
 import { CaseWithFlags, FlagInstance } from "../../../types/flagsRuntime";
 import { ApplyFlagPayload, DeleteFlagPayload } from "../../../api/caseFlagsApi";
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   onClose: () => void;
@@ -21,104 +24,146 @@ interface Props {
   onRemoveFlag:  (payload: DeleteFlagPayload) => Promise<void>;
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const activeInst = (flags: FlagInstance[]) => flags.filter(f => !f.deletedAt);
+const activeInst = (flags?: FlagInstance[]) => (flags ?? []).filter(f => !f.deletedAt);
 const defById    = (defs: FlagDefinition[], id: string) => defs.find(d => d.id === id);
-
 function deepClone<T>(v: T): T { return JSON.parse(JSON.stringify(v)); }
 
-// ── sub-components ────────────────────────────────────────────────────────────
+const sevColor = (sev?: number): string => {
+  if (!sev) return "#334155";
+  if (sev >= 5) return "#ef4444";
+  if (sev >= 4) return "#f59e0b";
+  if (sev >= 3) return "#38bdf8";
+  return "#334155";
+};
 
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
 
-const ConfirmDialog: React.FC<{
-  flagName: string; targetLabel: string;
-  onConfirm: () => void; onCancel: () => void; loading: boolean;
-}> = ({ flagName, targetLabel, onConfirm, onCancel, loading }) => (
-  <div data-capture-hide="true" className="ps-overlay" style={{ zIndex: 11000 }}>
-    <div className="ps-modal-dark" style={{ padding: "32px 36px", width: "400px", textAlign: "center" }}>
-      <div style={{ fontSize: "36px", marginBottom: "12px", textAlign: "center" }}>🗑️</div>
-      <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800, color: "#f1f5f9", textAlign: "center" }}>Remove Flag?</h3>
-      <p style={{ color: "#94a3b8", fontSize: "14px", margin: "0 0 4px", lineHeight: 1.6, textAlign: "center" }}>
-        Remove <strong style={{ color: "#e2e8f0" }}>{flagName}</strong> from{" "}
-        <strong style={{ color: "#e2e8f0" }}>{targetLabel}</strong>?
+const IcoCase = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+    <rect x="1.5" y="2" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M4.5 5.5h7M4.5 8h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+const IcoSpec = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4"/>
+    <circle cx="8" cy="8" r="2.5" fill="currentColor"/>
+  </svg>
+);
+const IcoSearch = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+    <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+const IcoFlag = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: "#ef4444" }}>
+    <path d="M3 2v12M3 2h9l-2.5 4L12 10H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoTrash = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+    <path d="M2 4h12M6 4V2h4v2M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoUndo = () => (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+    <path d="M3 7V3L1 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 3C3 3 5 1 8 1C11.866 1 15 4.134 15 8C15 11.866 11.866 15 8 15C4.134 15 1 11.866 1 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+const IcoLock = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.4"/>
+  </svg>
+);
+const IcoCheck = () => (
+  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// ─── Scope dialog ─────────────────────────────────────────────────────────────
+
+const ScopeDialog: React.FC<{
+  flagName: string; otherCount: number;
+  onSingle: () => void; onAll: () => void; onCancel: () => void;
+}> = ({ flagName, otherCount, onSingle, onAll, onCancel }) => (
+  <div data-capture-hide="true" className="fm-overlay" style={{ zIndex: 11000 }}>
+    <div className="fm-dialog" style={{ width: 440 }}>
+      <div className="fm-dialog-icon info"><IcoSpec /></div>
+      <h3 className="fm-dialog-title">Remove from multiple specimens?</h3>
+      <p className="fm-dialog-body">
+        <strong>{flagName}</strong> is also applied to{" "}
+        <strong>{otherCount} other specimen{otherCount !== 1 ? "s" : ""}</strong>.
       </p>
-      <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 24px", textAlign: "center" }}>This will be recorded in the audit trail.</p>
-      <div style={{ display: "flex", gap: "10px" }}>
-        <button onClick={onCancel} className="ps-btn-secondary-dark" style={{ flex: 1 }}
-        >
-          Cancel
+      <p className="fm-dialog-hint">All removals will be recorded in the audit trail.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <button onClick={onSingle} className="fm-dialog-option neutral">
+          Remove from this specimen only
         </button>
-        <button onClick={onConfirm} disabled={loading} className="ps-btn-danger" style={{ flex: 1, opacity: loading ? 0.7 : 1, cursor: loading ? "default" : "pointer" }}
-        >
-          {loading ? "Removing…" : "Yes, Remove"}
+        <button onClick={onAll} className="fm-dialog-option danger">
+          Remove from all {otherCount + 1} specimens
+        </button>
+        <button onClick={onCancel} className="fm-dialog-option ghost">
+          Cancel
         </button>
       </div>
     </div>
   </div>
 );
 
-// ── main ──────────────────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const FlagManagerModal: React.FC<Props> = ({
   onClose, caseData: initialCaseData, flagDefinitions, onApplyFlags, onRemoveFlag,
 }) => {
-  // Local copy of caseData — all edits happen here; Cancel reverts, Save commits
-  const [localCase, setLocalCase]       = useState<CaseWithFlags>(() => deepClone(initialCaseData));
+  const [localCase, setLocalCase] = useState<CaseWithFlags>(() => {
+    const clone = deepClone(initialCaseData);
+    if (!Array.isArray(clone.flags)) clone.flags = [];
+    clone.specimens.forEach((s: any) => { if (!Array.isArray(s.flags)) s.flags = []; });
+    return clone;
+  });
+  const [caseOn, setCaseOn]         = useState(true);
+  const [spIds, setSpIds]           = useState<Set<string>>(new Set());
+  const [query, setQuery]           = useState("");
 
-  // Left panel selection — "case" | specimenId(s)
-  const [caseOn, setCaseOn]             = useState(true);
-  const [spIds, setSpIds]               = useState<Set<string>>(new Set());
-
-  // Right panel
-  const [query, setQuery]               = useState("");
-
-  // Pending apply/remove ops to flush on Save
   type PendingOp =
     | { type: "apply";  payload: ApplyFlagPayload }
     | { type: "remove"; payload: DeleteFlagPayload };
-  const [pendingOps, setPendingOps]     = useState<PendingOp[]>([]);
+  const [pendingOps, setPendingOps] = useState<PendingOp[]>([]);
 
-  // Confirm dialog state
-  const [confirmPending, setConfirmPending] = useState<{
-    flagName: string; targetLabel: string;
-    onConfirm: () => void;
-  } | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  // Scope choice: when removing a specimen flag that exists on other specimens
   const [scopeDialog, setScopeDialog] = useState<{
-    flagName: string;
-    defId: string;
-    specimenId: string;
+    flagName: string; defId: string; specimenId: string;
     otherSpecimenIds: string[];
     onConfirm: (removeAll: boolean) => void;
   } | null>(null);
 
-  // Saving state
-  const [saving, setSaving]             = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const allIds   = localCase.specimens.map(s => s.id);
-  const allOn    = allIds.length > 0 && allIds.every(id => spIds.has(id));
-  const invalid  = caseOn && spIds.size > 0;
+  const allIds  = localCase.specimens.map((s: any) => s.id);
+  const allOn   = allIds.length > 0 && allIds.every((id: string) => spIds.has(id));
+  const invalid = caseOn && spIds.size > 0;
 
   const targetLevel: "case" | "specimen" | "none" =
     caseOn ? "case" : spIds.size > 0 ? "specimen" : "none";
   const hasTarget = targetLevel !== "none" && !invalid;
 
-  // ── pill toggles ────────────────────────────────────────────────────────────
-
-  const toggleCase = () => { setCaseOn(v => !v); setSpIds(new Set()); };
-  const toggleAll  = () => {
+  // ── toggles ───────────────────────────────────────────────────────────────────
+  const toggleCase = useCallback(() => { setCaseOn(v => !v); setSpIds(new Set()); }, []);
+  const toggleAll  = useCallback(() => {
     setCaseOn(false);
     setSpIds(allOn ? new Set() : new Set(allIds));
-  };
-  const toggleSp = (id: string) => {
+  }, [allOn, allIds]);
+  const toggleSp = useCallback((id: string) => {
     setCaseOn(false);
     setSpIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  };
+  }, []);
 
-  // ── local state helpers ─────────────────────────────────────────────────────
-
+  // ── local state helpers ───────────────────────────────────────────────────────
   const addFlagLocally = useCallback((defId: string, specimenId?: string) => {
     const inst: FlagInstance = {
       id: `local-${Date.now()}-${Math.random()}`,
@@ -131,15 +176,17 @@ const FlagManagerModal: React.FC<Props> = ({
     };
     setLocalCase(prev => {
       const next = deepClone(prev);
+      // Ensure flags arrays exist
+      if (!Array.isArray(next.flags)) next.flags = [];
+      next.specimens.forEach((s: any) => { if (!Array.isArray(s.flags)) s.flags = []; });
+
       if (!specimenId) {
-        const alreadyActive = next.flags.filter(f => !f.deletedAt).some(f => f.flagDefinitionId === defId);
-        if (!alreadyActive) next.flags.push(inst);
+        if (!activeInst(next.flags).some((f: FlagInstance) => f.flagDefinitionId === defId))
+          next.flags.push(inst);
       } else {
-        const sp = next.specimens.find(s => s.id === specimenId);
-        if (sp) {
-          const alreadyActive = sp.flags.filter(f => !f.deletedAt).some(f => f.flagDefinitionId === defId);
-          if (!alreadyActive) sp.flags.push({ ...inst, id: `local-${Date.now()}-${Math.random()}` });
-        }
+        const sp = next.specimens.find((s: any) => s.id === specimenId);
+        if (sp && !activeInst(sp.flags).some((f: FlagInstance) => f.flagDefinitionId === defId))
+          sp.flags.push({ ...inst, id: `local-${Date.now()}-${Math.random()}` });
       }
       return next;
     });
@@ -149,40 +196,40 @@ const FlagManagerModal: React.FC<Props> = ({
     const now = new Date().toISOString();
     setLocalCase(prev => {
       const next = deepClone(prev);
+      if (!Array.isArray(next.flags)) next.flags = [];
+      next.specimens.forEach((s: any) => { if (!Array.isArray(s.flags)) s.flags = []; });
+
       if (!specimenId) {
-        const f = next.flags.find(f => f.id === instanceId);
+        const f = next.flags.find((f: FlagInstance) => f.id === instanceId);
         if (f) { f.deletedAt = now; f.deletedBy = "current-user"; }
       } else {
-        const sp = next.specimens.find(s => s.id === specimenId);
-        const f  = sp?.flags.find(f => f.id === instanceId);
+        const sp = next.specimens.find((s: any) => s.id === specimenId);
+        const f  = sp?.flags.find((f: FlagInstance) => f.id === instanceId);
         if (f) { f.deletedAt = now; f.deletedBy = "current-user"; }
       }
       return next;
     });
   }, []);
 
-  // ── apply flag ──────────────────────────────────────────────────────────────
-
-  const handleApply = async (def: FlagDefinition) => {
+  // ── apply ─────────────────────────────────────────────────────────────────────
+  const handleApply = useCallback(async (def: FlagDefinition) => {
     if (!hasTarget) return;
     if (caseOn) {
       addFlagLocally(def.id);
       setPendingOps(ops => [...ops, { type: "apply", payload: { caseId: localCase.id, flagDefinitionId: def.id } }]);
     } else {
       for (const spId of Array.from(spIds)) {
-        const sp = localCase.specimens.find(s => s.id === spId);
-        const alreadyOn = activeInst(sp?.flags ?? []).some(f => f.flagDefinitionId === def.id);
-        if (!alreadyOn) {
+        const sp = localCase.specimens.find((s: any) => s.id === spId);
+        if (!activeInst(sp?.flags ?? []).some((f: FlagInstance) => f.flagDefinitionId === def.id)) {
           addFlagLocally(def.id, spId);
           setPendingOps(ops => [...ops, { type: "apply", payload: { caseId: localCase.id, flagDefinitionId: def.id, specimenId: spId } }]);
         }
       }
     }
-  };
+  }, [hasTarget, caseOn, spIds, localCase, addFlagLocally]);
 
-  // ── remove flag (with confirm) ──────────────────────────────────────────────
-
-  const doRemoveSingle = (inst: FlagInstance, specimenId: string | undefined) => {
+  // ── remove ────────────────────────────────────────────────────────────────────
+  const doRemoveSingle = useCallback((inst: FlagInstance, specimenId: string | undefined) => {
     removeFlagLocally(inst.id, specimenId);
     if (inst.id.startsWith("local-")) {
       setPendingOps(ops => ops.filter(op =>
@@ -192,38 +239,33 @@ const FlagManagerModal: React.FC<Props> = ({
     } else {
       setPendingOps(ops => [...ops, { type: "remove", payload: { caseId: localCase.id, flagInstanceId: inst.id, specimenId } }]);
     }
-  };
+  }, [removeFlagLocally, localCase.id]);
 
-  const doRemoveAll = (defId: string, specimenIds: string[]) => {
+  const doRemoveAll = useCallback((defId: string, specimenIds: string[]) => {
     for (const spId of specimenIds) {
-      const sp = localCase.specimens.find(s => s.id === spId);
-      const inst = sp ? activeInst(sp.flags).find(f => f.flagDefinitionId === defId) : undefined;
+      const sp   = localCase.specimens.find((s: any) => s.id === spId);
+      const inst = sp ? activeInst(sp.flags).find((f: FlagInstance) => f.flagDefinitionId === defId) : undefined;
       if (inst) doRemoveSingle(inst, spId);
     }
-  };
+  }, [localCase.specimens, doRemoveSingle]);
 
-  const requestRemove = (inst: FlagInstance, specimenId: string | undefined, targetLabel: string) => {
+  const requestRemove = useCallback((inst: FlagInstance, specimenId: string | undefined) => {
     const def = defById(flagDefinitions, inst.flagDefinitionId);
-    const flagName = def?.name ?? inst.flagDefinitionId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const flagName = def?.name ?? inst.flagDefinitionId;
 
-    // Check if this flag exists on other specimens too
+    // If flag exists on other specimens too, show scope dialog
     if (specimenId) {
       const otherSpecimenIds = localCase.specimens
-        .filter(sp => sp.id !== specimenId && activeInst(sp.flags).some(f => f.flagDefinitionId === inst.flagDefinitionId))
-        .map(sp => sp.id);
+        .filter((sp: any) => sp.id !== specimenId && activeInst(sp.flags).some((f: FlagInstance) => f.flagDefinitionId === inst.flagDefinitionId))
+        .map((sp: any) => sp.id);
 
       if (otherSpecimenIds.length > 0) {
         setScopeDialog({
-          flagName,
-          defId: inst.flagDefinitionId,
-          specimenId,
-          otherSpecimenIds,
+          flagName, defId: inst.flagDefinitionId, specimenId, otherSpecimenIds,
           onConfirm: (removeAll) => {
-            if (removeAll) {
-              doRemoveAll(inst.flagDefinitionId, [specimenId, ...otherSpecimenIds]);
-            } else {
-              doRemoveSingle(inst, specimenId);
-            }
+            removeAll
+              ? doRemoveAll(inst.flagDefinitionId, [specimenId, ...otherSpecimenIds])
+              : doRemoveSingle(inst, specimenId);
             setScopeDialog(null);
           },
         });
@@ -231,47 +273,49 @@ const FlagManagerModal: React.FC<Props> = ({
       }
     }
 
-    // Single target — standard confirm
-    setConfirmPending({
-      flagName,
-      targetLabel,
-      onConfirm: () => {
-        setConfirmLoading(true);
-        doRemoveSingle(inst, specimenId);
-        setConfirmLoading(false);
-        setConfirmPending(null);
-      },
-    });
-  };
+    // No confirmation needed — user will Save or Cancel to commit
+    doRemoveSingle(inst, specimenId);
+  }, [flagDefinitions, localCase.specimens, doRemoveSingle, doRemoveAll]);
 
-  // ── save — flush all pending ops ────────────────────────────────────────────
-
-  const handleSave = async () => {
+  // ── save / cancel ─────────────────────────────────────────────────────────────
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       for (const op of pendingOps) {
         if (op.type === "apply")  await onApplyFlags(op.payload);
         if (op.type === "remove") await onRemoveFlag(op.payload);
       }
+      // After save, purge soft-deleted flags from local state so they disappear
+      setLocalCase(prev => {
+        const next = deepClone(prev);
+        next.flags = next.flags.filter((f: FlagInstance) => !f.deletedAt);
+        next.specimens = next.specimens.map((sp: any) => ({
+          ...sp,
+          flags: sp.flags.filter((f: FlagInstance) => !f.deletedAt),
+        }));
+        return next;
+      });
+      setPendingOps([]);
     } finally {
       setSaving(false);
       onClose();
     }
-  };
+  }, [pendingOps, onApplyFlags, onRemoveFlag, onClose]);
 
-  // ── cancel — discard local state ─────────────────────────────────────────────
-
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setLocalCase(deepClone(initialCaseData));
     setPendingOps([]);
     onClose();
-  };
+  }, [initialCaseData, onClose]);
 
-  // ── catalog ─────────────────────────────────────────────────────────────────
-
+  // ── catalog ───────────────────────────────────────────────────────────────────
   const catalog = useMemo(() => {
-    let pool = flagDefinitions.filter(d => d.active);
-    if (hasTarget) pool = pool.filter(d => d.level === targetLevel);
+    let pool = flagDefinitions.filter(d =>
+      d.active === true || (d as any).status?.toLowerCase() === "active"
+    );
+    if (hasTarget) pool = pool.filter(d =>
+      (d.level as string).toLowerCase() === targetLevel
+    );
     if (query.trim()) {
       const q = query.toLowerCase();
       pool = pool.filter(d =>
@@ -283,18 +327,17 @@ const FlagManagerModal: React.FC<Props> = ({
     return pool;
   }, [flagDefinitions, hasTarget, targetLevel, query]);
 
-  // Is def already applied to ALL selected targets?
-  const isAppliedAll = (defId: string): boolean => {
-    if (caseOn) return activeInst(localCase.flags).some(f => f.flagDefinitionId === defId);
+  const isAppliedAll = useCallback((defId: string): boolean => {
+    if (caseOn) return activeInst(localCase.flags).some((f: FlagInstance) => f.flagDefinitionId === defId);
     return Array.from(spIds).every(spId => {
-      const sp = localCase.specimens.find(s => s.id === spId);
-      return activeInst(sp?.flags ?? []).some(f => f.flagDefinitionId === defId);
+      const sp = localCase.specimens.find((s: any) => s.id === spId);
+      return activeInst(sp?.flags ?? []).some((f: FlagInstance) => f.flagDefinitionId === defId);
     });
-  };
+  }, [caseOn, localCase, spIds]);
 
   const isDirty = pendingOps.length > 0;
 
-  // ── Voice command listeners ─────────────────────────────────────────
+  // ── voice listeners ───────────────────────────────────────────────────────────
   useEffect(() => {
     const selectCase    = () => toggleCase();
     const selectAllSpec = () => toggleAll();
@@ -302,228 +345,279 @@ const FlagManagerModal: React.FC<Props> = ({
     const saveFlags     = () => { if (isDirty) void handleSave(); };
     const cancelFlags   = () => handleCancel();
 
-    window.addEventListener('ForMedrix_FLAG_SELECT_CASE',           selectCase);
-    window.addEventListener('ForMedrix_FLAG_SELECT_ALL_SPECIMENS',  selectAllSpec);
-    window.addEventListener('ForMedrix_FLAG_DESELECT_ALL',          deselectAll);
-    window.addEventListener('ForMedrix_FLAG_SAVE',                  saveFlags);
-    window.addEventListener('ForMedrix_FLAG_CANCEL',                cancelFlags);
-
+    window.addEventListener("PATHSCRIBE_FLAG_SELECT_CASE",          selectCase);
+    window.addEventListener("PATHSCRIBE_FLAG_SELECT_ALL_SPECIMENS", selectAllSpec);
+    window.addEventListener("PATHSCRIBE_FLAG_DESELECT_ALL",         deselectAll);
+    window.addEventListener("PATHSCRIBE_FLAG_SAVE",                 saveFlags);
+    window.addEventListener("PATHSCRIBE_FLAG_CANCEL",               cancelFlags);
     return () => {
-      window.removeEventListener('ForMedrix_FLAG_SELECT_CASE',           selectCase);
-      window.removeEventListener('ForMedrix_FLAG_SELECT_ALL_SPECIMENS',  selectAllSpec);
-      window.removeEventListener('ForMedrix_FLAG_DESELECT_ALL',          deselectAll);
-      window.removeEventListener('ForMedrix_FLAG_SAVE',                  saveFlags);
-      window.removeEventListener('ForMedrix_FLAG_CANCEL',                cancelFlags);
+      window.removeEventListener("PATHSCRIBE_FLAG_SELECT_CASE",          selectCase);
+      window.removeEventListener("PATHSCRIBE_FLAG_SELECT_ALL_SPECIMENS", selectAllSpec);
+      window.removeEventListener("PATHSCRIBE_FLAG_DESELECT_ALL",         deselectAll);
+      window.removeEventListener("PATHSCRIBE_FLAG_SAVE",                 saveFlags);
+      window.removeEventListener("PATHSCRIBE_FLAG_CANCEL",               cancelFlags);
     };
   }, [isDirty, toggleCase, toggleAll, handleSave, handleCancel]);
 
-  // ── pill style ──────────────────────────────────────────────────────────────
-
-  // Pill className helper — uses ps-pill-dark CSS class
-  const pillCls = (on: boolean) => `ps-pill-dark${on ? ' active' : ''}`;
-
-  // ── applied flag chip in left panel ─────────────────────────────────────────
-
-  const FlagChip: React.FC<{
-    inst: FlagInstance; specimenId?: string; targetLabel: string;
-  }> = ({ inst, specimenId, targetLabel }) => {
-    const def = defById(flagDefinitions, inst.flagDefinitionId);
-    const isLis = inst.source === "lis";
-    return (
-      <div className="ps-flag-chip-dark">
-        <span style={{ fontSize: "12px", fontWeight: 600, color: "#cbd5e1", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {def?.name ?? inst.flagDefinitionId.replace(/-/g, " ").replace(/\w/g, c => c.toUpperCase())}
-        </span>
-        {isLis
-          ? <span title="Applied by LIS — cannot be removed" style={{ color: "#cbd5e1", fontSize: "12px", flexShrink: 0 }}>🔒</span>
-          : (
-            <button
-              onClick={() => requestRemove(inst, specimenId, targetLabel)}
-              title="Remove flag"
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "14px", lineHeight: 1, padding: "3px 4px", flexShrink: 0, borderRadius: "4px" }}
-              onMouseEnter={e => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.background = "#fee2e2"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "none"; }}
-            >🗑</button>
-          )
-        }
-      </div>
-    );
-  };
-
-  // ── render ───────────────────────────────────────────────────────────────────
-
+  // ── derived ───────────────────────────────────────────────────────────────────
   const totalFlags =
     activeInst(localCase.flags).length +
-    localCase.specimens.reduce((n, sp) => n + activeInst(sp.flags).length, 0);
+    localCase.specimens.reduce((n: number, sp: any) => n + activeInst(sp.flags).length, 0);
 
+  // ── FlagChip ─────────────────────────────────────────────────────────────────
+  const FlagChip: React.FC<{ inst: FlagInstance; specimenId?: string }> =
+    ({ inst, specimenId }) => {
+      const def      = defById(flagDefinitions, inst.flagDefinitionId);
+      const isLis    = inst.source === "lis";
+      const isDeleted = !!inst.deletedAt;
+      const name     = def?.name ?? inst.flagDefinitionId;
+
+      const handleUndo = () => {
+        // Restore locally and remove the pending remove op
+        setLocalCase(prev => {
+          const next = deepClone(prev);
+          if (!specimenId) {
+            const f = next.flags.find((f: FlagInstance) => f.id === inst.id);
+            if (f) { f.deletedAt = null; f.deletedBy = null; }
+          } else {
+            const sp = next.specimens.find((s: any) => s.id === specimenId);
+            const f  = sp?.flags.find((f: FlagInstance) => f.id === inst.id);
+            if (f) { f.deletedAt = null; f.deletedBy = null; }
+          }
+          return next;
+        });
+        setPendingOps(ops => ops.filter(op =>
+          !(op.type === "remove" && op.payload.flagInstanceId === inst.id)
+        ));
+      };
+
+      return (
+        <div className={`fm-flag-chip${isDeleted ? " deleted" : ""}`}>
+          <span className={`fm-flag-chip-name${isDeleted ? " strikethrough" : ""}`}>
+            {name}
+          </span>
+          {isDeleted ? (
+            <button
+              className="fm-chip-undo-btn"
+              onClick={handleUndo}
+              title="Undo removal"
+            >
+              <IcoUndo />
+            </button>
+          ) : isLis ? (
+            <span title="Applied by LIS — cannot be removed" className="fm-chip-remove-btn" style={{ cursor: "default" }}>
+              <IcoLock />
+            </span>
+          ) : (
+            <button
+              className="fm-chip-remove-btn"
+              onClick={() => requestRemove(inst, specimenId)}
+              title="Remove flag"
+            >
+              <IcoTrash />
+            </button>
+          )}
+        </div>
+      );
+    };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <>
-      <div data-capture-hide="true" onClick={handleCancel} className="ps-overlay" style={{ zIndex: 10000 }}>
-        <div onClick={e => e.stopPropagation()} className="ps-modal-dark ps-modal-xl" style={{ height: "740px" }}>
+      <div data-capture-hide="true" className="fm-overlay" onClick={handleCancel}>
+        <div
+          className="ps-research-modal fm-modal"
+          onClick={e => e.stopPropagation()}
+        >
 
           {/* ── HEADER ── */}
-          <div className="ps-modal-header">
+          <div className="ps-research-header">
             <div>
-              <h2 className="ps-modal-title">🚩 Flag Manager</h2>
-              <div style={{ fontSize: "12px", color: "#64748b", marginTop: "3px" }}>
-                Case {localCase.accession}
-                {totalFlags > 0 && <span style={{ marginLeft: "8px", background: "#fef3c7", color: "#b45309", fontWeight: 700, fontSize: "11px", padding: "1px 7px", borderRadius: "99px" }}>{totalFlags} active</span>}
+              <div className="fm-eyebrow">Flag Manager</div>
+              <div className="fm-title-row">
+                <IcoFlag />
+                <h2 className="fm-title">Case</h2>
+                <span className="fm-accession">· {localCase.accession}</span>
+                {totalFlags > 0 && (
+                  <span className="fm-active-badge">{totalFlags} active</span>
+                )}
               </div>
             </div>
-            <button onClick={handleCancel} className="ps-modal-close">✕</button>
+            <button onClick={handleCancel} className="ps-research-close" aria-label="Close">×</button>
           </div>
 
           {/* ── BODY ── */}
-          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          <div className="fm-body">
 
-            {/* ═══ LEFT — pills + applied flags ═══ */}
-            <div className="ps-modal-dark-left">
-              <div className="ps-modal-dark-label">
-                Apply to
-              </div>
-              <div className="ps-modal-dark-scroll">
+            {/* LEFT: targets */}
+            <div className="fm-left">
+              <div className="fm-section-label">Apply to</div>
 
-                {/* Case pill */}
-                <button className={pillCls(caseOn)} onClick={toggleCase}>
-                  <span>📋</span>
-                  <span style={{ flex: 1 }}>Case {localCase.accession}</span>
-                  {activeInst(localCase.flags).length > 0 && (
-                    <span style={{ fontSize: "10px", background: "#f59e0b", color: "white", borderRadius: "99px", padding: "1px 6px", fontWeight: 800 }}>
-                      {activeInst(localCase.flags).length}
+              {/* Case */}
+              <button
+                className={`fm-target-row${caseOn ? " active" : ""}`}
+                onClick={toggleCase}
+              >
+                <IcoCase />
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  Case {localCase.accession}
+                </span>
+                {activeInst(localCase.flags).length > 0 && (
+                  <span className="fm-count-badge">{activeInst(localCase.flags).length}</span>
+                )}
+              </button>
+              {localCase.flags.filter((f: FlagInstance) => f.flagDefinitionId).map((inst: FlagInstance) => (
+                <FlagChip key={inst.id} inst={inst} />
+              ))}
+              {activeInst(localCase.flags).length === 0 && localCase.flags.filter((f: FlagInstance) => f.flagDefinitionId && !f.deletedAt).length === 0 && (
+                <div className="fm-no-flags-note">No case flags applied</div>
+              )}
+
+              <div className="fm-divider" />
+
+              {/* All specimens */}
+              {allIds.length > 1 && (
+                <>
+                  <button
+                    className={`fm-target-row${allOn ? " active" : ""}`}
+                    onClick={toggleAll}
+                  >
+                    <IcoSpec />
+                    <span>All Specimens</span>
+                  </button>
+                  <div className="fm-divider" />
+                </>
+              )}
+
+              {/* Individual specimens */}
+              {localCase.specimens.map((sp: any, i: number) => (
+                <div key={sp.id} style={{ marginBottom: 2 }}>
+                  <button
+                    className={`fm-target-row${spIds.has(sp.id) ? " active" : ""}`}
+                    onClick={() => toggleSp(sp.id)}
+                  >
+                    <IcoSpec />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 600 }}>{sp.label}:</span>{' '}
+                      <span style={{ color: 'inherit' }}>{sp.description ?? ''}</span>
                     </span>
-                  )}
-                </button>
-                {/* Case flags */}
-                {activeInst(localCase.flags).map(inst => (
-                  <FlagChip key={inst.id} inst={inst} targetLabel={`Case ${localCase.accession}`} />
-                ))}
-                {activeInst(localCase.flags).length === 0 && (
-                  <div style={{ fontSize: "11px", color: "#475569", fontStyle: "italic", padding: "3px 10px 6px" }}>No case flags applied</div>
-                )}
-
-                <div className="ps-divider" />
-
-                {/* All Specimens pill */}
-                {allIds.length > 1 && (
-                  <>
-                    <button className={pillCls(allOn)} style={{ marginBottom: "4px" }} onClick={toggleAll}>
-                      <span>🔬</span>
-                      <span style={{ flex: 1 }}>All Specimens</span>
-                    </button>
-                    <div className="ps-divider" />
-                  </>
-                )}
-
-                {/* Individual specimen pills */}
-                {localCase.specimens.map((sp, i) => (
-                  <div key={sp.id} style={{ marginBottom: "6px" }}>
-                    <button className={pillCls(spIds.has(sp.id))} onClick={() => toggleSp(sp.id)}>
-                      <span>🔬</span>
-                      <span style={{ flex: 1 }}>Sp. {i + 1}</span><span style={{ fontSize: "13px", color: spIds.has(sp.id) ? "#0369a1" : "#64748b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 2 }}>{sp.label.replace(/^Specimen \d+ — /, "")}</span>
-                      {activeInst(sp.flags).length > 0 && (
-                        <span style={{ fontSize: "10px", background: "#f59e0b", color: "white", borderRadius: "99px", padding: "1px 6px", fontWeight: 800, flexShrink: 0 }}>
-                          {activeInst(sp.flags).length}
-                        </span>
-                      )}
-                    </button>
-                    {/* Applied flags for this specimen */}
-                    {activeInst(sp.flags).map(inst => (
-                      <FlagChip key={inst.id} inst={inst} specimenId={sp.id} targetLabel={sp.label} />
-                    ))}
-                    {activeInst(sp.flags).length === 0 && (
-                      <div style={{ fontSize: "11px", color: "#475569", fontStyle: "italic", padding: "2px 10px 2px" }}>No flags applied</div>
+                    {activeInst(sp.flags).length > 0 && (
+                      <span className="fm-count-badge">{activeInst(sp.flags).length}</span>
                     )}
-                  </div>
-                ))}
-
-                {/* Invalid combo warning */}
-                {invalid && (
-                  <div style={{ marginTop: "8px", className: "" }}>
-                    ⚠️ Case and specimens can't be selected together
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ═══ RIGHT — search + catalog ═══ */}
-            <div className="ps-modal-dark-right">
-
-              {/* Search */}
-              <div className="ps-modal-dark-search">
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: "11px", top: "50%", transform: "translateY(-50%)", fontSize: "14px", color: "#94a3b8", pointerEvents: "none" }}>🔍</span>
-                  <input
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    placeholder="Search flags by name, code, or description…"
-                    className="ps-input-dark-search"
-                  />
-                  {query && (
-                    <button onClick={() => setQuery("")} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "14px", padding: 0, lineHeight: 1 }}>✕</button>
+                  </button>
+                  {sp.flags.filter((f: FlagInstance) => f.flagDefinitionId).map((inst: FlagInstance) => (
+                    <FlagChip key={inst.id} inst={inst} specimenId={sp.id} />
+                  ))}
+                  {activeInst(sp.flags).length === 0 && sp.flags.filter((f: FlagInstance) => f.flagDefinitionId && !f.deletedAt).length === 0 && (
+                    <div className="fm-no-flags-note">No flags applied</div>
                   )}
                 </div>
+              ))}
+
+              {invalid && (
+                <div className="fm-invalid-warn">
+                  Case and specimens can't be selected together
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT: catalog */}
+            <div className="fm-right">
+
+              {/* Search */}
+              <div className="fm-search-bar">
+                <span className="fm-search-icon"><IcoSearch /></span>
+                <input
+                  className="fm-search-input"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search flags by name, code, or description…"
+                />
+                {query && (
+                  <button className="fm-search-clear" onClick={() => setQuery("")}>✕</button>
+                )}
               </div>
 
               {/* Column headers */}
-              <div className="ps-modal-dark-col-header">
-                <span style={{ width: "58px", fontSize: "10px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.4px" }}>Code</span>
-                <span style={{ flex: 1, fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+              <div className="fm-col-header">
+                <span className="fm-col-label">Code</span>
+                <span className="fm-col-label">
                   Flag
-                  {hasTarget && <span style={{ fontWeight: 400, textTransform: "none", color: "#cbd5e1", marginLeft: "6px" }}>· {targetLevel}-level</span>}
+                  {hasTarget && (
+                    <span className="fm-col-label-note"> · {targetLevel}-level</span>
+                  )}
                 </span>
-                <span style={{ width: "80px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px", textAlign: "right" }}>Action</span>
+                <span className="fm-col-label" style={{ textAlign: "right" }}>Action</span>
               </div>
 
-              {/* Flag rows */}
-              <div className="ps-modal-dark-list">
-                {!hasTarget && !invalid ? (
-                  <div className="ps-modal-dark-empty">
-                    <div style={{ fontSize: "26px", marginBottom: "10px" }}>☝️</div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Select a target on the left</div>
-                    <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>Choose the case or one or more specimens, then click a flag to apply it</div>
+              {/* Flag list */}
+              <div className="fm-flag-list">
+
+                {!hasTarget && !invalid && (
+                  <div className="fm-empty">
+                    <IcoCase />
+                    <div className="fm-empty-heading">Select a target on the left</div>
+                    <div className="fm-empty-hint">Choose the case or one or more specimens, then click a flag to apply it</div>
                   </div>
-                ) : invalid ? (
-                  <div style={{ padding: "52px 24px", textAlign: "center" }}>
-                    <div style={{ fontSize: "26px", marginBottom: "10px" }}>⚠️</div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#ef4444" }}>Invalid selection</div>
-                    <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>Deselect either the case or the specimens</div>
+                )}
+
+                {invalid && (
+                  <div className="fm-empty">
+                    <div className="fm-empty-heading" style={{ color: "#f87171" }}>Invalid selection</div>
+                    <div className="fm-empty-hint">Deselect either the case or the specimens</div>
                   </div>
-                ) : catalog.length === 0 ? (
-                  <div style={{ padding: "52px 24px", textAlign: "center" }}>
-                    <div style={{ fontSize: "26px", marginBottom: "10px" }}>🔍</div>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>
+                )}
+
+                {hasTarget && catalog.length === 0 && (
+                  <div className="fm-empty">
+                    <IcoSearch />
+                    <div className="fm-empty-heading">
                       {query ? `No flags match "${query}"` : `No ${targetLevel}-level flags defined`}
                     </div>
-                    {!query && <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>Go to Configuration → System → Flags to add some</div>}
+                    {!query && (
+                      <div className="fm-empty-hint">Go to Configuration → System → Flags to add some</div>
+                    )}
                   </div>
-                ) : catalog.map(def => {
+                )}
+
+                {hasTarget && catalog.map((def: FlagDefinition) => {
                   const applied = isAppliedAll(def.id);
+                  const sev     = (def as any).severity as number | undefined;
                   return (
                     <div
                       key={def.id}
+                      className={`fm-flag-card${applied ? " applied" : ""}`}
                       onClick={() => !applied && handleApply(def)}
-                      style={{
-                        display: "flex", alignItems: "center", padding: "12px 20px",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        cursor: applied ? "default" : "pointer",
-                      }}
-                      onMouseEnter={e => { if (!applied) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = applied ? "rgba(16,185,129,0.1)" : "transparent"; }}
                     >
-                      <div style={{ width: "58px", flexShrink: 0 }}>
-                        <span className="ps-code-badge">
+                      <div>
+                        <span className={`fm-code-chip${applied ? " applied" : ""}`}>
                           {def.lisCode}
                         </span>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "inherit" }}>{def.name}</div>
-                        {def.description && <div style={{ fontSize: "12px", color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{def.description}</div>}
+
+                      <div className="fm-flag-info">
+                        <div className="fm-flag-name-row">
+                          {sev && (
+                            <span className="fm-sev-dot" style={{ background: sevColor(sev) }} title={`Severity ${sev}`} />
+                          )}
+                          <span className="fm-flag-name">{def.name}</span>
+                        </div>
+                        {def.description && (
+                          <span className="fm-flag-desc">{def.description}</span>
+                        )}
                       </div>
-                      <div style={{ width: "80px", textAlign: "right", flexShrink: 0 }}>
-                        {applied
-                          ? <span className="ps-badge ps-badge-green">✓ Applied</span>
-                          : <span style={{ fontSize: "12px", fontWeight: 600, color: "#0891B2" }}>+ Apply</span>
-                        }
+
+                      <div style={{ textAlign: "right" }}>
+                        {applied ? (
+                          <span className="fm-applied-text">
+                            <IcoCheck />
+                            Applied
+                          </span>
+                        ) : (
+                          <span className="fm-apply-text">+ Apply</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -533,21 +627,18 @@ const FlagManagerModal: React.FC<Props> = ({
           </div>
 
           {/* ── FOOTER ── */}
-          <div className="ps-modal-footer" style={{ justifyContent: "space-between" }}>
-            <div style={{ fontSize: "12px", color: isDirty ? "#b45309" : "#94a3b8", fontWeight: isDirty ? 600 : 400 }}>
-              {isDirty ? `${pendingOps.length} unsaved change${pendingOps.length !== 1 ? "s" : ""}` : "No changes"}
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
+          <div className="fm-footer">
+            <span className={`fm-footer-status${isDirty ? " dirty" : ""}`}>
+              {isDirty
+                ? `${pendingOps.length} unsaved change${pendingOps.length !== 1 ? "s" : ""}`
+                : "No changes"}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="fm-btn-cancel" onClick={handleCancel}>Cancel</button>
               <button
-                onClick={handleCancel}
-                className="ps-btn-secondary-dark"
-              >
-                Cancel
-              </button>
-              <button
+                className="fm-btn-save"
                 onClick={handleSave}
                 disabled={saving || !isDirty}
-                className="ps-btn-primary"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -556,56 +647,13 @@ const FlagManagerModal: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Scope dialog — flag exists on multiple specimens */}
       {scopeDialog && (
-        <div data-capture-hide="true" className="ps-overlay" style={{ zIndex: 11000 }}>
-          <div className="ps-modal-dark" style={{ padding: "32px 36px", width: "440px", textAlign: "center" }}>
-            <div style={{ fontSize: "36px", marginBottom: "12px", textAlign: "center" }}>🔬</div>
-            <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 800, color: "#f1f5f9", textAlign: "center" }}>Remove from multiple specimens?</h3>
-            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 6px", lineHeight: 1.6, textAlign: "center" }}>
-              <strong style={{ color: "#e2e8f0" }}>{scopeDialog.flagName}</strong> is also applied to{" "}
-              <strong style={{ color: "#e2e8f0" }}>{scopeDialog.otherSpecimenIds.length} other specimen{scopeDialog.otherSpecimenIds.length !== 1 ? "s" : ""}</strong>.
-              How would you like to proceed?
-            </p>
-            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 24px", textAlign: "center" }}>All removals will be recorded in the audit trail.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <button
-                onClick={() => scopeDialog.onConfirm(false)}
-                style={{ padding: "11px 16px", border: "2px solid #e2e8f0", borderRadius: "10px", background: "white", color: "#e2e8f0", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
-              >
-                Remove from this specimen only
-              </button>
-              <button
-                onClick={() => scopeDialog.onConfirm(true)}
-                style={{ padding: "11px 16px", border: "2px solid #fca5a5", borderRadius: "10px", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#fef2f2"; }}
-              >
-                Remove from all {scopeDialog.otherSpecimenIds.length + 1} specimens
-              </button>
-              <button
-                onClick={() => setScopeDialog(null)}
-                style={{ padding: "10px 16px", border: "none", borderRadius: "10px", background: "none", color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer", textAlign: "center", marginTop: "4px" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#64748b"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "#94a3b8"; }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm remove dialog */}
-      {confirmPending && (
-        <ConfirmDialog
-          flagName={confirmPending.flagName}
-          targetLabel={confirmPending.targetLabel}
-          onConfirm={confirmPending.onConfirm}
-          onCancel={() => setConfirmPending(null)}
-          loading={confirmLoading}
+        <ScopeDialog
+          flagName={scopeDialog.flagName}
+          otherCount={scopeDialog.otherSpecimenIds.length}
+          onSingle={() => scopeDialog.onConfirm(false)}
+          onAll={() => scopeDialog.onConfirm(true)}
+          onCancel={() => setScopeDialog(null)}
         />
       )}
     </>

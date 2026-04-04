@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const STORAGE_KEY = "formedrix-user";
+  const STORAGE_KEY = "pathscribe-user";
 
   // Helper to sync state and storage
   const saveUser = (userData: User | null) => {
@@ -44,20 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let authenticatedUser: User | null = null;
 
         // Mock Login Data with Voice Profiles
-        if (email === "***REMOVED***@formedrix.ai" && password === "***REMOVED***") {
+        if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
           authenticatedUser = {
             id: "u1",
             name: "Dr. Sarah Johnson",
-            email: "***REMOVED***@formedrix.ai",
+            email: "***REMOVED***@pathscribe.ai",
             role: "pathologist",
             initials: "SJ",
             voiceProfile: "EN-US",
           };
-        } else if (email === "***REMOVED***@formedrix.ai" && password === "***REMOVED***") {
+        } else if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
           authenticatedUser = {
             id: "u3",
             name: "System Admin",
-            email: "***REMOVED***@formedrix.ai",
+            email: "***REMOVED***@pathscribe.ai",
             role: "***REMOVED***",
             initials: "SA",
             voiceProfile: "EN-US",

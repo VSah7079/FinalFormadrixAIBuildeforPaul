@@ -4,7 +4,7 @@
  * Main page for reviewing and completing CAP synoptic reports for a case.
  *
  * Architecture role:
- *   The primary clinical workspace in ForMedrix. Pathologists spend most of
+ *   The primary clinical workspace in PathScribe. Pathologists spend most of
  *   their active reporting time here. Owns the full synoptic editing workflow:
  *   draft → finalize (with password) → case sign-out (with username + password).
  *   Post-finalization: Addendum (new synoptic template) and Amendment (corrective
@@ -27,7 +27,9 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import '../formedrix.css';
+import CaseSignOutModal from './SynopticReportPage/CaseSignOutModal';
+import AmendmentModal from './SynopticReportPage/AmendmentModal';
+import '../pathscribe.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMockReport } from '../mock/mockReports';
 import type { FullReport } from '../mock/mockReports';
@@ -36,7 +38,6 @@ import { useLogout } from '@hooks/useLogout';
 import { useSystemConfig } from '../contexts/SystemConfigContext';
 import { HelpIcon, WarningIcon } from "../components/Icons";
 import CasePanel from '../components/CasePanel/CasePanel';
-import { getFlags } from '../api/flagsApi';
 import { getCaseWithFlags, applyFlags, deleteFlags } from '../api/caseFlagsApi';
 import FlagManagerModal from '../components/Config/System/FlagManagerModal';
 import InternalNotesDrawer from '../components/InternalNotes/InternalNotesDrawer';
@@ -47,6 +48,7 @@ import { VoiceMissPrompt }     from '../components/Voice/VoiceMissPrompt';
 import { useVoice, reportDictationCorrection } from '../contexts/VoiceProvider';
 import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
 import { VOICE_CONTEXT } from '../constants/systemActions';
+import { toast } from 'react-toastify';
 
 import type {
   SynopticField, MedicalCode, SynopticReportNode, FieldVerification, CaseRole,
@@ -67,7 +69,39 @@ import { useSynopticFinalize } from './Synoptic/useSynopticFinalize';
 import { useSynopticToast }    from './Synoptic/useSynopticToast';
 import { useSynopticFlags }    from './Synoptic/useSynopticFlags';
 
+type ValidationSummaryPanelProps = {
+  issues: any[];
+  requiredMissing: any[];
+  disputed: any[];
+  unverified: any[];
+  dirty: any[];
+  isReadyToFinalize: boolean;
+  onJumpToField: (fieldId: string) => void;
+};
+
+const ValidationSummaryPanel = (_props: ValidationSummaryPanelProps) => null;
+
 const POST_SIGNOUT_PREF_KEY = 'ps_post_signout_pref';
+
+
+// 1. FieldGroup union (must match the keys above)
+type FieldGroup =
+  | 'tumorFields'
+  | 'marginFields'
+  | 'lymphNodes'
+  | 'ancillaryFields'
+  | 'specimenFields'
+  | 'biomarkerFields';
+
+// 2. Canonical group order
+const FIELD_GROUP_ORDER: FieldGroup[] = [
+  'tumorFields',
+  'marginFields',
+  'lymphNodes',
+  'ancillaryFields',
+  'specimenFields',
+  'biomarkerFields',
+];
 
 const SYNOPTIC_TAB_ORDER = ['tumor', 'margins', 'biomarkers', 'codes'] as const;
 type SynopticTab = typeof SYNOPTIC_TAB_ORDER[number];
@@ -77,6 +111,8 @@ const SynopticReportPage: React.FC = () => {
   const navigate     = useNavigate();
   const { user }     = useAuth();
   const handleLogout = useLogout();
+  const [narrative, setNarrative] = useState('');
+
 
   // ⭐ ACTIVE PATH — [specimenIdx, reportIdx, childIdx?, grandchildIdx?, ...]
   const [activePath, setActivePath] = useState<ActivePath>([0, 0]);
@@ -87,6 +123,22 @@ const SynopticReportPage: React.FC = () => {
     flagCaseData, setFlagCaseData, flagDefinitions,
     showFlagManager, setShowFlagManager, openFlagManager,
   } = useSynopticFlags(caseId);
+
+// Temporary validation summary stub
+const validationSummary = {
+  allIssues: [],
+  requiredMissing: [],
+  disputed: [],
+  unverified: [],
+  dirty: [],
+  isReadyToFinalize: true,
+};
+
+// Temporary scroll helper stub
+const scrollToField = (fieldId: string) => {
+  const el = fieldRefs.current[fieldId];
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
   // ⭐ MODAL STATE
   const {
@@ -163,8 +215,8 @@ const SynopticReportPage: React.FC = () => {
   // ── LIS config ─────────────────────────────────────────────────────────────
   const { config: systemConfig }                = useSystemConfig();
   const lisIntegrationEnabled                   = systemConfig.lisIntegrationEnabled;
-  const allowForMedrixPostFinalActions         = systemConfig.allowForMedrixPostFinalActions;
-  const showAmendmentButton                     = !lisIntegrationEnabled || allowForMedrixPostFinalActions;
+  const allowPathScribePostFinalActions         = systemConfig.allowPathScribePostFinalActions;
+  const showAmendmentButton                     = !lisIntegrationEnabled || allowPathScribePostFinalActions;
   const { toastMsg, toastVisible, showToast }   = useSynopticToast();
   const { startDictation, stopDictation }        = useVoice();
   // Set to true when voice command opened the internal notes drawer
@@ -182,37 +234,112 @@ const SynopticReportPage: React.FC = () => {
   );
 
   // ── Field update helpers ───────────────────────────────────────────────────
+
+  const getAllRequiredFields = (node: SynopticReportNode): SynopticField[] => {
+  const groups = FIELD_GROUP_ORDER;
+  const fields: SynopticField[] = [];
+
+  for (const group of groups) {
+    const groupFields = node[group] as SynopticField[] | undefined;
+    if (!groupFields) continue;
+
+    for (const field of groupFields) {
+      if (field.required) fields.push(field);
+    }
+  }
+
+  // recurse into children
+  for (const child of node.children) {
+    fields.push(...getAllRequiredFields(child));
+  }
+
+  return fields;
+};
+
+const findFirstInvalidRequiredField = (node: SynopticReportNode): SynopticField | null => {
+  const required = getAllRequiredFields(node);
+
+  return required.find(f =>
+    !f.value ||
+    f.value === '' ||
+    f.verification !== 'verified'
+  ) || null;
+};
+
   type FieldGroup = 'tumorFields' | 'marginFields' | 'biomarkerFields';
 
   const updateField = useCallback((group: FieldGroup, fieldId: string, value: string) => {
-    setCaseData((prev: CaseData) => ({
+  setCaseData((prev: CaseData) => ({
+    ...prev,
+    synoptics: updateNodeAtPath(prev.synoptics, activePath, (node: SynopticReportNode) => ({
+      ...node,
+      [group]: (node[group] as SynopticField[]).map(f => {
+        if (f.id !== fieldId) return f;
+
+        const dirty = value !== f.aiValue;
+        const verification: FieldVerification =
+          f.aiValue === '' ? f.verification :
+          dirty            ? 'disputed'     : 'unverified';
+
+        // ⭐ Step 3 trigger condition
+        if (!isFinalized && f.aiValue && dirty) {
+          // Defer auto‑advance until after React state updates
+          setTimeout(() => {
+            advanceToNextUnverifiedField(group, fieldId);
+          }, 0);
+        }
+
+        return { ...f, value, dirty, verification };
+      }),
+    })),
+  }));
+
+  setHasUnsavedData(true);
+}, [activePath]);
+
+  const updateVerification = useCallback(
+  (group: FieldGroup, fieldId: string, status: FieldVerification) => {
+    setCaseData(prev => ({
       ...prev,
-      synoptics: updateNodeAtPath(prev.synoptics, activePath, (node: SynopticReportNode) => ({
+      synoptics: updateNodeAtPath(prev.synoptics, activePath, node => ({
         ...node,
         [group]: (node[group] as SynopticField[]).map(f => {
           if (f.id !== fieldId) return f;
-          const dirty = value !== f.aiValue;
-          const verification: FieldVerification =
-            f.aiValue === '' ? f.verification :
-            dirty            ? 'disputed'     : 'unverified';
-          return { ...f, value, dirty, verification };
-        }),
-      })),
-    }));
-    setHasUnsavedData(true);
-  }, [activePath]);
 
-  const updateVerification = useCallback((group: FieldGroup, fieldId: string, verification: FieldVerification) => {
-    setCaseData((prev: CaseData) => ({
-      ...prev,
-      synoptics: updateNodeAtPath(prev.synoptics, activePath, (node: SynopticReportNode) => ({
-        ...node,
-        [group]: (node[group] as SynopticField[]).map(f =>
-          f.id === fieldId ? { ...f, verification } : f
-        ),
-      })),
+          // If user confirms AI value, dirty must be cleared
+          const dirty = status === 'verified' ? false : f.dirty;
+
+          // Step 8: dispute workflow
+          if (status === 'disputed') {
+            return {
+              ...f,
+              verification: status,
+              dirty,
+              disputeReason: f.disputeReason ?? '',
+              attested: false,
+            };
+          }
+
+          // If switching away from disputed → clear dispute metadata
+          return {
+            ...f,
+            verification: status,
+            dirty,
+            disputeReason: undefined,
+            attested: undefined,
+          };
+        })
+      }))
     }));
+
     setHasUnsavedData(true);
+
+    // ⭐ Auto‑advance only when confirming AI value
+    if (status === 'verified') {
+      setTimeout(() => {
+        advanceToNextUnverifiedField(group, fieldId);
+      }, 0);
+    }
   }, [activePath]);
 
   const updateSpecimenComment = useCallback((html: string) => {
@@ -333,39 +460,71 @@ const SynopticReportPage: React.FC = () => {
     setShowFinalizeModal(true);
   };
 
-  // ── Confirm finalization ───────────────────────────────────────────────────
-  const handleFinalizeConfirm = useCallback(() => {
-    if (finalizePassword.length < 4) {
-      setFinalizeError('Incorrect password. Please try again.');
-      return;
-    }
-    const updated: CaseData = {
-      ...caseData,
-      synoptics: updateNodeAtPath(caseData.synoptics, activePath, finalizeNodeAndChildren),
-    };
-    setCaseData(updated);
-    saveCase(caseId, updated);
-    setHasUnsavedData(false);
-    setShowFinalizeModal(false);
-    setFinalizePassword('');
-    setFinalizeError('');
-    showToast(`${activeSynoptic?.title ?? 'Report'} finalized`);
+// ── Confirm finalization ───────────────────────────────────────────────────
+const handleFinalizeConfirm = useCallback(() => {
+  // Step 7 + 8 validation
+  if (!activeSynoptic) return;
 
-    const nowAllFinalized = updated.synoptics.every((spec: any) =>
-      spec.reports.every((r: any) => r.status === 'finalized')
-    );
-    if (nowAllFinalized && !caseSigned) {
-      setTimeout(() => {
-        setSignOutUser('');
-        setSignOutPassword('');
-        setSignOutError('');
-        setShowSignOutModal(true);
-      }, 500);
-    } else if (finalizeAndNext) {
-      const next = getNextUnfinalizedPath();
-      if (next) { setActivePath(next); setActiveSynopticTab('tumor'); }
+  const invalid = findFirstInvalidRequiredField(activeSynoptic);
+  if (invalid) {
+    toast.error("Please complete or attest all required fields before finalizing.");
+    return;
+  }
+
+  // Password check (unchanged)
+  if (finalizePassword.length < 4) {
+    setFinalizeError('Incorrect password. Please try again.');
+    return;
+  }
+
+  // Finalize this synoptic + children
+  const updated: CaseData = {
+    ...caseData,
+    synoptics: updateNodeAtPath(
+      caseData.synoptics,
+      activePath,
+      finalizeNodeAndChildren
+    ),
+  };
+
+  setCaseData(updated);
+  saveCase(caseId, updated);
+  setHasUnsavedData(false);
+  setShowFinalizeModal(false);
+  setFinalizePassword('');
+  setFinalizeError('');
+
+  showToast(`${activeSynoptic?.title ?? 'Report'} finalized`);
+
+  // Check if all synoptics are finalized
+  const nowAllFinalized = updated.synoptics.every((spec: any) =>
+    spec.reports.every((r: any) => r.status === 'finalized')
+  );
+
+  if (nowAllFinalized && !caseSigned) {
+    setTimeout(() => {
+      setSignOutUser('');
+      setSignOutPassword('');
+      setSignOutError('');
+      setShowSignOutModal(true);
+    }, 500);
+  } else if (finalizeAndNext) {
+    const next = getNextUnfinalizedPath();
+    if (next) {
+      setActivePath(next);
+      setActiveSynopticTab('tumor');
     }
-  }, [finalizePassword, caseId, caseData, activePath, activeSynoptic, finalizeAndNext, caseSigned, getNextUnfinalizedPath]);
+  }
+}, [
+  finalizePassword,
+  caseId,
+  caseData,
+  activePath,
+  activeSynoptic,
+  finalizeAndNext,
+  caseSigned,
+  getNextUnfinalizedPath
+]);
 
   // ── Case sign-out ──────────────────────────────────────────────────────────
   const handleCaseSignOut = useCallback(() => {
@@ -398,6 +557,22 @@ const SynopticReportPage: React.FC = () => {
 
   useEffect(() => { const t = setTimeout(() => setIsLoaded(true), 100); return () => clearTimeout(t); }, []);
 
+  
+// ── AI Source Highlight Sync ───────────────────────────────────────────────
+// When a synoptic field is focused, highlight and scroll to its AI source
+// inside the narrative panel. Clears highlight on blur. Keeps provenance
+// synchronized with field navigation and auto‑advance.
+  useEffect(() => {
+    if (!activeFieldSource) return;
+
+    const el = document.querySelector('[data-ai-source="active"]');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeFieldSource]);
+
+
+  
   // ── Voice: REPORTING context ───────────────────────────────────────────────
   useEffect(() => {
     mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.REPORTING);
@@ -439,34 +614,34 @@ const SynopticReportPage: React.FC = () => {
     const enterAddendum  = () => window.dispatchEvent(new CustomEvent('VOICE_ACTION_ENTER_ADDENDUM'));
     const openResources  = () => setIsResourcesOpen(true);
 
-    window.addEventListener('ForMedrix_NEXT_TAB',          nextTab);
-    window.addEventListener('ForMedrix_PREVIOUS_TAB',      prevTab);
-    window.addEventListener('ForMedrix_SAVE_DRAFT',        saveDraft);
-    window.addEventListener('ForMedrix_SIGN_OUT',          signOut);
-    window.addEventListener('ForMedrix_GO_BACK',           goBack);
-    window.addEventListener('ForMedrix_GO_FORWARD',        goForward);
-    window.addEventListener('ForMedrix_NAV_NEXT_CASE',     nextCase);
-    window.addEventListener('ForMedrix_NAV_PREVIOUS_CASE', prevCase);
-    window.addEventListener('ForMedrix_ENTER_GROSS',          enterGross);
-    window.addEventListener('ForMedrix_ENTER_MICRO',          enterMicro);
-    window.addEventListener('ForMedrix_ENTER_DIAGNOSIS',      enterDiagnosis);
-    window.addEventListener('ForMedrix_ENTER_ADDENDUM',       enterAddendum);
-    window.addEventListener('ForMedrix_PAGE_OPEN_RESOURCES',  openResources);
+    window.addEventListener('PATHSCRIBE_NEXT_TAB',          nextTab);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB',      prevTab);
+    window.addEventListener('PATHSCRIBE_SAVE_DRAFT',        saveDraft);
+    window.addEventListener('PATHSCRIBE_SIGN_OUT',          signOut);
+    window.addEventListener('PATHSCRIBE_GO_BACK',           goBack);
+    window.addEventListener('PATHSCRIBE_GO_FORWARD',        goForward);
+    window.addEventListener('PATHSCRIBE_NAV_NEXT_CASE',     nextCase);
+    window.addEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE', prevCase);
+    window.addEventListener('PATHSCRIBE_ENTER_GROSS',          enterGross);
+    window.addEventListener('PATHSCRIBE_ENTER_MICRO',          enterMicro);
+    window.addEventListener('PATHSCRIBE_ENTER_DIAGNOSIS',      enterDiagnosis);
+    window.addEventListener('PATHSCRIBE_ENTER_ADDENDUM',       enterAddendum);
+    window.addEventListener('PATHSCRIBE_PAGE_OPEN_RESOURCES',  openResources);
 
     return () => {
-      window.removeEventListener('ForMedrix_NEXT_TAB',          nextTab);
-      window.removeEventListener('ForMedrix_PREVIOUS_TAB',      prevTab);
-      window.removeEventListener('ForMedrix_SAVE_DRAFT',        saveDraft);
-      window.removeEventListener('ForMedrix_SIGN_OUT',          signOut);
-      window.removeEventListener('ForMedrix_GO_BACK',           goBack);
-      window.removeEventListener('ForMedrix_GO_FORWARD',        goForward);
-      window.removeEventListener('ForMedrix_NAV_NEXT_CASE',     nextCase);
-      window.removeEventListener('ForMedrix_NAV_PREVIOUS_CASE', prevCase);
-      window.removeEventListener('ForMedrix_ENTER_GROSS',          enterGross);
-      window.removeEventListener('ForMedrix_ENTER_MICRO',          enterMicro);
-      window.removeEventListener('ForMedrix_ENTER_DIAGNOSIS',      enterDiagnosis);
-      window.removeEventListener('ForMedrix_ENTER_ADDENDUM',       enterAddendum);
-      window.removeEventListener('ForMedrix_PAGE_OPEN_RESOURCES',  openResources);
+      window.removeEventListener('PATHSCRIBE_NEXT_TAB',          nextTab);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB',      prevTab);
+      window.removeEventListener('PATHSCRIBE_SAVE_DRAFT',        saveDraft);
+      window.removeEventListener('PATHSCRIBE_SIGN_OUT',          signOut);
+      window.removeEventListener('PATHSCRIBE_GO_BACK',           goBack);
+      window.removeEventListener('PATHSCRIBE_GO_FORWARD',        goForward);
+      window.removeEventListener('PATHSCRIBE_NAV_NEXT_CASE',     nextCase);
+      window.removeEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE', prevCase);
+      window.removeEventListener('PATHSCRIBE_ENTER_GROSS',          enterGross);
+      window.removeEventListener('PATHSCRIBE_ENTER_MICRO',          enterMicro);
+      window.removeEventListener('PATHSCRIBE_ENTER_DIAGNOSIS',      enterDiagnosis);
+      window.removeEventListener('PATHSCRIBE_ENTER_ADDENDUM',       enterAddendum);
+      window.removeEventListener('PATHSCRIBE_PAGE_OPEN_RESOURCES',  openResources);
     };
   }, [handleSaveDraft, handleSaveAndNext, navigate, guard, activeSynopticTab]);
 
@@ -653,21 +828,56 @@ const SynopticReportPage: React.FC = () => {
   // ── Field refs for alert click navigation ──────────────────────────────────
   const fieldRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
 
-  // ── Auto-advance to next unverified field ──────────────────────────────────
-  const advanceToNextUnverifiedField = useCallback((group: FieldGroup, currentFieldId: string) => {
-    if (!activeSynoptic) return;
-    const fields = (activeSynoptic[group] as SynopticField[]).filter((f: SynopticField) => f.type !== 'comment');
-    const currentIdx = fields.findIndex(f => f.id === currentFieldId);
-    const next = fields.slice(currentIdx + 1).find(f => f.verification === 'unverified' && f.confidence < 100);
-    if (next) {
-      const el = fieldRefs.current[next.id];
-      if (el) {
+// ── Auto-advance across groups (unified navigation) ─────────────────────────
+// Uses FIELD_GROUP_ORDER to move through the synoptic in a predictable
+// clinical sequence. Looks in the current group first, then subsequent groups.
+  const advanceToNextUnverifiedField = useCallback(
+    (currentGroup: FieldGroup, currentFieldId: string) => {
+      if (!activeSynoptic) return;
+
+      const focusField = (field: SynopticField) => {
+        const el = fieldRefs.current[field.id];
+        if (!el) return;
+
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         const input = el.querySelector('input');
         if (input) setTimeout(() => input.focus(), 200);
+      };
+
+      const groupIndex = FIELD_GROUP_ORDER.indexOf(currentGroup);
+      if (groupIndex === -1) return;
+
+      // 1. Look in the current group first
+      const currentFields = (activeSynoptic[currentGroup] as SynopticField[]).filter(
+        f => f.type !== 'comment'
+      );
+      const currentIdx = currentFields.findIndex(f => f.id === currentFieldId);
+
+      for (let i = currentIdx + 1; i < currentFields.length; i++) {
+        if (currentFields[i].verification !== 'verified') {
+          focusField(currentFields[i]);
+          return;
+        }
       }
-    }
-  }, [activeSynoptic]);
+
+      // 2. Move to subsequent groups
+      for (let g = groupIndex + 1; g < FIELD_GROUP_ORDER.length; g++) {
+        const nextGroup = FIELD_GROUP_ORDER[g];
+        const fields = activeSynoptic[nextGroup] as SynopticField[] | undefined;
+        if (!fields) continue;
+
+        const candidates = fields.filter(f => f.type !== 'comment');
+        const next = candidates.find(f => f.verification !== 'verified');
+        if (next) {
+          focusField(next);
+          return;
+        }
+      }
+
+      // 3. No unverified fields left — workflow complete
+    },
+    [activeSynoptic, fieldRefs]
+  );
 
   // ── View mode ──────────────────────────────────────────────────────────────
   const [synopticViewMode, setSynopticViewMode] = useState<'tabbed' | 'full'>('tabbed');
@@ -876,54 +1086,54 @@ const SynopticReportPage: React.FC = () => {
     const openAddSynoptic      = () => voiceOpenAddSynoptic();
     const openFlags            = () => voiceOpenFlags();
 
-    window.addEventListener('ForMedrix_GOTO_CODES',           gotoCodes);
-    window.addEventListener('ForMedrix_SELECT_SPECIMEN',       selectSpecimen);
-    window.addEventListener('ForMedrix_OPEN_HISTORY',          openHistory);
-    window.addEventListener('ForMedrix_CLOSE_HISTORY',         closeHistory);
-    window.addEventListener('ForMedrix_VOICE_CANCEL',          cancelVoice);
-    window.addEventListener('ForMedrix_ADD_ADDENDUM',          addAddendum);
-    window.addEventListener('ForMedrix_ADD_AMENDMENT',         addAmendment);
-    window.addEventListener('ForMedrix_SIGNOUT_NEXT',          signnoutNext);
-    window.addEventListener('ForMedrix_VOICE_CASE_COMMENT',     openCaseComment);
-    window.addEventListener('ForMedrix_VOICE_SPECIMEN_COMMENT', openSpecimenComment);
-    window.addEventListener('ForMedrix_VOICE_INTERNAL_NOTE',    openInternalNote);
-    window.addEventListener('ForMedrix_VOICE_ADD_SYNOPTIC',     openAddSynoptic);
-    window.addEventListener('ForMedrix_VOICE_FLAGS',            openFlags);
-    window.addEventListener('ForMedrix_NEXT_UNANSWERED',  nextUnanswered);
-    window.addEventListener('ForMedrix_NEXT_REQUIRED',    nextRequired);
-    window.addEventListener('ForMedrix_CONFIRM_FIELD',    confirmField);
-    window.addEventListener('ForMedrix_EDIT_FIELD',       editField);
-    window.addEventListener('ForMedrix_SKIP_FIELD',       skipField);
-    window.addEventListener('ForMedrix_FULL_VIEW',        fullView);
-    window.addEventListener('ForMedrix_TABBED_VIEW',      tabbedView);
-    window.addEventListener('ForMedrix_MAX_VIEW',         maxView);
-    window.addEventListener('ForMedrix_MIN_VIEW',         minView);
-    window.addEventListener('ForMedrix_PREVIEW_REPORT',   previewReport);
+    window.addEventListener('PATHSCRIBE_GOTO_CODES',           gotoCodes);
+    window.addEventListener('PATHSCRIBE_SELECT_SPECIMEN',       selectSpecimen);
+    window.addEventListener('PATHSCRIBE_OPEN_HISTORY',          openHistory);
+    window.addEventListener('PATHSCRIBE_CLOSE_HISTORY',         closeHistory);
+    window.addEventListener('PATHSCRIBE_VOICE_CANCEL',          cancelVoice);
+    window.addEventListener('PATHSCRIBE_ADD_ADDENDUM',          addAddendum);
+    window.addEventListener('PATHSCRIBE_ADD_AMENDMENT',         addAmendment);
+    window.addEventListener('PATHSCRIBE_SIGNOUT_NEXT',          signnoutNext);
+    window.addEventListener('PATHSCRIBE_VOICE_CASE_COMMENT',     openCaseComment);
+    window.addEventListener('PATHSCRIBE_VOICE_SPECIMEN_COMMENT', openSpecimenComment);
+    window.addEventListener('PATHSCRIBE_VOICE_INTERNAL_NOTE',    openInternalNote);
+    window.addEventListener('PATHSCRIBE_VOICE_ADD_SYNOPTIC',     openAddSynoptic);
+    window.addEventListener('PATHSCRIBE_VOICE_FLAGS',            openFlags);
+    window.addEventListener('PATHSCRIBE_NEXT_UNANSWERED',  nextUnanswered);
+    window.addEventListener('PATHSCRIBE_NEXT_REQUIRED',    nextRequired);
+    window.addEventListener('PATHSCRIBE_CONFIRM_FIELD',    confirmField);
+    window.addEventListener('PATHSCRIBE_EDIT_FIELD',       editField);
+    window.addEventListener('PATHSCRIBE_SKIP_FIELD',       skipField);
+    window.addEventListener('PATHSCRIBE_FULL_VIEW',        fullView);
+    window.addEventListener('PATHSCRIBE_TABBED_VIEW',      tabbedView);
+    window.addEventListener('PATHSCRIBE_MAX_VIEW',         maxView);
+    window.addEventListener('PATHSCRIBE_MIN_VIEW',         minView);
+    window.addEventListener('PATHSCRIBE_PREVIEW_REPORT',   previewReport);
 
     return () => {
-      window.removeEventListener('ForMedrix_GOTO_CODES',           gotoCodes);
-      window.removeEventListener('ForMedrix_SELECT_SPECIMEN',       selectSpecimen);
-      window.removeEventListener('ForMedrix_OPEN_HISTORY',          openHistory);
-      window.removeEventListener('ForMedrix_CLOSE_HISTORY',         closeHistory);
-      window.removeEventListener('ForMedrix_VOICE_CANCEL',          cancelVoice);
-      window.removeEventListener('ForMedrix_ADD_ADDENDUM',          addAddendum);
-      window.removeEventListener('ForMedrix_ADD_AMENDMENT',         addAmendment);
-      window.removeEventListener('ForMedrix_SIGNOUT_NEXT',          signnoutNext);
-      window.removeEventListener('ForMedrix_VOICE_CASE_COMMENT',     openCaseComment);
-      window.removeEventListener('ForMedrix_VOICE_SPECIMEN_COMMENT', openSpecimenComment);
-      window.removeEventListener('ForMedrix_VOICE_INTERNAL_NOTE',    openInternalNote);
-      window.removeEventListener('ForMedrix_VOICE_ADD_SYNOPTIC',     openAddSynoptic);
-      window.removeEventListener('ForMedrix_VOICE_FLAGS',            openFlags);
-      window.removeEventListener('ForMedrix_NEXT_UNANSWERED',  nextUnanswered);
-      window.removeEventListener('ForMedrix_NEXT_REQUIRED',    nextRequired);
-      window.removeEventListener('ForMedrix_CONFIRM_FIELD',    confirmField);
-      window.removeEventListener('ForMedrix_EDIT_FIELD',       editField);
-      window.removeEventListener('ForMedrix_SKIP_FIELD',       skipField);
-      window.removeEventListener('ForMedrix_FULL_VIEW',        fullView);
-      window.removeEventListener('ForMedrix_TABBED_VIEW',      tabbedView);
-      window.removeEventListener('ForMedrix_MAX_VIEW',         maxView);
-      window.removeEventListener('ForMedrix_MIN_VIEW',         minView);
-      window.removeEventListener('ForMedrix_PREVIEW_REPORT',   previewReport);
+      window.removeEventListener('PATHSCRIBE_GOTO_CODES',           gotoCodes);
+      window.removeEventListener('PATHSCRIBE_SELECT_SPECIMEN',       selectSpecimen);
+      window.removeEventListener('PATHSCRIBE_OPEN_HISTORY',          openHistory);
+      window.removeEventListener('PATHSCRIBE_CLOSE_HISTORY',         closeHistory);
+      window.removeEventListener('PATHSCRIBE_VOICE_CANCEL',          cancelVoice);
+      window.removeEventListener('PATHSCRIBE_ADD_ADDENDUM',          addAddendum);
+      window.removeEventListener('PATHSCRIBE_ADD_AMENDMENT',         addAmendment);
+      window.removeEventListener('PATHSCRIBE_SIGNOUT_NEXT',          signnoutNext);
+      window.removeEventListener('PATHSCRIBE_VOICE_CASE_COMMENT',     openCaseComment);
+      window.removeEventListener('PATHSCRIBE_VOICE_SPECIMEN_COMMENT', openSpecimenComment);
+      window.removeEventListener('PATHSCRIBE_VOICE_INTERNAL_NOTE',    openInternalNote);
+      window.removeEventListener('PATHSCRIBE_VOICE_ADD_SYNOPTIC',     openAddSynoptic);
+      window.removeEventListener('PATHSCRIBE_VOICE_FLAGS',            openFlags);
+      window.removeEventListener('PATHSCRIBE_NEXT_UNANSWERED',  nextUnanswered);
+      window.removeEventListener('PATHSCRIBE_NEXT_REQUIRED',    nextRequired);
+      window.removeEventListener('PATHSCRIBE_CONFIRM_FIELD',    confirmField);
+      window.removeEventListener('PATHSCRIBE_EDIT_FIELD',       editField);
+      window.removeEventListener('PATHSCRIBE_SKIP_FIELD',       skipField);
+      window.removeEventListener('PATHSCRIBE_FULL_VIEW',        fullView);
+      window.removeEventListener('PATHSCRIBE_TABBED_VIEW',      tabbedView);
+      window.removeEventListener('PATHSCRIBE_MAX_VIEW',         maxView);
+      window.removeEventListener('PATHSCRIBE_MIN_VIEW',         minView);
+      window.removeEventListener('PATHSCRIBE_PREVIEW_REPORT',   previewReport);
     };
   }, [goToNextUnanswered, goToNextRequired, voiceConfirmField, voiceEditField, voiceSkipField,
       setSynopticViewMode, setIsExpandedView, setShowReportPreview,
@@ -1115,6 +1325,18 @@ const SynopticReportPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ⭐ Validation Summary Panel ⭐ */}
+        <ValidationSummaryPanel
+          issues={validationSummary.allIssues}
+          requiredMissing={validationSummary.requiredMissing}
+          disputed={validationSummary.disputed}
+          unverified={validationSummary.unverified}
+          dirty={validationSummary.dirty}
+          isReadyToFinalize={validationSummary.isReadyToFinalize}
+          onJumpToField={scrollToField}
+        />
+
 
         {/* Alert bar */}
         {!isExpandedView && (
@@ -1364,6 +1586,16 @@ const SynopticReportPage: React.FC = () => {
 
               <div ref={rightPanelScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '0 32px 32px' }}>
                 <style>{`.ProseMirror-menubar, [class*="toolbar"], [class*="Toolbar"] { min-height: 44px !important; }`}</style>
+                {/* ─── Narrative Editor ─────────────────────────────────────────────── */}
+                <section className="mt-6">
+                  <h2 className="text-lg font-semibold mb-2">Narrative</h2>
+                  <textarea
+                    value={narrative}
+                    onChange={(e) => setNarrative(e.target.value)}
+                    className="w-full h-40 p-3 border rounded-md font-mono text-sm"
+                    placeholder="Enter narrative text here..."
+                  />
+                </section>
 
                 {/* Full view */}
                 {synopticViewMode === 'full' && activeSynoptic && (
@@ -1462,7 +1694,7 @@ const SynopticReportPage: React.FC = () => {
                   <button onClick={() => setShowReportPreview(true)} style={{ padding: '7px 12px', border: '1.5px solid #334155', borderRadius: '7px', background: 'white', color: '#334155', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = 'white'} title="Preview the formatted pathology report">📄 Preview Report</button>
                   <button onClick={() => { setAmendmentMode('addendum'); setAmendmentText(''); setShowAmendmentModal(true); }} style={{ padding: '7px 12px', border: '1.5px solid #0891B2', borderRadius: '7px', background: 'white', color: '#0891B2', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'} onMouseLeave={e => e.currentTarget.style.background = 'white'} title="Request an addendum">📎 Addendum</button>
                   {showAmendmentButton && (
-                    <button onClick={() => { if (!isFinalized) return; setAmendmentMode('amendment'); setAmendmentText(''); setShowAmendmentModal(true); }} disabled={!isFinalized} style={{ padding: '7px 12px', border: `1.5px solid ${isFinalized ? '#d97706' : '#e2e8f0'}`, borderRadius: '7px', background: 'white', color: isFinalized ? '#d97706' : '#94a3b8', fontWeight: 600, fontSize: '12px', cursor: isFinalized ? 'pointer' : 'not-allowed', opacity: isFinalized ? 1 : 0.55 }} title={!isFinalized ? 'Amendment is only available after finalization' : lisIntegrationEnabled ? 'Amendment — ForMedrix will notify LIS' : 'Request an amendment'} onMouseEnter={e => { if (isFinalized) e.currentTarget.style.background = '#fffbeb'; }} onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}>✏️ Amendment</button>
+                    <button onClick={() => { if (!isFinalized) return; setAmendmentMode('amendment'); setAmendmentText(''); setShowAmendmentModal(true); }} disabled={!isFinalized} style={{ padding: '7px 12px', border: `1.5px solid ${isFinalized ? '#d97706' : '#e2e8f0'}`, borderRadius: '7px', background: 'white', color: isFinalized ? '#d97706' : '#94a3b8', fontWeight: 600, fontSize: '12px', cursor: isFinalized ? 'pointer' : 'not-allowed', opacity: isFinalized ? 1 : 0.55 }} title={!isFinalized ? 'Amendment is only available after finalization' : lisIntegrationEnabled ? 'Amendment — PathScribe will notify LIS' : 'Request an amendment'} onMouseEnter={e => { if (isFinalized) e.currentTarget.style.background = '#fffbeb'; }} onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}>✏️ Amendment</button>
                   )}
                   <button onClick={() => alert('Consultation Request — coming soon')} style={{ padding: '7px 12px', border: '1.5px solid #7c3aed', borderRadius: '7px', background: 'white', color: '#7c3aed', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#faf5ff'} onMouseLeave={e => e.currentTarget.style.background = 'white'} title="Request consultation">🔬 Consult</button>
                   <button type="button" onClick={() => setIsSimilarCasesOpen(true)} style={{ padding: '7px 12px', border: '1.5px solid #0891b2', borderRadius: '7px', background: 'white', color: '#0891b2', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'} onMouseLeave={e => e.currentTarget.style.background = 'white'} title="Show similar cases">📋 History</button>
@@ -1585,7 +1817,7 @@ const SynopticReportPage: React.FC = () => {
             <div style={{ fontSize: '44px', marginBottom: '12px' }}>✍️</div>
             <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>Sign Out Case</h2>
             <p style={{ color: '#64748b', marginBottom: '6px', fontSize: '13px', lineHeight: '1.5' }}>All synoptic reports for <strong data-phi="accession">Case {caseData.accession}</strong> have been finalized.</p>
-            <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '13px', lineHeight: '1.5' }}>Enter your username and password to sign out this case from ForMedrix.</p>
+            <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '13px', lineHeight: '1.5' }}>Enter your username and password to sign out this case from PathScribe.</p>
             <div style={{ textAlign: 'left', marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Username</label>
               <input type="text" autoFocus value={signOutUser} onChange={e => { setSignOutUser(e.target.value); setSignOutError(''); }} placeholder="Your username" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: `2px solid ${signOutError ? '#ef4444' : '#e2e8f0'}`, fontSize: '14px', boxSizing: 'border-box', outline: 'none' }} />
@@ -1647,108 +1879,58 @@ const SynopticReportPage: React.FC = () => {
         </div>
       )}
 
-      {/* Amendment / Addendum modal */}
-      {showAmendmentModal && (
-        <div data-capture-hide="true" style={modalOverlay} onClick={() => setShowAmendmentModal(false)}>
-          <div style={{ width: '520px', backgroundColor: '#fff', padding: '36px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              {(['amendment', 'addendum'] as const).map(mode => (
-                <button key={mode} onClick={() => setAmendmentMode(mode)} style={{ padding: '7px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', border: '1.5px solid', background: amendmentMode === mode ? (mode === 'amendment' ? '#d97706' : '#0891B2') : 'white', color: amendmentMode === mode ? 'white' : (mode === 'amendment' ? '#d97706' : '#0891B2'), borderColor: mode === 'amendment' ? '#d97706' : '#0891B2' }}>
-                  {mode === 'amendment' ? '✏️ Amendment' : '📎 Addendum'}
-                </button>
-              ))}
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>{amendmentMode === 'amendment' ? 'Amendment Request' : 'Addendum Request'}</h2>
-            <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '20px', lineHeight: '1.5' }}>
-              {amendmentMode === 'amendment' ? 'An amendment is a corrective change to a finalized report. Describe the error and the correction required.' : 'An addendum is an official addition to a finalized report. Describe the reason for the addendum and any changes required.'}
-              {' '}Applies to <strong>{activeSynoptic?.title ?? 'the report'}</strong>.
-            </p>
-            <textarea autoFocus value={amendmentText} onChange={e => setAmendmentText(e.target.value)} placeholder={amendmentMode === 'amendment' ? 'Describe the error and the required correction…' : 'Describe the reason for the addendum and any changes required…'} rows={6} style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '13px', lineHeight: '1.6', resize: 'vertical', boxSizing: 'border-box', outline: 'none', fontFamily: 'Inter, sans-serif' }} />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-              <button onClick={() => setShowAmendmentModal(false)} style={{ flex: 1, padding: '11px', borderRadius: '10px', background: 'transparent', border: '2px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={() => { if (!amendmentText.trim()) return; setShowAmendmentModal(false); showToast(`${amendmentMode === 'amendment' ? 'Amendment' : 'Addendum'} request submitted`); }} disabled={!amendmentText.trim()} style={{ flex: 1, padding: '11px', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '14px', cursor: amendmentText.trim() ? 'pointer' : 'not-allowed', background: amendmentText.trim() ? (amendmentMode === 'amendment' ? '#d97706' : '#0891B2') : '#e2e8f0', color: amendmentText.trim() ? '#fff' : '#94a3b8' }} onMouseEnter={e => { if (amendmentText.trim()) e.currentTarget.style.opacity = '0.9'; }} onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
-                {amendmentMode === 'amendment' ? '✏️ Submit Amendment' : '📎 Submit Addendum'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+{/* Extracted Modals */}
+<FinalizeSynopticModal
+  show={showFinalizeModal}
+  overlayStyle={modalOverlay}
+  activeSynoptic={activeSynoptic ?? null}
+  finalizePassword={finalizePassword}
+  finalizeError={finalizeError}
+  finalizeAndNext={finalizeAndNext}
+  onClose={() => setShowFinalizeModal(false)}
+  onPasswordChange={(value) => {
+    setFinalizePassword(value);
+    setFinalizeError('');
+  }}
+  onConfirm={handleFinalizeConfirm}
+/>
 
-      {/* Unsaved changes warning */}
-      {showWarning && (
-        <div data-capture-hide="true" style={modalOverlay}>
-          <div style={{ width: '400px', backgroundColor: '#111', padding: '40px', borderRadius: '28px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>Unsaved Changes</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '30px', lineHeight: '1.6', fontSize: '15px' }}>You have unsaved changes. Leaving now will discard your current progress.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button onClick={() => { setShowWarning(false); setPendingNavigation(null); }} style={{ padding: '16px', borderRadius: '12px', background: '#0891B2', border: 'none', color: '#fff', fontWeight: 700, fontSize: '16px', cursor: 'pointer' }}>← Keep Editing</button>
-              <button onClick={() => { handleSaveDraft(); setShowWarning(false); if (pendingNavigation) navigate(pendingNavigation); }} style={{ padding: '16px', borderRadius: '12px', background: 'transparent', border: '2px solid #10B981', color: '#10B981', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>💾 Save &amp; Leave</button>
-              <button onClick={confirmNavigation} style={{ padding: '16px', borderRadius: '12px', background: 'transparent', border: '2px solid #F59E0B', color: '#F59E0B', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#F59E0B'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#F59E0B'; }}>Leave &amp; Discard</button>
-            </div>
-          </div>
-        </div>
-      )}
+<CaseSignOutModal
+  show={showSignOutModal}
+  overlayStyle={modalOverlay}
+  accession={caseData.accession}
+  signOutUser={signOutUser}
+  signOutPassword={signOutPassword}
+  signOutError={signOutError}
+  onClose={() => setShowSignOutModal(false)}
+  onUserChange={(value) => {
+    setSignOutUser(value);
+    setSignOutError('');
+  }}
+  onPasswordChange={(value) => {
+    setSignOutPassword(value);
+    setSignOutError('');
+  }}
+  onConfirm={handleCaseSignOut}
+/>
 
-      {/* Profile modal */}
-      {isProfileOpen && (
-        <div data-capture-hide="true" style={modalOverlay} onClick={() => setIsProfileOpen(false)}>
-          <div style={{ width: '400px', backgroundColor: '#111', borderRadius: '20px', padding: '40px', border: '1px solid rgba(8,145,178,0.3)', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ color: '#0891B2', fontSize: '24px', fontWeight: 700, marginBottom: '24px' }}>User Preferences</div>
-            <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button onClick={() => { window.open('https://www.cap.org/', '_blank'); setIsProfileOpen(false); }} style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#cbd5e1', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(8,145,178,0.1)'; e.currentTarget.style.color = '#0891B2'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#cbd5e1'; }}><HelpIcon /> Support &amp; Protocols</button>
-              <button onClick={() => { setShowAbout(true); setIsProfileOpen(false); }} style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#cbd5e1', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(8,145,178,0.1)'; e.currentTarget.style.color = '#0891B2'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#cbd5e1'; }}><HelpIcon /> About ForMedrix<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super' }}>AI</span></button>
-            </div>
-            <button onClick={() => setIsProfileOpen(false)} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(8,145,178,0.15)', border: '1px solid rgba(8,145,178,0.3)', color: '#0891B2', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%' }}>Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* About modal */}
-      {showAbout && (
-        <div data-capture-hide="true" style={modalOverlay} onClick={() => setShowAbout(false)}>
-          <div style={{ width: '400px', backgroundColor: 'rgba(220,220,220,0.75)', backdropFilter: 'blur(40px)', padding: '40px', borderRadius: '20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.3)' }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: '32px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>ForMedrix<span style={{ color: '#0891B2', fontSize: '0.6em', verticalAlign: 'super' }}>AI</span></h2>
-            <p style={{ color: '#3a3a3a', marginBottom: '8px', fontSize: '15px' }}>Version 1.0.0 | Build: 2026-02-14</p>
-            <p style={{ color: '#5a5a5a', marginBottom: '30px', fontSize: '14px' }}>&copy; 2026 ForMedrix</p>
-            <button onClick={() => setShowAbout(false)} style={{ padding: '12px 32px', borderRadius: '8px', background: 'rgba(160,160,160,0.5)', border: 'none', color: '#1a1a1a', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%' }}>Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* Resources modal */}
-      {isResourcesOpen && (
-        <div data-capture-hide="true" style={modalOverlay} onClick={() => setIsResourcesOpen(false)}>
-          <div style={{ width: '500px', maxHeight: '80vh', overflowY: 'auto', backgroundColor: '#111', borderRadius: '20px', padding: '40px', border: '1px solid rgba(8,145,178,0.3)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ color: '#0891B2', fontSize: '24px', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>Quick Links</div>
-            {Object.entries(quickLinks).map(([section, links]) => (
-              <div key={section} style={{ marginBottom: '24px' }}>
-                <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>{section}</div>
-                {links.map((link, i) => (
-                  <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" onClick={() => setIsResourcesOpen(false)} style={{ display: 'block', color: '#cbd5e1', textDecoration: 'none', padding: '12px 16px', fontSize: '16px', borderRadius: '8px', marginBottom: '8px' }} onMouseEnter={e => { e.currentTarget.style.color = '#0891B2'; e.currentTarget.style.background = 'rgba(8,145,178,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#cbd5e1'; e.currentTarget.style.background = 'transparent'; }}>→ {link.title}</a>
-                ))}
-              </div>
-            ))}
-            <button onClick={() => setIsResourcesOpen(false)} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(8,145,178,0.15)', border: '1px solid rgba(8,145,178,0.3)', color: '#0891B2', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%' }}>Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* Logout warning modal */}
-      {showLogoutModal && (
-        <div data-capture-hide="true" style={modalOverlay}>
-          <div style={{ width: '400px', backgroundColor: '#111', padding: '40px', borderRadius: '28px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}><WarningIcon color="#F59E0B" /></div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>Unsaved Data</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '30px', lineHeight: '1.6', fontSize: '15px' }}>You have unsaved changes. Logging out will discard your current progress.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button onClick={() => setShowLogoutModal(false)} style={{ padding: '16px', borderRadius: '12px', background: '#0891B2', border: 'none', color: '#fff', fontWeight: 700, fontSize: '16px', cursor: 'pointer' }}>← Return to Page</button>
-              <button onClick={() => { handleSaveDraft(); handleLogout(); }} style={{ padding: '16px', borderRadius: '12px', background: 'transparent', border: '2px solid #10B981', color: '#10B981', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>💾 Save &amp; Log Out</button>
-              <button onClick={handleLogout} style={{ padding: '16px', borderRadius: '12px', background: 'transparent', border: '2px solid #F59E0B', color: '#F59E0B', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#F59E0B'; e.currentTarget.style.color = '#000'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#F59E0B'; }}>Log Out &amp; Discard</button>
-            </div>
-          </div>
-        </div>
-      )}
+<AmendmentModal
+  show={showAmendmentModal}
+  overlayStyle={modalOverlay}
+  amendmentMode={amendmentMode}
+  amendmentText={amendmentText}
+  activeSynopticTitle={activeSynoptic?.title ?? 'the report'}
+  onModeChange={(mode) => setAmendmentMode(mode)}
+  onTextChange={(value) => setAmendmentText(value)}
+  onClose={() => setShowAmendmentModal(false)}
+  onSubmit={() => {
+    if (!amendmentText.trim()) return;
+    setShowAmendmentModal(false);
+    showToast(
+      `${amendmentMode === 'amendment' ? 'Amendment' : 'Addendum'} request submitted`
+    );
+  }}
+/>
 
       {/* Voice overlays — outside AppShell so mounted directly here */}
       <VoiceCommandOverlay showSuccess={import.meta.env.DEV} />

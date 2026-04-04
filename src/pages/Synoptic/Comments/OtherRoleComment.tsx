@@ -1,6 +1,6 @@
 import React from 'react';
-import type { CaseRole } from '../synopticTypes';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
+import PathScribeEditor from '../../../components/Editor/PathScribeEditor';
 
 const OtherRoleComment: React.FC<{
   role: CaseRole;

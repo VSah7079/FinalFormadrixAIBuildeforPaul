@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   EnhancementRequestConfig as Config,
@@ -240,7 +240,7 @@ export const EnhancementRequestConfig: React.FC = () => {
               <input
                 value={config.portalProjectKey}
                 onChange={e => patch({ portalProjectKey: e.target.value })}
-                placeholder="e.g. PATH (Jira) or ForMedrix\\Enhancements (ADO)"
+                placeholder="e.g. PATH (Jira) or pathscribe\\Enhancements (ADO)"
                 style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = T.accent}
                 onBlur={e  => e.currentTarget.style.borderColor = T.border}

@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { PatientCaseSummary } from '../../Legacy/CasePanel_similarcases_legacy';
 
 interface PatientHistoryTabProps {

@@ -17,7 +17,7 @@
  */
 
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useNavigate } from 'react-router-dom';
 import {
   Protocol,

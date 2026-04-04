@@ -50,7 +50,7 @@ export function buildHtmlEmail(payload: EnhancementRequestPayload): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">ForMedrix AI</div>
+                    <div style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">PathScribe AI</div>
                     <div style="font-size:11px;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:0.08em;">Enhancement Request</div>
                   </td>
                   <td align="right">
@@ -121,7 +121,7 @@ export function buildHtmlEmail(payload: EnhancementRequestPayload): string {
           <tr>
             <td style="padding:28px 32px;margin-top:24px;border-top:1px solid #e2e8f0;margin:24px 32px 0;">
               <div style="font-size:11px;color:#94a3b8;line-height:1.6;">
-                This request was submitted via ForMedrix AI. To configure routing preferences, visit
+                This request was submitted via PathScribe AI. To configure routing preferences, visit
                 <strong>Configuration → System → Enhancement Request Routing</strong>.
               </div>
             </td>
@@ -141,7 +141,7 @@ export function buildHtmlEmail(payload: EnhancementRequestPayload): string {
 export function buildPlainTextEmail(payload: EnhancementRequestPayload): string {
   const { title, description, category, priority, metadata, includeSystem, attachments } = payload;
   const lines: string[] = [
-    'ForMedrix AI — ENHANCEMENT REQUEST',
+    'PATHSCRIBE AI — ENHANCEMENT REQUEST',
     '═'.repeat(40),
     '',
     `Title:       ${title}`,
@@ -166,12 +166,12 @@ export function buildPlainTextEmail(payload: EnhancementRequestPayload): string 
 
   if (attachments.length > 0) {
     lines.push('ATTACHMENTS', '─'.repeat(40));
-    attachments.forEach(f => lines.push(`  &bull; ${f.name}`));
+    attachments.forEach(f => lines.push(`  • ${f.name}`));
     lines.push('');
   }
 
   lines.push('─'.repeat(40));
-  lines.push('Sent from ForMedrix AI — Configuration → System → Enhancement Request Routing');
+  lines.push('Sent from PathScribe AI — Configuration → System → Enhancement Request Routing');
 
   return lines.filter(l => l !== null).join('\n');
 }

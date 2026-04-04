@@ -1,9 +1,9 @@
 import React from 'react';
-import { useForMedrixSpeech } from '../../hooks/useForMedrixSpeech';
+import { usepathscribeSpeech } from '../../hooks/usepathscribeSpeech';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 
 const VoiceControl: React.FC = () => {
-  const { isListening, isAiEnabled, isProcessing, toggleMic } = useForMedrixSpeech();
+  const { isListening, isAiEnabled, isProcessing, toggleMic } = usepathscribeSpeech();
 
   const getStateStyles = () => {
     if (!isListening) return { border: '#334155', icon: '#f1f5f9', glow: 'transparent' };

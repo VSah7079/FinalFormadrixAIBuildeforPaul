@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { modelService } from '../../../services';
 import { AIModel } from '../../../services/models/IModelService';
 

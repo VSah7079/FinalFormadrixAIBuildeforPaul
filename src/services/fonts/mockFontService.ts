@@ -15,8 +15,8 @@ const SEED_FONTS: EditorFont[] = [
   { id: 'source-serif', name: 'Source Serif',    family: '"Source Serif 4", serif',       source: 'google', status: 'Inactive' },
 ];
 
-const load = () => storageGet<EditorFont[]>('formedrix_fonts', SEED_FONTS);
-const persist = (data: EditorFont[]) => storageSet('formedrix_fonts', data);
+const load = () => storageGet<EditorFont[]>('pathscribe_fonts', SEED_FONTS);
+const persist = (data: EditorFont[]) => storageSet('pathscribe_fonts', data);
 let MOCK_FONTS: EditorFont[] = load();
 
 let MOCK_CONFIG: EditorFontConfig = {

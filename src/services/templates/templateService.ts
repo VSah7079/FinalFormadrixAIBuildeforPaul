@@ -371,7 +371,7 @@ export async function transitionTemplate(
 }
 
 // ─── Terminology validation ───────────────────────────────────────────────────
-// POST /api/v1/terminology/validate (see /docs/api/formedrix-api-contract.yaml)
+// POST /api/v1/terminology/validate (see /docs/api/pathscribe-api-contract.yaml)
 //
 // Mock phase: validates against MOCK_DEPRECATED_CODES.
 // Real phase: replace function body with fetch() to the backend endpoint.
@@ -528,3 +528,23 @@ export async function validateTerminologyCodes(
   // if (!res.ok) throw await res.json() as ServiceError;
   // return res.json();
 }
+
+// ─── DEVELOPMENT SEED (CAP eCC JSON files) ───────────────────────────────────
+// Imports real CAP protocol JSON files converted from official eCCs.
+// Each is seeded into editorStore at module load so getTemplate() returns
+// real field data during development. Remove when backend API is wired in.
+
+import BREAST_INVASIVE_JSON      from '../../data/templates/breast_invasive.json';
+import BREAST_DCIS_JSON          from '../../data/templates/breast_dcis_resection.json';
+import LUNG_ADENO_JSON           from '../../data/templates/lung_adeno.json';
+import PROSTATE_NEEDLE_JSON      from '../../data/templates/prostate_needle_biopsy.json';
+import COLON_RESECTION_JSON      from '../../data/templates/colon_resection.json';
+
+// Seed all real CAP templates
+editorStore.set('breast_invasive',      BREAST_INVASIVE_JSON   as any);
+editorStore.set('breast_dcis_resection',BREAST_DCIS_JSON       as any);
+editorStore.set('lung_adeno',           LUNG_ADENO_JSON        as any);
+editorStore.set('prostate_needle_biopsy', PROSTATE_NEEDLE_JSON as any);
+editorStore.set('colon_resection',         COLON_RESECTION_JSON   as any);
+
+// Keep melanoma (already seeded above from skin_melanoma_bx.json)

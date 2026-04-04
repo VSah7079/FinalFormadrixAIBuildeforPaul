@@ -39,8 +39,8 @@ const SEED_FLAGS: Flag[] = [
   { id: 'f35', name: 'Molecular Profiling Pending', lisCode: 'MPROF',  description: 'Comprehensive molecular profiling panel in progress',             level: 'Specimen', severity: 3, status: 'Active'   },
 ];
 
-const load = () => storageGet<Flag[]>('formedrix_flags', SEED_FLAGS);
-const persist = (data: Flag[]) => storageSet('formedrix_flags', data);
+const load = () => storageGet<Flag[]>('pathscribe_flags', SEED_FLAGS);
+const persist = (data: Flag[]) => storageSet('pathscribe_flags', data);
 let MOCK_FLAGS: Flag[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });

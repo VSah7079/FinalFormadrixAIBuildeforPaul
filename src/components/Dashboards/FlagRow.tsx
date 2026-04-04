@@ -18,8 +18,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import React from "react";
-import '../../formedrix.css';
-import { ForMedrixTheme } from "@theme/ForMedrixTheme";
+import '../../pathscribe.css';
+import { pathscribeTheme } from "@theme/pathscribeTheme";
 import type { ContributionFlag, Severity } from "../../types/ContributionDashboard";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,9 +38,9 @@ const SEVERITY_BG: Record<Severity, string> = {
 };
 
 const SEVERITY_COLOR: Record<Severity, string> = {
-  high:   ForMedrixTheme.colors.semantic.warning,
-  medium: ForMedrixTheme.colors.semantic.info,
-  low:    ForMedrixTheme.colors.semantic.success,
+  high:   pathscribeTheme.colors.semantic.warning,
+  medium: pathscribeTheme.colors.semantic.info,
+  low:    pathscribeTheme.colors.semantic.success,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,8 +61,8 @@ const FlagRow: React.FC<FlagRowProps> = ({
       style={{
         padding: "10px 12px",
         borderRadius: "10px",
-        background: ForMedrixTheme.colors.surfaceSubtle,
-        border: `1px solid ${ForMedrixTheme.colors.border.subtle}`,
+        background: pathscribeTheme.colors.surfaceSubtle,
+        border: `1px solid ${pathscribeTheme.colors.border.subtle}`,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -72,10 +72,10 @@ const FlagRow: React.FC<FlagRowProps> = ({
     >
       {/* Left: case ID + issue description */}
       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span style={{ fontWeight: 600, color: ForMedrixTheme.colors.text.primary }}>
+        <span style={{ fontWeight: 600, color: pathscribeTheme.colors.text.primary }}>
           {label}
         </span>
-        <span style={{ color: ForMedrixTheme.colors.text.muted }}>
+        <span style={{ color: pathscribeTheme.colors.text.muted }}>
           {value}
         </span>
       </div>

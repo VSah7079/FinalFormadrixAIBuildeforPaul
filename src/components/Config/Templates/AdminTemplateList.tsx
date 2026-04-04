@@ -1,5 +1,5 @@
 import React from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useNavigate } from "react-router-dom";
 
 type Template = {

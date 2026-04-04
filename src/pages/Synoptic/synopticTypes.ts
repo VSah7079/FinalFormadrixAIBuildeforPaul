@@ -27,7 +27,9 @@ export interface SynopticField {
   value: string;
   aiValue: string;
   dirty: boolean;
-  verification: FieldVerification;
+  verification: FieldVerification; 
+  disputeReason?: string;
+  attested?: boolean;
 }
 
 export interface MedicalCode {
@@ -49,16 +51,23 @@ export interface MedicalCode {
 // Children are fixed by the protocol template — pathologists fill values only.
 
 export interface SynopticReportNode {
-  instanceId: string;          // unique per node instance (uuid-like)
-  templateId: string;          // e.g. "cap_erpr_1.0" — identifies the protocol
-  title: string;               // display name, e.g. "ER/PR IHC Panel"
+  instanceId: string;
+  templateId: string;
+  title: string;
   status: 'draft' | 'finalized';
+
+  // FIELD GROUPS (UI expects all of these)
   tumorFields: SynopticField[];
   marginFields: SynopticField[];
+  lymphNodes?: SynopticField[];        // ← add
+  ancillaryFields?: SynopticField[];   // ← add
+  specimenFields?: SynopticField[];    // ← add
   biomarkerFields: SynopticField[];
+
   specimenComment: string;
   codes: MedicalCode[];
-  children: SynopticReportNode[];  // sub-reports called by this protocol
+
+  children: SynopticReportNode[];
 }
 
 export interface SpecimenSynoptic {
@@ -81,6 +90,11 @@ export interface CaseData {
   caseComments: Partial<Record<CaseRole, string>>;
   synoptics: SpecimenSynoptic[];
 }
+export interface OtherRoleComment {
+  role: CaseRole;
+  text: string;
+  createdAt: string;
+}
 
 // ─── Navigation: path through the tree ───────────────────────────────────────
 // activePath = [specimenIndex, reportIndex, childIndex, grandchildIndex, ...]
@@ -88,4 +102,3 @@ export interface CaseData {
 // activePath[1] = which top-level report within that specimen
 // activePath[2+] = which child at each subsequent level
 export type ActivePath = number[];
-

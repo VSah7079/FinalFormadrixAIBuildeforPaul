@@ -1,12 +1,8 @@
 import React from 'react';
-import '../../../formedrix.css';
-import type { MedicalCode, FieldVerification, CodeSource } from '../synopticTypes';
-
-const SOURCE_META: Record<CodeSource, { label: string; color: string; bg: string; removable: boolean }> = {
-  system: { label: 'CAP/System', color: '#5b21b6', bg: '#ede9fe', removable: false },
-  ai:     { label: 'AI',         color: '#0369a1', bg: '#e0f2fe', removable: true  },
-  manual: { label: 'Manual',     color: '#065f46', bg: '#d1fae5', removable: true  },
-};
+import '../../../pathscribe.css';
+import type { MedicalCode } from '../synopticTypes';
+import { SOURCE_META } from './codeConstants';
+import { FieldVerification } from '../../Synoptic/synopticTypes';
 
 
 // ─── CodeBadge ────────────────────────────────────────────────────────────────
@@ -138,4 +134,3 @@ const CodeBadge: React.FC<{
 // specimen strip at bottom. One view, no steps, no page turns.
 
 export default CodeBadge;
-

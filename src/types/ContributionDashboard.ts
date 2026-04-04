@@ -34,7 +34,7 @@ export interface ContributionFlag {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Case Mix Data
-// Keys match ForMedrixTheme.colors.caseMix exactly.
+// Keys match pathscribeTheme.colors.caseMix exactly.
 // All values are case counts (integers expected, floats accepted).
 // ─────────────────────────────────────────────────────────────────────────────
 export interface CaseMixData {

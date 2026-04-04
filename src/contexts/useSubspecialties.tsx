@@ -1,66 +1,85 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
-import { subspecialtyService } from "../services";
+// src/contexts/useSubspecialties.tsx
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface Subspecialty {
   id: string;
   name: string;
   active: boolean;
-  userIds: string[];      // physician IDs assigned to this subspecialty
-  description?: string;   // optional description
-  specimenIds?: string[]; // specimen types assigned to this subspecialty
+  userIds: string[];
+  specimenIds: string[];
+  clientIds: string[];    // New: Links to Client Dictionary
+  isWorkgroup: boolean;   // New: Toggle for Consult/Referral routing
+  description?: string;
+  category?: string;
 }
 
 interface SubspecialtyContextType {
   subspecialties: Subspecialty[];
-  subspecialtyMap: Record<string, Subspecialty>;
-  addSubspecialty:    (s: Omit<Subspecialty, "id">) => void;
-  updateSubspecialty: (s: Subspecialty) => void;
+  addSubspecialty: (sub: Omit<Subspecialty, 'id'>) => void;
+  updateSubspecialty: (sub: Subspecialty) => void;
   deleteSubspecialty: (id: string) => void;
 }
 
 const SubspecialtyContext = createContext<SubspecialtyContextType | undefined>(undefined);
 
-export const SubspecialtyProvider = ({ children }: { children: ReactNode }) => {
-  const [subspecialties, setSubspecialties] = useState<Subspecialty[]>([]);
+export const SubspecialtyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Initial state updated with new required fields to prevent TS2345
+  const [subspecialties, setSubspecialties] = useState<Subspecialty[]>([
+    {
+      id: '1',
+      name: 'Gastrointestinal',
+      active: true,
+      userIds: ['user_1'],
+      specimenIds: ['spec_1', 'spec_2'],
+      clientIds: [], // Global by default
+      isWorkgroup: true,
+      category: 'gi',
+      description: 'Main GI biopsy pool'
+    },
+    {
+      id: '2',
+      name: 'Dermatopathology',
+      active: true,
+      userIds: ['user_2'],
+      specimenIds: ['spec_3'],
+      clientIds: ['client_1'], // Specific to a client
+      isWorkgroup: false,
+      category: 'derm'
+    }
+  ]);
 
-  useEffect(() => {
-    subspecialtyService.getAll().then(res => {
-      if (res.ok) setSubspecialties(res.data.map(s => ({
-        id: s.id, name: s.name, active: s.status === 'Active', userIds: s.userIds,
-      })));
-    });
-  }, []);
-
-  const addSubspecialty = async (s: Omit<Subspecialty, "id">) => {
-    const res = await subspecialtyService.add({
-      name: s.name, userIds: s.userIds, specimenIds: [],
-      status: s.active ? 'Active' : 'Inactive',
-    });
-    if (res.ok) setSubspecialties(prev => [...prev, {
-      id: res.data.id, name: res.data.name,
-      active: res.data.status === 'Active', userIds: res.data.userIds,
-    }]);
+  const addSubspecialty = (newSub: Omit<Subspecialty, 'id'>) => {
+    const subWithId: Subspecialty = {
+      ...newSub,
+      id: Math.random().toString(36).substring(2, 9),
+      // Ensure arrays exist even if modal sends null/undefined
+      specimenIds: newSub.specimenIds || [],
+      userIds: newSub.userIds || [],
+      clientIds: newSub.clientIds || [],
+      isWorkgroup: newSub.isWorkgroup || false,
+    };
+    setSubspecialties((prev) => [...prev, subWithId]);
   };
 
-  const updateSubspecialty = async (updated: Subspecialty) => {
-    const res = await subspecialtyService.update(updated.id, {
-      name: updated.name, userIds: updated.userIds,
-      status: updated.active ? 'Active' : 'Inactive',
-    });
-    if (res.ok) setSubspecialties(prev => prev.map(s => s.id === updated.id ? updated : s));
+  const updateSubspecialty = (updatedSub: Subspecialty) => {
+    setSubspecialties((prev) =>
+      prev.map((sub) => (sub.id === updatedSub.id ? updatedSub : sub))
+    );
   };
 
-  const deleteSubspecialty = async (id: string) => {
-    const res = await subspecialtyService.deactivate(id);
-    if (res.ok) setSubspecialties(prev => prev.filter(s => s.id !== id));
+  const deleteSubspecialty = (id: string) => {
+    setSubspecialties((prev) => prev.filter((sub) => sub.id !== id));
   };
-
-  const subspecialtyMap = useMemo(() => {
-    return Object.fromEntries(subspecialties.map((s) => [s.name.toLowerCase(), s]));
-  }, [subspecialties]);
 
   return (
-    <SubspecialtyContext.Provider value={{ subspecialties, subspecialtyMap, addSubspecialty, updateSubspecialty, deleteSubspecialty }}>
+    <SubspecialtyContext.Provider 
+      value={{ 
+        subspecialties, 
+        addSubspecialty, 
+        updateSubspecialty, 
+        deleteSubspecialty 
+      }}
+    >
       {children}
     </SubspecialtyContext.Provider>
   );
@@ -68,6 +87,8 @@ export const SubspecialtyProvider = ({ children }: { children: ReactNode }) => {
 
 export const useSubspecialties = () => {
   const context = useContext(SubspecialtyContext);
-  if (!context) throw new Error("useSubspecialties must be used within a SubspecialtyProvider");
+  if (!context) {
+    throw new Error('useSubspecialties must be used within a SubspecialtyProvider');
+  }
   return context;
 };

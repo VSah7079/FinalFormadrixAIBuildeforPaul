@@ -2,7 +2,7 @@
 /**
  * seedTerminology.ts — scripts/seedTerminology.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Deployment script that seeds ForMedrix's clinical terminology dictionaries
+ * Deployment script that seeds pathscribe's clinical terminology dictionaries
  * into Firestore. Run once at institution setup, and again whenever a new
  * terminology edition is released.
  *
@@ -289,7 +289,7 @@ async function seedSystem(
 
 async function main(): Promise<void> {
   console.log('━'.repeat(60));
-  console.log('  ForMedrix Terminology Seed Script');
+  console.log('  pathscribe Terminology Seed Script');
   console.log('━'.repeat(60));
 
   if (isListVersions) {

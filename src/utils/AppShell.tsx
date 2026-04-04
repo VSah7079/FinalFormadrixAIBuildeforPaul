@@ -102,8 +102,8 @@ const AppShell: React.FC = () => {
         {/* Left — logo + breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <img
-            src="/formedrix-logo.svg"
-            alt="ForMedrix AI"
+            src="/pathscribe-logo.svg"
+            alt="pathscribe AI"
             style={{ height: '60px', width: 'auto', cursor: 'pointer' }}
             onClick={() => navigate('/')}
           />

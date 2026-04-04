@@ -1,7 +1,7 @@
 /**
  * SystemConfigContext.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * React context, provider, and hook for ForMedrix system-level configuration.
+ * React context, provider, and hook for PathScribe system-level configuration.
  *
  * Architecture role:
  *   This is the runtime layer that sits on top of the pure types in
@@ -40,16 +40,27 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from 'react';
+
 import {
   SystemConfig,
   DEFAULT_SYSTEM_CONFIG,
 } from '../types/systemConfig';
 
+// NEW — typed enterprise + hospital config
+import { EnterpriseConfig } from '@app-types/config/EnterpriseConfig';
+import { HospitalConfig } from '@app-types/config/HospitalConfig';
+
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
 const LS_VERSION = 'v1';
-const LS_KEY     = `formedrix_system_config_${LS_VERSION}`;
+const LS_KEY     = `pathscribe_system_config_${LS_VERSION}`;
 
 const loadConfig = (): SystemConfig => {
   try {
@@ -59,8 +70,6 @@ const loadConfig = (): SystemConfig => {
       : { ...DEFAULT_SYSTEM_CONFIG };
 
     // Hard env override — VITE_VOICE_ENABLED=false disables voice entirely
-    // regardless of what is stored in localStorage. Useful for deployments
-    // where voice should never be available (e.g. locked-down client sites).
     const envVoice = (import.meta as any).env?.VITE_VOICE_ENABLED;
     if (envVoice === 'false') merged.voiceEnabled = false;
 
@@ -89,16 +98,10 @@ interface SystemConfigContextValue {
    * Shallow-merge update. Pass only the fields you want to change.
    * Changes are immediately reflected in the context and persisted to
    * localStorage.
-   *
-   * Example:
-   *   updateConfig({ lisIntegrationEnabled: true });
    */
   updateConfig: (patch: Partial<SystemConfig>) => void;
 
-  /**
-   * Reset all config values back to DEFAULT_SYSTEM_CONFIG.
-   * Useful for a "Restore Defaults" button in the config UI.
-   */
+  /** Reset all config values back to DEFAULT_SYSTEM_CONFIG. */
   resetConfig: () => void;
 }
 
@@ -108,21 +111,13 @@ const SystemConfigContext = createContext<SystemConfigContextValue | null>(null)
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-/**
- * SystemConfigProvider
- * Wrap your app root (or router) with this provider so that all pages and
- * components can access system config via useSystemConfig().
- *
- * Recommended placement in App.tsx / main.tsx:
- *   <SystemConfigProvider>
- *     <AuthProvider>
- *       <BrowserRouter>
- *         ...routes
- *       </BrowserRouter>
- *     </AuthProvider>
- *   </SystemConfigProvider>
- */
 export const SystemConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
+  // NEW — typed enterprise + hospital config state
+  // These do NOT replace your SystemConfig. They are inputs used elsewhere.
+
+
+  // Existing combined system config
   const [config, setConfig] = useState<SystemConfig>(loadConfig);
 
   // Persist to localStorage whenever config changes
@@ -139,7 +134,13 @@ export const SystemConfigProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   return (
-    <SystemConfigContext.Provider value={{ config, updateConfig, resetConfig }}>
+    <SystemConfigContext.Provider
+      value={{
+        config,
+        updateConfig,
+        resetConfig,
+      }}
+    >
       {children}
     </SystemConfigContext.Provider>
   );
@@ -147,15 +148,6 @@ export const SystemConfigProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-/**
- * useSystemConfig
- * Returns the current system config and an update function.
- * Must be used inside a <SystemConfigProvider> — throws a clear error if not.
- *
- * Example:
- *   const { config, updateConfig } = useSystemConfig();
- *   if (config.lisIntegrationEnabled) { ... }
- */
 export const useSystemConfig = (): SystemConfigContextValue => {
   const ctx = useContext(SystemConfigContext);
   if (!ctx) {

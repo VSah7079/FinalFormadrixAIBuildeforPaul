@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSubspecialties, Subspecialty } from "../../../contexts/useSubspecialties";
 import { useSpecimens } from "../../../contexts/useSpecimens";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../../Common/modalStyles";
 import { userService } from "../../../services";
 import { StaffUser } from "../Users/index";
+import { mockClientService, Client } from "../../../services/clients/mockClientService";
 
 
 
@@ -80,8 +81,22 @@ const ImpactRow = ({ name, sub }: { name: string; sub?: string }) => (
   </div>
 );
 
-type Draft = { name: string; active: boolean; userIds: string[] };
-const emptyDraft: Draft = { name: "", active: true, userIds: [] };
+type Draft = { 
+  name: string; 
+  active: boolean; 
+  userIds: string[]; 
+  description: string;      
+  isWorkgroup: boolean;     
+  clientIds: string[];      
+};
+const emptyDraft: Draft = { 
+  name: "", 
+  active: true, 
+  userIds: [], 
+  description: "",          
+  isWorkgroup: false,       
+  clientIds: []             
+};
 
 type InactiveConfirm = {
   sub: Subspecialty; draft: Draft; specimenAssignments: string[];
@@ -93,10 +108,12 @@ type ReactivateConfirm = { sub: Subspecialty; draft: Draft; specimenAssignments:
 const SubspecialtiesSection: React.FC = () => {
   const { subspecialties, addSubspecialty, updateSubspecialty } = useSubspecialties();
   const { specimens, updateSpecimen } = useSpecimens();
-  const [users, setUsers] = useState<StaffUser[]>([]);
+  const [users,   setUsers]   = useState<StaffUser[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   React.useEffect(() => {
     userService.getAll().then(res => { if (res.ok) setUsers(res.data); });
+    mockClientService.getAll().then(res => { if (res.ok) setClients(res.data); });
   }, []);
 
   const [search, setSearch]                           = useState("");
@@ -105,10 +122,11 @@ const SubspecialtiesSection: React.FC = () => {
   const [modalMode, setModalMode]                     = useState<"add" | "edit">("add");
   const [editTarget, setEditTarget]                   = useState<Subspecialty | null>(null);
   const [draft, setDraft]                             = useState<Draft>(emptyDraft);
-  const [activeTab, setActiveTab]                     = useState<"specimens" | "physicians">("specimens");
+  const [activeTab, setActiveTab]                     = useState<"specimens" | "physicians" | "clients">("specimens");
   const [specimenAssignments, setSpecimenAssignments] = useState<string[]>([]);
   const [specimenSearch, setSpecimenSearch]           = useState("");
   const [physicianSearch, setPhysicianSearch]         = useState("");
+  const [clientSearch, setClientSearch]               = useState("");
   const [inactiveConfirm, setInactiveConfirm]         = useState<InactiveConfirm | null>(null);
   const [nameError, setNameError]                     = useState("");
   const [reactivateConfirm, setReactivateConfirm]     = useState<ReactivateConfirm | null>(null);
@@ -121,15 +139,23 @@ const SubspecialtiesSection: React.FC = () => {
 
   const openAdd = () => {
     setModalMode("add"); setEditTarget(null); setDraft(emptyDraft);
-    setSpecimenAssignments([]); setSpecimenSearch(""); setPhysicianSearch("");
+    setSpecimenAssignments([]); setSpecimenSearch(""); setPhysicianSearch(""); setClientSearch("");
     setActiveTab("specimens"); setNameError(""); setShowModal(true);
   };
 
   const openEdit = (sub: Subspecialty) => {
-    setModalMode("edit"); setEditTarget(sub);
-    setDraft({ name: sub.name, active: sub.active !== false, userIds: [...sub.userIds] });
+    setModalMode("edit"); 
+    setEditTarget(sub);
+    setDraft({ 
+      name: sub.name, 
+      active: sub.active !== false, 
+      userIds: [...sub.userIds],
+      description: (sub as any).description || "",
+      isWorkgroup: (sub as any).isWorkgroup || false,
+      clientIds: (sub as any).clientIds || [],
+    });
     setSpecimenAssignments(specimens.filter((sp) => sp.subspecialtyId === sub.id).map((sp) => sp.id));
-    setSpecimenSearch(""); setPhysicianSearch("");
+    setSpecimenSearch(""); setPhysicianSearch(""); setClientSearch("");
     setActiveTab("specimens"); setNameError(""); setShowModal(true);
   };
 
@@ -157,9 +183,9 @@ const SubspecialtiesSection: React.FC = () => {
   const commitSave = (d: Draft, spAssignments: string[], target: Subspecialty | null, unlinkAll: boolean) => {
     const subId = modalMode === "add" ? d.name.toLowerCase().replace(/\s+/g, "-") : target!.id;
     if (modalMode === "add") {
-      addSubspecialty({ name: d.name, active: d.active, userIds: d.userIds });
+      addSubspecialty({ name: d.name, active: d.active, userIds: d.userIds, specimenIds: [], clientIds: d.clientIds, isWorkgroup: d.isWorkgroup, description: d.description, status: d.active ? 'Active' : 'Inactive' } as any);
     } else {
-      updateSubspecialty({ ...target!, name: d.name, active: d.active, userIds: unlinkAll ? [] : d.userIds });
+      updateSubspecialty({ ...target!, name: d.name, active: d.active, userIds: unlinkAll ? [] : d.userIds, clientIds: d.clientIds, isWorkgroup: d.isWorkgroup, description: d.description, status: d.active ? 'Active' : 'Inactive' });
     }
     specimens.forEach((sp) => {
       const shouldBelong     = !unlinkAll && spAssignments.includes(sp.id);
@@ -230,7 +256,19 @@ const SubspecialtiesSection: React.FC = () => {
                     <td style={{ padding: ROW_PAD }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={sub.name} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#f9fafb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub.name}</span>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#f9fafb" }}>{sub.name}</span>
+                            {(sub as any).isWorkgroup && (
+                              <span title="Workgroup / Pool" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0, display: "inline-block", boxShadow: "0 0 6px #22c55e99" }} />
+                            )}
+                          </div>
+                          {(sub as any).description && (
+                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
+                              {(sub as any).description}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td style={{ padding: ROW_PAD }}>
@@ -303,11 +341,52 @@ const SubspecialtiesSection: React.FC = () => {
                 )}
               </div>
 
+              {/* Assignment Mode */}
+              <div style={FIELD}>
+                <label style={LABEL}>Assignment Mode</label>
+                <div
+                  onClick={() => setDraft(prev => ({ ...prev, isWorkgroup: !prev.isWorkgroup }))}
+                  style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderRadius: 9, cursor: "pointer", border: `1.5px solid ${draft.isWorkgroup ? "rgba(251,191,36,0.4)" : "#1f2937"}`, background: draft.isWorkgroup ? "rgba(251,191,36,0.06)" : "#0a0a0a", transition: "all 0.15s" }}
+                >
+                  <div style={{ width: 44, height: 24, borderRadius: 12, position: "relative", flexShrink: 0, background: draft.isWorkgroup ? "#f59e0b" : "#374151", transition: "background 0.2s", boxShadow: draft.isWorkgroup ? "0 0 8px #f59e0b55" : "none" }}>
+                    <div style={{ position: "absolute", top: 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s", left: draft.isWorkgroup ? 23 : 3, boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: draft.isWorkgroup ? "#fbbf24" : "#e5e7eb" }}>
+                      {draft.isWorkgroup ? "Pool / Workgroup" : "Create Workgroup"}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                      {draft.isWorkgroup
+                        ? "Cases go to a shared queue — any member can claim"
+                        : "Toggle on to enable shared pool mode for this subspecialty"}
+                    </div>
+                  </div>
+                  {draft.isWorkgroup && (
+                    <span style={{ marginLeft: "auto", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.3)" }}>
+                      WORKGROUP
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div style={FIELD}>
+                <label style={LABEL}>Description <span style={{ color: "#4b5563", fontWeight: 400, textTransform: "none" }}>(optional)</span></label>
+                <input
+                  style={INPUT}
+                  value={draft.description}
+                  onChange={e => setDraft(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Administrative notes about this subspecialty or pool..."
+                />
+              </div>
+
               {/* Assignment tabs */}
               <div style={{ border: "1px solid #1f2937", borderRadius: 10, overflow: "hidden" }}>
                 <div style={{ display: "flex", background: "#0a0a0a", borderBottom: "1px solid #1f2937" }}>
-                  {([["specimens", "Specimens"], ["physicians", "Physicians"]] as const).map(([tab, label]) => {
-                    const count    = tab === "specimens" ? specimenAssignments.length : draft.userIds.length;
+                  {([["specimens", "Specimens"], ["physicians", "Physicians"], ["clients", "Clients"]] as const).map(([tab, label]) => {
+                    const count = tab === "specimens" ? specimenAssignments.length : 
+                    tab === "physicians" ? draft.userIds.length : 
+                    draft.clientIds.length;
                     const isActive = activeTab === tab;
                     return (
                       <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "10px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: "transparent", border: "none", borderBottom: isActive ? "2px solid #00A3C4" : "2px solid transparent", color: isActive ? "#00A3C4" : "#6b7280", transition: "all 0.15s" }}>
@@ -318,14 +397,14 @@ const SubspecialtiesSection: React.FC = () => {
                   })}
                 </div>
 
-                {/* Tab content with search */}
-                <div style={{ background: "#0d0d0d" }}>
-                  {activeTab === "specimens" ? (
+                {/* Tab content */}
+                <div style={{ background: "#0d0d0d", height: 440, display: "flex", flexDirection: "column" }}>
+                  {activeTab === "specimens" && (
                     <>
                       <div style={{ padding: "10px 10px 4px" }}>
                         <SearchInput value={specimenSearch} onChange={setSpecimenSearch} placeholder="Search specimens..." />
                       </div>
-                      <div style={{ minHeight: 200, maxHeight: 370, overflowY: "auto", padding: "4px 10px 10px" }}>
+                      <div style={{ flex: 1, overflowY: "auto", padding: "4px 10px 10px" }}>
                         {filteredSpecimens.length === 0
                           ? <div style={{ textAlign: "center", color: "#4b5563", fontSize: 13, padding: "16px 0" }}>{specimenSearch ? "No specimens match your search." : "No specimens available."}</div>
                           : filteredSpecimens.map((sp) => {
@@ -335,35 +414,69 @@ const SubspecialtiesSection: React.FC = () => {
                         }
                       </div>
                     </>
-                  ) : (
+                  )}
+
+                  {activeTab === "physicians" && (
                     <>
                       <div style={{ padding: "10px 10px 4px" }}>
                         <SearchInput value={physicianSearch} onChange={setPhysicianSearch} placeholder="Search physicians..." />
                       </div>
-                      <div style={{ minHeight: 200, maxHeight: 370, overflowY: "auto", padding: "4px 10px 10px" }}>
+                      <div style={{ flex: 1, overflowY: "auto", padding: "4px 10px 10px" }}>
                         {filteredPhysicians.length === 0
                           ? <div style={{ textAlign: "center", color: "#4b5563", fontSize: 13, padding: "16px 0" }}>{physicianSearch ? "No physicians match your search." : "No physicians available."}</div>
                           : filteredPhysicians.map((u) => (
-                              <CheckRow key={u.id} label={`${u.firstName} ${u.lastName}`} data-phi="name" sub={u.roles?.join(", ")} checked={draft.userIds.includes(u.id)} onChange={() => setDraft(prev => ({ ...prev, userIds: prev.userIds.includes(u.id) ? prev.userIds.filter(x => x !== u.id) : [...prev.userIds, u.id] }))} />
+                              <CheckRow key={u.id} label={`${u.firstName} ${u.lastName}`} sub={u.roles?.join(", ")} checked={draft.userIds.includes(u.id)} onChange={() => setDraft(prev => ({ ...prev, userIds: prev.userIds.includes(u.id) ? prev.userIds.filter(x => x !== u.id) : [...prev.userIds, u.id] }))} />
                             ))
                         }
                       </div>
                     </>
                   )}
-                </div>
-              </div>
 
-            </div>
-            <div style={{ ...modalFooterStyle, padding: "12px 24px", borderTop: "1px solid #1f2937", flexShrink: 0 }}>
-              <button style={cancelButtonStyle} onClick={() => setShowModal(false)}>Cancel</button>
-              <button style={{ ...applyButtonStyle }} onClick={handleSave}>
-                {modalMode === "edit" ? "Save Changes" : "Add Subspecialty"}
-              </button>
-            </div>
+                  {activeTab === "clients" && (
+                    <>
+                      <div style={{ padding: "10px 10px 4px" }}>
+                        <SearchInput value={clientSearch} onChange={setClientSearch} placeholder="Search clients..." />
+                      </div>
+                      <div style={{ flex: 1, overflowY: "auto", padding: "4px 10px 10px" }}>
+                        {clients
+                          .filter(c => c.status === 'Active')
+                          .filter(c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                          .length === 0
+                          ? <div style={{ textAlign: "center", color: "#4b5563", fontSize: 13, padding: "16px 0" }}>{clientSearch ? "No clients match your search." : "No clients available."}</div>
+                          : clients
+                              .filter(c => c.status === 'Active')
+                              .filter(c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                              .map((c) => (
+                                <CheckRow
+                                  key={c.id}
+                                  label={c.name}
+                                  sub={c.code}
+                                  checked={draft.clientIds.includes(c.id)}
+                                  onChange={() => setDraft(prev => ({
+                                    ...prev,
+                                    clientIds: prev.clientIds.includes(c.id)
+                                      ? prev.clientIds.filter(x => x !== c.id)
+                                      : [...prev.clientIds, c.id]
+                                  }))}
+                                />
+                              ))
+                        }
+                      </div>
+                    </>
+                  )}
+                </div> {/* Closes background #0d0d0d */}
+            </div> {/* Closes assignment tabs border div */}
+          </div> {/* Closes modal content padding div */}
+
+          <div style={{ ...modalFooterStyle, padding: "12px 24px", borderTop: "1px solid #1f2937", flexShrink: 0 }}>
+            <button style={cancelButtonStyle} onClick={() => setShowModal(false)}>Cancel</button>
+            <button style={applyButtonStyle} onClick={handleSave}>
+              {modalMode === "edit" ? "Save Changes" : "Save"}
+            </button>
           </div>
         </div>
-      )}
-
+      </div>
+    )}
       {/* Inactivation confirmation */}
       {inactiveConfirm && (
         <div style={overlay}>

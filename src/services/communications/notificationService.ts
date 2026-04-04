@@ -5,7 +5,7 @@
  * All domain-specific subjects, bodies, and recipient logic lives in the
  * feature-specific services (synopticNotificationService, etc.)
  *
- * Any feature in ForMedrix that needs to send email imports sendEmail()
+ * Any feature in pathscribe that needs to send email imports sendEmail()
  * from here. The backend routes POST /api/notifications/email to
  * SendGrid / SES / SMTP per system config.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ import { EmailPayload } from './types';
 const API_BASE = '/api';
 
 /**
- * Dispatches an email via the ForMedrix notification endpoint.
+ * Dispatches an email via the pathscribe notification endpoint.
  * Fire-and-forget safe — logs errors but never throws.
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {

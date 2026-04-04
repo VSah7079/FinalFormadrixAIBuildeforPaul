@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSearchParams } from 'react-router-dom';
 import ActiveProtocolsSection from './ActiveProtocolsSection';
 import ReviewQueueSection     from './ReviewQueueSection';

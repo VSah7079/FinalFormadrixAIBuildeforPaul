@@ -1,4 +1,4 @@
-export const ForMedrixTheme = {
+export const pathscribeTheme = {
   colors: {
     // ─────────────────────────────────────────────
     // Background surfaces (dark mode)

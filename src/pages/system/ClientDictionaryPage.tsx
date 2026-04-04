@@ -7,7 +7,7 @@
  */
 
 import { useState } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { useClientDictionary } from "../../contexts/useClientDictionary";
 import { ClientEditorModal } from "./ClientEditorModal";
 import { ClientTable } from "./ClientTable";

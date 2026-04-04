@@ -1,10 +1,10 @@
 // src/components/Config/System/VoiceSection.tsx
-// ForMedrix ***REMOVED*** toggle — enables or disables voice for a client deployment.
+// PathScribe ***REMOVED*** toggle — enables or disables voice for a client deployment.
 // One switch only. If the deployment has a Gemini key, users get AI + Local.
 // If not, they get Local only. That's handled automatically — no config needed.
 
 import React from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSystemConfig } from '../../../contexts/SystemConfigContext';
 
 export const VoiceSection: React.FC = () => {
@@ -28,7 +28,7 @@ export const VoiceSection: React.FC = () => {
               Voice Commands &amp; Dictation
             </div>
             <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-              When enabled, users can control ForMedrix by voice and dictate into
+              When enabled, users can control PathScribe by voice and dictate into
               report fields. AI-powered dictation refinement is available automatically
               if this deployment has a Gemini API key configured.
             </div>
@@ -66,7 +66,7 @@ export const VoiceSection: React.FC = () => {
           borderRadius: '10px',
           fontSize: '12px', color: '#64748b', lineHeight: 1.6,
         }}>
-          <strong style={{ color: '#94a3b8', fontWeight: 600 }}>ForMedrix staff note:</strong>{' '}
+          <strong style={{ color: '#94a3b8', fontWeight: 600 }}>PathScribe staff note:</strong>{' '}
           To hard-disable voice at the environment level (removes the mic button entirely),
           set{' '}
           <code style={{ fontSize: '11px', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: '4px' }}>

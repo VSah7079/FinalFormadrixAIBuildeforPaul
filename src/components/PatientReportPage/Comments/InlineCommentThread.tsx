@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { logEvent } from "../../audit/auditLogger";
 import { mockDcisTemplate } from "../../templates/mockDcisTemplate";
 

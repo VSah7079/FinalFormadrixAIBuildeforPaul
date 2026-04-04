@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import '../formedrix.css';
+import '../pathscribe.css';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
 import { useLogout } from "@hooks/useLogout";
@@ -17,7 +17,7 @@ import CaseMixTile    from "@components/Dashboards/CaseMixTile";
 import ProductivityTab from "./ProductivityTab";
 import QualityTab      from "./QualityTab";
 import AIContributionTab from "./AIContributionTab";
-import { ForMedrixTheme as t } from "@theme/ForMedrixTheme";
+import { pathScribeTheme as t } from "@theme/pathscribeTheme";
 import type {
   ContributionFlag,
   CaseMixData,
@@ -320,7 +320,7 @@ const ContributionDashboardPage: React.FC = () => {
             </div>
             <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowQuickLinksModal(true); }}>Quick Links</button>
             <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowWarningModal(true);   }}>Unsaved Data Warning</button>
-            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowAboutModal(true);     }}>About ForMedrix AI</button>
+            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowAboutModal(true);     }}>About PathScribe AI</button>
             <button style={{ ...closeBtnStyle, marginTop: "20px" }} onClick={() => setShowProfileModal(false)}>Close</button>
           </div>
         </div>
@@ -352,8 +352,8 @@ const ContributionDashboardPage: React.FC = () => {
       {showAboutModal && (
         <div style={overlayStyle} onClick={() => setShowAboutModal(false)}>
           <div style={{ ...modalCardStyle, width: "460px" }} onClick={e => e.stopPropagation()}>
-            <h2 style={modalHeadingStyle}>About ForMedrix AI</h2>
-            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>ForMedrix AI is a next‑generation pathology reporting platform designed to streamline workflows, enhance diagnostic accuracy, and provide actionable insights through intelligent automation.</p>
+            <h2 style={modalHeadingStyle}>About PathScribe AI</h2>
+            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>PathScribe AI is a next‑generation pathology reporting platform designed to streamline workflows, enhance diagnostic accuracy, and provide actionable insights through intelligent automation.</p>
             <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>This dashboard provides a high‑level overview of your case activity, productivity, quality indicators, and AI‑assisted contributions.</p>
             <button style={closeBtnStyle} onClick={() => setShowAboutModal(false)}>Close</button>
           </div>

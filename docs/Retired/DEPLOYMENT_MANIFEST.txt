@@ -1,4 +1,4 @@
-ForMedrix AI — File Deployment Manifest
+pathscribe AI — File Deployment Manifest
 ==========================================
 HOW TO READ THIS:
   Each file listed below goes into src/ of your project.

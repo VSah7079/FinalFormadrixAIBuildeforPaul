@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: ForMedrix AI — Synoptic Template Service API
+  title: pathscribe AI — Synoptic Template Service API
   version: 1.0.0
   description: |
-    Backend API contract for the ForMedrix AI clinical pathology reporting platform.
+    Backend API contract for the pathscribe AI clinical pathology reporting platform.
     Covers the Synoptic Template Editor sprint: protocol lifecycle management,
     review queue, audit logging, and terminology (SNOMED/ICD) validation.
 
@@ -16,9 +16,9 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://api.formedrix.io/v1
+  - url: https://api.pathscribe.io/v1
     description: Production
-  - url: https://api.staging.formedrix.io/v1
+  - url: https://api.staging.pathscribe.io/v1
     description: Staging
   - url: http://localhost:4000/v1
     description: Local development

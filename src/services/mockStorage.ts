@@ -5,7 +5,7 @@
 // When Firestore services replace the mocks, this file is simply unused.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PREFIX = 'formedrix_mock_';
+const PREFIX = 'pathscribe_mock_';
 
 export function storageGet<T>(key: string, fallback: T): T {
   try {

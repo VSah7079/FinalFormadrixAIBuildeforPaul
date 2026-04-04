@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 
 interface Comment {
   id: string;

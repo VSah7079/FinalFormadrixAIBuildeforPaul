@@ -1,32 +1,45 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
+    // Vite bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+
+    // React
     "jsx": "react-jsx",
-    "baseUrl": ".",
+
+    // Path aliases
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@pages/*": ["src/pages/*"],
-      "@theme/*": ["src/theme/*"],
-      "@types/*": ["src/types/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@contexts/*": ["src/contexts/*"]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@theme/*": ["./src/theme/*"],
+      "@app-types/*": ["./src/types/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@contexts/*": ["./src/contexts/*"]
     },
+
+    // Linting
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+
+    // Node types
     "types": ["node"]
   },
+
   "include": ["src"],
+
   "exclude": [
     "node_modules",
     "src/Legacy",
@@ -44,18 +57,8 @@
     "src/components/Config/System/FlagTable.tsx",
     "src/components/Flags/AutoCreatedBanner.tsx",
     "src/components/Config/System/KeyboardShortcutsModal.tsx",
-    "src/components/Config/System/CategorySection.tsx",
-    "src/Worklist/WorklistPage.tsx",
-    "src/Home.tsx",
-    "src/components/AppShell/ComposeModal.tsx",
-    "src/components/AppShell/MessageThread.tsx",
-    "src/components/AppShell/useMessaging.ts",
-    "src/components/Config/Speech/SpeechConfigTab.tsx",
-    "src/components/Config/Templates/TemplateRenderer.tsx",
-    "src/hooks/useSynopticAudit.ts",
-    "src/utils/serviceHelpers.ts",
-    "src/services/enhancementRequestService.ts"
+    "src/components/Config/System/CategorySection.tsx"
   ],
+
   "references": [{ "path": "./tsconfig.node.json" }]
 }
-

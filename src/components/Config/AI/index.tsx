@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { aiBehaviorService, AIBehaviorConfig } from '../../../services';
+import AiProviderSettings from './AiProviderSettings';
 
 const card: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
@@ -87,6 +88,11 @@ const AITab: React.FC = () => {
           style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#9AA0A6' }}
         >Reset to Defaults</button>
         {saving && <span style={{ fontSize: 13, color: '#6b7280', alignSelf: 'center' }}>Saving…</span>}
+      </div>
+
+      {/* ── AI Provider Configuration ─────────────────────────────────────── */}
+      <div style={{ marginTop: 40, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 32 }}>
+        <AiProviderSettings isAdmin={true} />
       </div>
     </div>
   );

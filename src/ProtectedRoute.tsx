@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import './formedrix.css';
+import './pathscribe.css';
 import { useEffect } from "react";
 import { useAuth } from "@contexts/AuthContext";
 

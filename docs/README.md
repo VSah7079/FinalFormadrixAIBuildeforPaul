@@ -1,6 +1,6 @@
-﻿# ForMedrix AI â€” Documentation
+﻿# pathscribe AI â€” Documentation
 
-> **Start here.** This file is the index for all ForMedrix documentation.
+> **Start here.** This file is the index for all pathscribe documentation.
 > If you're new to the project, read the docs in the order listed under Reference.
 
 ---
@@ -37,7 +37,7 @@ docs/
 
 ## Reference Docs
 
-These four documents are the authoritative source of truth for ForMedrix.
+These four documents are the authoritative source of truth for pathscribe.
 They are always kept current. If anything in here is outdated, it gets updated â€” not supplemented.
 
 | # | Document | Audience | What it covers |
@@ -88,8 +88,8 @@ Their content has been absorbed into the documents above.
 
 | Retired file | Superseded by | Reason |
 |---|---|---|
-| `ForMedrix-Admin-Guide.docx` | PS-02 | Reorganised and updated â€” role model, config sections, action IDs all revised |
-| `ForMedrix-Terminology-Architecture.docx` | PS-01 Â§6 | Terminology architecture absorbed into Master Architecture |
+| `pathscribe-Admin-Guide.docx` | PS-02 | Reorganised and updated â€” role model, config sections, action IDs all revised |
+| `pathscribe-Terminology-Architecture.docx` | PS-01 Â§6 | Terminology architecture absorbed into Master Architecture |
 | `revised_roadmap.docx` | PS-04 | Replaced by current roadmap with up-to-date phase status |
 | `SearchPage_UserGuide.docx` | modules/search/EndUser Guide | Earlier version â€” identifier box and SNOMED modal redesigned since |
 | `SearchPage_TestPlan.docx` | modules/search/Testing Guide | Earlier version â€” mock data setup and new test plans not included |

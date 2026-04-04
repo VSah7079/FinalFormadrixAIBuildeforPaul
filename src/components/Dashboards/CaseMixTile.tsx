@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import '../../formedrix.css';
-import { ForMedrixTheme } from "@theme/ForMedrixTheme";
+import '../../pathscribe.css';
+import { pathscribeTheme } from "@theme/pathscribeTheme";
 import type { CaseMixData } from "../../types/ContributionDashboard";
 
 export interface CaseMixTileProps {
@@ -18,7 +18,7 @@ const CATEGORY_LABELS: Record<keyof CaseMixData, string> = {
   other:  "Other",
 };
 
-const t = ForMedrixTheme;
+const t = pathscribeTheme;
 
 const CaseMixTile: React.FC<CaseMixTileProps> = ({ title, data, colors, showCounts: _showCounts = false }) => {
   const [hovered, setHovered] = useState<keyof CaseMixData | null>(null);

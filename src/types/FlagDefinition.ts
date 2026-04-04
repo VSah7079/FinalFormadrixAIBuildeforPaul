@@ -1,5 +1,5 @@
 // src/types/FlagDefinition.ts
-// Canonical definition of a flag in ForMedrixAI.
+// Canonical definition of a flag in pathscribeAI.
 // Includes LIS-style short code, display name, description, and level.
 
 export interface FlagDefinition {

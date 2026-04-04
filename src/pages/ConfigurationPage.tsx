@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuditLog } from '../components/Audit/useAuditLog';
 import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
 import { VOICE_CONTEXT } from '../constants/systemActions';
-
+import NarrativeTemplatesTab from '../components/Config/NarrativeTemplates';
 import AITab         from '../components/Config/AI/index';
 import ModelsTab     from '../components/Config/Models/index';
 import ProtocolsTab  from '../components/Config/Protocols/index';
@@ -20,7 +20,7 @@ import MacrosTab     from '../components/Config/Macros/index';
 import VoiceSettings from '../components/Voice/VoiceSettings';
 import { ActionsTab } from '../components/Config/Actions/ActionsTab';
 
-const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'actions', 'macros'] as const;
+const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros'] as const;
 type TabId = typeof VALID_TABS[number];
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
@@ -32,6 +32,8 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: 'system',    label: 'System'            },
   { id: 'actions',   label: 'Action Registry'   },
   { id: 'macros',    label: 'Macros'            },
+  { id: 'narrative', label: 'Narrative Templates' },
+
 ];
 
 function getTabFromSearch(search: string): TabId {
@@ -81,11 +83,11 @@ const ConfigurationPage: React.FC = () => {
       });
     };
 
-    window.addEventListener('ForMedrix_NEXT_TAB',     nextTab);
-    window.addEventListener('ForMedrix_PREVIOUS_TAB', prevTab);
+    window.addEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
     return () => {
-      window.removeEventListener('ForMedrix_NEXT_TAB',     nextTab);
-      window.removeEventListener('ForMedrix_PREVIOUS_TAB', prevTab);
+      window.removeEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
     };
   }, [navigate, log]);
 
@@ -104,6 +106,7 @@ const ConfigurationPage: React.FC = () => {
       case 'actions':   return <ActionsTab />;
       case 'macros':    return <MacrosTab />;
       case 'voice':     return <VoiceSettings />;
+      case 'narrative': return <NarrativeTemplatesTab />;
       default:          return null;
     }
   };
@@ -142,7 +145,9 @@ const ConfigurationPage: React.FC = () => {
         </div>
 
         {/* Tab Content */}
-        {renderActiveTab()}
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', paddingBottom: 40 }}>
+          {renderActiveTab()}
+        </div>
       </div>
 
       {/* Unsaved Changes Modal */}

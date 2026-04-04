@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import '../../../formedrix.css';
+import React from 'react';
+import { useState } from 'react';
+import '../../../pathscribe.css';
 
 const ConfidenceBadge: React.FC<{
   confidence: number;

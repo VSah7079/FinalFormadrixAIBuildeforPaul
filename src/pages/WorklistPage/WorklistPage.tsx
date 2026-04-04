@@ -1,20 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { mockCaseService } from '@/services/cases/mockCaseService';
+import type { Case } from '@/types/case/Case';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLogout } from '@hooks/useLogout';
-import { PathologyCase } from '../components/Worklist/types';
-import WorklistTable from '../components/Worklist/WorklistTable';
-import CaseSearchBar from '../components/Search/CaseSearchBar';
-import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
-import { VOICE_CONTEXT } from '../constants/systemActions';
+import { PathologyCase } from '../../components/Worklist/types';
+import WorklistTable      from '../../components/Worklist/WorklistTable';
+import ResourcesModal     from './ResourcesModal';
+import LogoutWarningModal from './LogoutWarningModal';
+import CaseSearchBar from '../../components/Search/CaseSearchBar';
+import { mockActionRegistryService } from '../../services/actionRegistry/mockActionRegistryService';
+import { VOICE_CONTEXT } from '../../constants/systemActions';
 
 const WorklistPage: React.FC = () => {
   const handleLogout = useLogout();
   const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician'>('all');
+  const [realCases, setRealCases]             = useState<Case[]>([]);
   const [physicianFilter, setPhysicianFilter] = useState<string>('');
   const [physicianPrompt, setPhysicianPrompt] = useState<string | null>(null); // clarification prompt
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   
   const [showLogoutWarning, setShowLogoutWarning] = useState(false);
+
+  // Load real cases from mockCaseService on mount
+  useEffect(() => {
+    mockCaseService.listCasesForUser('current').then(setRealCases).catch(() => {});
+  }, []);
 
   // Quick Links Data
   const quickLinks = {
@@ -34,94 +44,155 @@ const WorklistPage: React.FC = () => {
 
   // ── 50 Mock Cases ──────────────────────────────────────────────────────────
   const allCases: PathologyCase[] = [
-    { 
-      id: 'S26-4401', 
-      patient: 'Miller, Jane', 
-      protocol: 'Breast Invasive Carcinoma', 
-      specimen: 'Left Breast Mastectomy',
-      status: 'Grossed', 
-      aiStatus: 'Draft Ready', 
-      confidence: 94,
-      time: '2h ago', 
+    {
+      // S26-4401 — Breast Invasive, in-progress — has pre-filled synoptic
+      id: 'S26-4401',
+      patient: 'Thompson, Grace',
+      protocol: 'CAP Breast Invasive Carcinoma — Resection',
+      specimen: 'Left Breast Mastectomy + Sentinel LN',
+      status: 'Synoptic',
+      aiStatus: 'Draft Ready',
+      confidence: 91,
+      time: '2h ago',
       priority: 'Routine',
       isCritical: false,
-      accessionDate: '02/24/2026',
+      accessionDate: '03/28/2026',
       submittingPhysician: 'Dr. Sarah Chen',
       caseFlags: [
-        { id: 'pending_clinical_cor', name: 'Pending Clinical Correlation', color: 'yellow', severity: 3 },
         { id: 'tumor_board_schedule', name: 'Tumor Board Scheduled', color: 'blue', severity: 2 }
       ],
       specimenFlags: [
-        { id: 'margins_involved', name: 'Margins Involved', color: 'red', severity: 5 }
+        { id: 'her2_fish_pending', name: 'HER2 ISH Pending', color: 'blue', severity: 2 }
       ]
     },
-    { 
-      id: 'S26-4402', 
-      patient: 'Smith, Alice', 
-      protocol: 'Lung Resection', 
-      specimen: 'Right Upper Lobe Wedge',
-      status: 'Awaiting Micro', 
-      aiStatus: 'Staged', 
-      confidence: 0,
-      time: '45m ago', 
+    {
+      // S26-4402 — Colorectal sigmoid, in-progress — has pre-filled synoptic
+      id: 'S26-4402',
+      patient: 'Jackson, Robert',
+      protocol: 'CAP Colon & Rectum Carcinoma — Resection',
+      specimen: 'Sigmoid Colon Resection + Apical LN',
+      status: 'Synoptic',
+      aiStatus: 'Draft Ready',
+      confidence: 88,
+      time: '1h ago',
       priority: 'STAT',
       isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Marcus Webb',
+      accessionDate: '03/29/2026',
+      submittingPhysician: 'Dr. Michael Torres',
       caseFlags: [
-        { id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 }
-      ]
-    },
-    { 
-      id: 'S26-4405', 
-      patient: 'Davis, Robert', 
-      protocol: 'Colon Resection', 
-      specimen: 'Right Hemicolectomy',
-      status: 'Finalizing', 
-      aiStatus: 'Syncing Micro...', 
-      confidence: 89,
-      time: '5m ago', 
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      specimenFlags: [
-        { id: 'additional_levels_re', name: 'Additional Levels Requested', color: 'orange', severity: 4 }
-      ]
-    },
-    { 
-      id: 'S26-4410', 
-      patient: 'Wilson, Karen', 
-      protocol: 'Prostatectomy', 
-      specimen: 'Radical Prostatectomy',
-      status: 'Grossed', 
-      aiStatus: 'Draft Ready', 
-      confidence: 96,
-      time: '1h ago', 
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. James Nguyen'
-    },
-    { 
-      id: 'S26-4412', 
-      patient: 'Johnson, Michael', 
-      protocol: 'Breast Invasive Carcinoma', 
-      specimen: 'Right Breast Lumpectomy',
-      status: 'Completed', 
-      aiStatus: 'Finalized', 
-      confidence: 97,
-      time: '3h ago', 
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/23/2026',
-      submittingPhysician: 'Dr. Sarah Chen',
-      caseFlags: [
-        { id: 'second_opinion_reque', name: 'Second Opinion Requested', color: 'purple', severity: 3 }
+        { id: 'oncology_awaiting', name: 'Oncology Awaiting Report', color: 'red', severity: 5 }
       ],
       specimenFlags: [
-        { id: 'er_pr_her2_pending', name: 'ER/PR/HER2 Pending', color: 'blue', severity: 2 },
-        { id: 'ihc_ordered', name: 'IHC Ordered', color: 'green', severity: 2 }
+        { id: 'kras_pending', name: 'KRAS/RAS Panel Pending', color: 'green', severity: 2 }
+      ]
+    },
+    {
+      // S26-4403 — Lung RUL lobectomy, draft — partially filled synoptic
+      id: 'S26-4403',
+      patient: 'Williams, Helen',
+      protocol: 'CAP Lung — Resection',
+      specimen: 'Right Upper Lobe Lobectomy + Mediastinal LN',
+      status: 'Synoptic',
+      aiStatus: 'Staged',
+      confidence: 84,
+      time: '45m ago',
+      priority: 'STAT',
+      isCritical: true,
+      accessionDate: '03/30/2026',
+      submittingPhysician: 'Dr. James Park',
+      caseFlags: [
+        { id: 'stat___rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }
+      ],
+      specimenFlags: [
+        { id: 'ngs_pending', name: 'NGS Panel Pending', color: 'blue', severity: 3 }
+      ]
+    },
+    {
+      // S26-4404 — Prostate needle biopsy, draft — partially filled synoptic
+      id: 'S26-4404',
+      patient: 'Martinez, David',
+      protocol: 'CAP Prostate — Needle Biopsy',
+      specimen: 'Prostate Cores x6 Sites (A–F)',
+      status: 'Synoptic',
+      aiStatus: 'Draft Ready',
+      confidence: 87,
+      time: '3h ago',
+      priority: 'Routine',
+      isCritical: false,
+      accessionDate: '03/30/2026',
+      submittingPhysician: 'Dr. Anil Sharma',
+    },
+    {
+      // S26-4405 — Breast DCIS, finalized — tests read-only flow
+      id: 'S26-4405',
+      patient: 'Taylor, Susan',
+      protocol: 'CAP Breast DCIS — Resection',
+      specimen: 'Right Breast Lumpectomy',
+      status: 'Completed',
+      aiStatus: 'Finalized',
+      confidence: 99,
+      time: '4d ago',
+      priority: 'Routine',
+      isCritical: false,
+      accessionDate: '03/26/2026',
+      submittingPhysician: 'Dr. Lisa Wong',
+    },
+    {
+      // S26-4406 — Breast Invasive blank form — tests empty synoptic state
+      id: 'S26-4406',
+      patient: 'Anderson, Ruth',
+      protocol: 'CAP Breast Invasive Carcinoma — Resection',
+      specimen: 'Left Breast Core Needle Biopsy',
+      status: 'Awaiting Micro',
+      aiStatus: 'Staged',
+      confidence: 0,
+      time: '20m ago',
+      priority: 'STAT',
+      isCritical: true,
+      accessionDate: '03/30/2026',
+      submittingPhysician: 'Dr. Patricia Moore',
+      caseFlags: [
+        { id: 'stat___rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }
+      ]
+    },
+    {
+      // S26-4407 — Colorectal rectal post-chemo — tests treatment effect fields
+      id: 'S26-4407',
+      patient: 'Chen, Michael',
+      protocol: 'CAP Colon & Rectum Carcinoma — Resection',
+      specimen: 'Anterior Resection — Rectum + Mesorectal LN',
+      status: 'Synoptic',
+      aiStatus: 'Draft Ready',
+      confidence: 86,
+      time: '2h ago',
+      priority: 'Routine',
+      isCritical: false,
+      accessionDate: '03/28/2026',
+      submittingPhysician: 'Dr. James Nguyen',
+      specimenFlags: [
+        { id: 'braf_pending', name: 'BRAF V600E Result Noted', color: 'orange', severity: 3 }
+      ]
+    },
+    {
+      // S26-4408 — Breast invasive + DCIS same specimen — tests multi-report sidebar
+      id: 'S26-4408',
+      patient: 'Davis, Carol',
+      protocol: 'CAP Breast Invasive + DCIS — Resection',
+      specimen: 'Right Breast Mastectomy + Axillary Contents',
+      status: 'Synoptic',
+      aiStatus: 'Draft Ready',
+      confidence: 89,
+      time: '1h ago',
+      priority: 'STAT',
+      isCritical: true,
+      accessionDate: '03/29/2026',
+      submittingPhysician: 'Dr. Sarah Chen',
+      caseFlags: [
+        { id: 'brca1_positive', name: 'BRCA1 Positive', color: 'purple', severity: 3 },
+        { id: 'oncology_holding', name: 'Oncology Treatment on Hold', color: 'red', severity: 5 }
+      ],
+      specimenFlags: [
+        { id: 'her2_3plus', name: 'HER2 3+ — Oncology Alert', color: 'red', severity: 4 }
       ]
     },
     {
@@ -814,13 +885,6 @@ const WorklistPage: React.FC = () => {
   const [selectedCaseId,   setSelectedCaseId]   = useState<string | null>(null);
   const [displayOrder,     setDisplayOrder]      = useState<string[]>([]);
 
-  // Refs so voice closures always see current values without stale captures
-  const selectedCaseIdRef = useRef<string | null>(null);
-  const displayOrderRef   = useRef<string[]>([]);
-
-  useEffect(() => { selectedCaseIdRef.current = selectedCaseId; }, [selectedCaseId]);
-  useEffect(() => { displayOrderRef.current   = displayOrder;   }, [displayOrder]);
-
   // ── Return-from-case selection ─────────────────────────────────────────
   // When navigating back from a synoptic report, advance to the next case
   // in the table's actual display order (respects active sort).
@@ -847,61 +911,47 @@ const WorklistPage: React.FC = () => {
   });
 
   const stats = {
-    grossedToday: allCases.filter(c => c.status === 'Grossed').length,
-    pendingMicro: allCases.filter(c => c.status === 'Awaiting Micro').length,
-    needsReview: allCases.filter(c => c.aiStatus === 'Draft Ready').length,
-    critical: allCases.filter(c => c.isCritical).length
+    total:          realCases.length,
+    inProgress:     realCases.filter(c => c.status === 'in-progress').length,
+    needsReview:    realCases.filter(c => c.status === 'pending-review').length,
+    urgent:         realCases.filter(c => c.order?.priority === 'STAT').length,
+    amended:        realCases.filter(c => c.status === 'amended').length,
+    completedToday: realCases.filter(c => {
+      if (c.status !== 'finalized') return false;
+      if (!c.updatedAt) return false;
+      const u = new Date(c.updatedAt), t = new Date();
+      return u.getFullYear() === t.getFullYear() &&
+             u.getMonth()    === t.getMonth()    &&
+             u.getDate()     === t.getDate();
+    }).length,
   };
 
-  // ── Voice: set WORKLIST context on mount ──────────────────────────────────────
+  // ── Voice: set WORKLIST context on mount ──────────────────────────────────
   useEffect(() => {
     mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
     return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
   }, []);
 
-  // ── Keyboard: Alt+Enter opens selected case ───────────────────────────────
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === 'Enter') {
-        e.preventDefault();
-        const id = selectedCaseIdRef.current;
-        if (id) navigate(`/case/${id}/synoptic`);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [navigate]);
-
   // ── Voice: table navigation listeners ────────────────────────────────────────
   useEffect(() => {
-    // Navigate by display order (actual rendered order from WorklistTable)
-    // Always read from ref so closures are never stale
-    const clampOrder = (i: number) => Math.max(0, Math.min(i, displayOrderRef.current.length - 1));
+    const clamp = (i: number) => Math.max(0, Math.min(i, filteredCases.length - 1));
 
-    const selectByOrderIdx = (idx: number) => {
-      const order = displayOrderRef.current;
-      if (!order.length) return;
-      const clamped = clampOrder(idx);
-      const id = order[clamped];
-      setSelectedIndex(clamped);
-      setSelectedCaseId(id);
+    // Sync both index and case ID together so selection survives sort/filter changes
+    const syncId = (idx: number) => {
+      setSelectedIndex(idx);
+      setSelectedCaseId(filteredCases[idx]?.id ?? null);
     };
 
-    const currentOrderIdx = () => {
-      const id = selectedCaseIdRef.current;
-      const order = displayOrderRef.current;
-      if (!id || !order.length) return 0;
-      const i = order.indexOf(id);
-      return i < 0 ? 0 : i;
-    };
+    // Default to row 0 on first voice command if nothing selected yet
+    const ensureSelection = (i: number) => i < 0 ? 0 : i;
 
-    const next     = () => selectByOrderIdx(currentOrderIdx() + 1);
-    const previous = () => selectByOrderIdx(currentOrderIdx() - 1);
-    const pageDown = () => selectByOrderIdx(currentOrderIdx() + 10);
-    const pageUp   = () => selectByOrderIdx(currentOrderIdx() - 10);
-    const first    = () => selectByOrderIdx(0);
-    const last     = () => selectByOrderIdx(displayOrderRef.current.length - 1);
-    const refresh  = () => window.location.reload();
+    const next        = () => setSelectedIndex(i => { const n = clamp(ensureSelection(i) + 1); syncId(n); return n; });
+    const previous    = () => setSelectedIndex(i => { const n = clamp(ensureSelection(i) - 1); syncId(n); return n; });
+    const pageDown    = () => setSelectedIndex(i => { const n = clamp(ensureSelection(i) + 10); syncId(n); return n; });
+    const pageUp      = () => setSelectedIndex(i => { const n = clamp(ensureSelection(i) - 10); syncId(n); return n; });
+    const first       = () => syncId(0);
+    const last        = () => syncId(clamp(filteredCases.length - 1));
+    const refresh     = () => window.location.reload();
 
     // TTS helper — reads text aloud via Web Speech Synthesis
     const speak = (text: string) => {
@@ -917,8 +967,8 @@ const WorklistPage: React.FC = () => {
       const focused = allCases.find(c => c.id === selectedCaseId);
       if (!focused) { speak('No case selected.'); return; }
       const flags = [
-        ...(focused.caseFlags    ?? []).map(f => f.name),
-        ...(focused.specimenFlags ?? []).map(f => f.name),
+        ...(focused.caseFlags    ?? []).map((f: any) => f.name),
+        ...(focused.specimenFlags ?? []).map((f: any) => f.name),
       ];
       if (flags.length === 0) {
         speak(`${focused.id} has no flags.`);
@@ -965,9 +1015,9 @@ const WorklistPage: React.FC = () => {
     const clearFilter     = () => { setActiveFilter('all');       setSelectedIndex(-1); setSelectedCaseId(null); };
 
     // Sort commands — forward to WorklistTable's internal sort system via custom events
-    const sortDate     = () => window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_SORT_APPLY', { detail: { key: 'accessionDate', dir: 'desc' } }));
-    const sortPriority = () => window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_SORT_APPLY', { detail: { key: 'flagSeverity',  dir: 'desc' } }));
-    const sortStatus   = () => window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_SORT_APPLY', { detail: { key: 'status',        dir: 'asc'  } }));
+    const sortDate     = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'accessionDate', dir: 'desc' } }));
+    const sortPriority = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'flagSeverity',  dir: 'desc' } }));
+    const sortStatus   = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'status',        dir: 'asc'  } }));
 
     // Sort by column name — extracted from transcript e.g. "sort by date", "sort by physician"
     const sortByColumn = (e: Event) => {
@@ -981,251 +1031,163 @@ const WorklistPage: React.FC = () => {
       if (fn) { fn(); }
       else { speak(`Column "${t}" not recognised. Try date, priority, or status.`); }
     };
-    const clearSort    = () => window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_SORT_CLEAR'));
+    const clearSort    = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_CLEAR'));
 
     const openResources = () => setIsResourcesOpen(true);
 
+    const worklistState = { worklistCaseIds: filteredCases.map(c => c.id) };
+
     const openSelected = () => {
-      const id = selectedCaseIdRef.current;
-      if (id) navigate(`/case/${id}/synoptic`);
+      if (selectedIndex >= 0 && filteredCases[selectedIndex]) {
+        navigate(`/case/${filteredCases[selectedIndex].id}/synoptic`, { state: worklistState });
+      }
     };
 
     const nextCase = () => {
-      const idx = currentOrderIdx() + 1;
-      if (idx < displayOrderRef.current.length) {
-        const id = displayOrderRef.current[idx];
-        selectByOrderIdx(idx);
-        navigate(`/case/${id}/synoptic`);
-      }
+      const idx = clamp(ensureSelection(selectedIndex) + 1);
+      syncId(idx);
+      navigate(`/case/${filteredCases[idx].id}/synoptic`, { state: worklistState });
     };
 
     const prevCase = () => {
-      const idx = currentOrderIdx() - 1;
-      if (idx >= 0) {
-        const id = displayOrderRef.current[idx];
-        selectByOrderIdx(idx);
-        navigate(`/case/${id}/synoptic`);
-      }
+      const idx = clamp(ensureSelection(selectedIndex) - 1);
+      syncId(idx);
+      navigate(`/case/${filteredCases[idx].id}/synoptic`, { state: worklistState });
     };
 
-    window.addEventListener('ForMedrix_TABLE_NEXT',             next);
-    window.addEventListener('ForMedrix_TABLE_PREVIOUS',         previous);
-    window.addEventListener('ForMedrix_TABLE_PAGE_DOWN',        pageDown);
-    window.addEventListener('ForMedrix_TABLE_PAGE_UP',          pageUp);
-    window.addEventListener('ForMedrix_TABLE_FIRST',            first);
-    window.addEventListener('ForMedrix_TABLE_LAST',             last);
-    window.addEventListener('ForMedrix_TABLE_OPEN_SELECTED',    openSelected);
-    window.addEventListener('ForMedrix_TABLE_REFRESH',          refresh);
-    window.addEventListener('ForMedrix_TABLE_FILTER_URGENT',    filterUrgent);
-    window.addEventListener('ForMedrix_TABLE_FILTER_REVIEW',    filterReview);
-    window.addEventListener('ForMedrix_TABLE_FILTER_COMPLETED', filterCompleted);
-    window.addEventListener('ForMedrix_TABLE_FILTER_PHYSICIAN', filterPhysician);
-    window.addEventListener('ForMedrix_TABLE_CLEAR_FILTER',     clearFilter);
-    window.addEventListener('ForMedrix_READ_FLAGS',             readFlags);
-    window.addEventListener('ForMedrix_READ_SPECIMEN',          readSpecimen);
-    window.addEventListener('ForMedrix_TABLE_SORT_DATE',        sortDate);
-    window.addEventListener('ForMedrix_TABLE_SORT_PRIORITY',    sortPriority);
-    window.addEventListener('ForMedrix_TABLE_SORT_STATUS',      sortStatus);
-    window.addEventListener('ForMedrix_TABLE_SORT_BY_COLUMN',   sortByColumn);
-    window.addEventListener('ForMedrix_TABLE_CLEAR_SORT',       clearSort);
-    window.addEventListener('ForMedrix_NAV_NEXT_CASE',          nextCase);
-    window.addEventListener('ForMedrix_NAV_PREVIOUS_CASE',      prevCase);
-    window.addEventListener('ForMedrix_PAGE_OPEN_RESOURCES',    openResources);
+    window.addEventListener('PATHSCRIBE_TABLE_NEXT',             next);
+    window.addEventListener('PATHSCRIBE_TABLE_PREVIOUS',         previous);
+    window.addEventListener('PATHSCRIBE_TABLE_PAGE_DOWN',        pageDown);
+    window.addEventListener('PATHSCRIBE_TABLE_PAGE_UP',          pageUp);
+    window.addEventListener('PATHSCRIBE_TABLE_FIRST',            first);
+    window.addEventListener('PATHSCRIBE_TABLE_LAST',             last);
+    window.addEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
+    window.addEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
+    window.addEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
+    window.addEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
+    window.addEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
+    window.addEventListener('PATHSCRIBE_TABLE_SORT_PRIORITY',    sortPriority);
+    window.addEventListener('PATHSCRIBE_TABLE_SORT_STATUS',      sortStatus);
+    window.addEventListener('PATHSCRIBE_TABLE_SORT_BY_COLUMN',   sortByColumn);
+    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_SORT',       clearSort);
+    window.addEventListener('PATHSCRIBE_NAV_NEXT_CASE',          nextCase);
+    window.addEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE',      prevCase);
+    window.addEventListener('PATHSCRIBE_PAGE_OPEN_RESOURCES',    openResources);
 
     return () => {
-      window.removeEventListener('ForMedrix_TABLE_NEXT',             next);
-      window.removeEventListener('ForMedrix_TABLE_PREVIOUS',         previous);
-      window.removeEventListener('ForMedrix_TABLE_PAGE_DOWN',        pageDown);
-      window.removeEventListener('ForMedrix_TABLE_PAGE_UP',          pageUp);
-      window.removeEventListener('ForMedrix_TABLE_FIRST',            first);
-      window.removeEventListener('ForMedrix_TABLE_LAST',             last);
-      window.removeEventListener('ForMedrix_TABLE_OPEN_SELECTED',    openSelected);
-      window.removeEventListener('ForMedrix_TABLE_REFRESH',          refresh);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_URGENT',    filterUrgent);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_COMPLETED', filterCompleted);
-      window.removeEventListener('ForMedrix_TABLE_CLEAR_FILTER',     clearFilter);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_URGENT',    filterUrgent);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_REVIEW',    filterReview);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_COMPLETED', filterCompleted);
-      window.removeEventListener('ForMedrix_TABLE_FILTER_PHYSICIAN', filterPhysician);
-      window.removeEventListener('ForMedrix_READ_FLAGS',             readFlags);
-      window.removeEventListener('ForMedrix_READ_SPECIMEN',          readSpecimen);
-      window.removeEventListener('ForMedrix_TABLE_SORT_DATE',        sortDate);
-      window.removeEventListener('ForMedrix_TABLE_SORT_PRIORITY',    sortPriority);
-      window.removeEventListener('ForMedrix_TABLE_SORT_STATUS',      sortStatus);
-      window.removeEventListener('ForMedrix_TABLE_SORT_BY_COLUMN',   sortByColumn);
-      window.removeEventListener('ForMedrix_TABLE_CLEAR_SORT',       clearSort);
-      window.removeEventListener('ForMedrix_NAV_NEXT_CASE',          nextCase);
-      window.removeEventListener('ForMedrix_NAV_PREVIOUS_CASE',      prevCase);
-      window.removeEventListener('ForMedrix_PAGE_OPEN_RESOURCES',    openResources);
+      window.removeEventListener('PATHSCRIBE_TABLE_NEXT',             next);
+      window.removeEventListener('PATHSCRIBE_TABLE_PREVIOUS',         previous);
+      window.removeEventListener('PATHSCRIBE_TABLE_PAGE_DOWN',        pageDown);
+      window.removeEventListener('PATHSCRIBE_TABLE_PAGE_UP',          pageUp);
+      window.removeEventListener('PATHSCRIBE_TABLE_FIRST',            first);
+      window.removeEventListener('PATHSCRIBE_TABLE_LAST',             last);
+      window.removeEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
+      window.removeEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
+      window.removeEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
+      window.removeEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
+      window.removeEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
+      window.removeEventListener('PATHSCRIBE_TABLE_SORT_PRIORITY',    sortPriority);
+      window.removeEventListener('PATHSCRIBE_TABLE_SORT_STATUS',      sortStatus);
+      window.removeEventListener('PATHSCRIBE_TABLE_SORT_BY_COLUMN',   sortByColumn);
+      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_SORT',       clearSort);
+      window.removeEventListener('PATHSCRIBE_NAV_NEXT_CASE',          nextCase);
+      window.removeEventListener('PATHSCRIBE_NAV_PREVIOUS_CASE',      prevCase);
+      window.removeEventListener('PATHSCRIBE_PAGE_OPEN_RESOURCES',    openResources);
     };
-  }, [navigate, allCases, setActiveFilter, setPhysicianFilter, setPhysicianPrompt, setIsResourcesOpen]);
+  }, [filteredCases, selectedIndex, navigate]);
 
   return (
-    <div style={{ 
-      position: 'relative', 
-      width: '100vw', 
-      height: '100vh', 
-      backgroundColor: '#000000', 
-      color: '#ffffff', 
+    <div style={{
+      position: 'relative', width: '100vw', height: '100vh',
+      backgroundColor: '#000000', color: '#ffffff',
       fontFamily: "'Inter', sans-serif",
-      transition: 'opacity 0.6s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
-      {/* Background */}
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        backgroundImage: 'url(/main_background.jpg)', 
-        backgroundSize: 'cover', 
-        backgroundPosition: 'center', 
-        zIndex: 0,
-        filter: 'brightness(0.3) contrast(1.1)'
-      }} />
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, #000000 100%)', 
-        zIndex: 1 
-      }} />
+      {/* Backgrounds — self-closing, no scroll contribution */}
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/main_background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0, filter: 'brightness(0.3) contrast(1.1)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, #000000 100%)', zIndex: 1 }} />
 
-      {/* Content */}
-      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        
-        {/* Top Navigation */}
+      {/* All content — fills viewport exactly, no overflow */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-        {/* Case Search Bar — PHI: typed case number hidden during capture */}
-        <div
-          data-capture-hide="true"
-          style={{
-            padding: '16px 40px',
-            background: 'rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)'
-          }}
-        >
+        {/* Search bar — fixed height, never scrolls */}
+        <div data-capture-hide="true" style={{ flexShrink: 0, padding: '12px 24px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <CaseSearchBar />
         </div>
 
-        {/* Main Content */}
-        <main style={{ 
-          flex: 1,
-          minHeight: 0,
-          padding: '40px', 
-          display: 'flex',
-          flexDirection: 'column',
-          overflowX: 'hidden'
-        }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-            
-            {/* Header Section — PHI: case counts derived from PHI data */}
-            <div data-capture-hide="true" style={{ marginBottom: '40px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
-                <div>
-                  <h1 style={{ fontSize: '42px', fontWeight: 900, margin: 0, letterSpacing: '-1px' }}>
-                    Active Cases
-                  </h1>
-                  <p style={{ fontSize: '16px', color: '#94a3b8', marginTop: '8px' }}>
-                    Managing {filteredCases.length} assignment{filteredCases.length !== 1 ? 's' : ''} in the current queue
-                  </p>
-                </div>
-                
-                {/* Stats Cards */}
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  {/* Critical Cases Card */}
-                  <div style={{ 
-                    background: 'rgba(239,68,68,0.08)', 
-                    border: '1px solid rgba(239,68,68,0.25)',
-                    borderRadius: '12px', 
-                    padding: '16px 24px',
-                    backdropFilter: 'blur(10px)',
-                    minWidth: '140px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                      <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
-                        background: '#EF4444',
-                        display: 'inline-block',
-                        boxShadow: '0 0 6px #EF4444'
-                      }} />
-                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Critical
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#EF4444' }}>
-                      {stats.critical}
-                    </div>
-                  </div>
+        {/* Main — fills remaining height, no overflow */}
+        <main style={{ flex: 1, minHeight: 0, padding: '12px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
-                  <div style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px', 
-                    padding: '16px 24px',
-                    backdropFilter: 'blur(10px)',
-                    minWidth: '140px'
-                  }}>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
-                      Grossed Today
-                    </div>
-                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#0891B2' }}>
-                      {stats.grossedToday}
-                    </div>
-                  </div>
-                  
-                  <div style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px', 
-                    padding: '16px 24px',
-                    backdropFilter: 'blur(10px)',
-                    minWidth: '140px'
-                  }}>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
-                      Needs Review
-                    </div>
-                    <div style={{ fontSize: '32px', fontWeight: 800, color: '#10B981' }}>
-                      {stats.needsReview}
-                    </div>
-                  </div>
-                </div>
+            {/* Header row — title LEFT, tiles RIGHT, fixed height */}
+            <div data-capture-hide="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexShrink: 0 }}>
+
+              {/* Title */}
+              <div style={{ flexShrink: 0 }}>
+                <h1 style={{ fontSize: '28px', fontWeight: 900, margin: 0, letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>Active Cases</h1>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0', whiteSpace: 'nowrap' }}>
+                  Managing {realCases.length} case{realCases.length !== 1 ? 's' : ''}
+                  {activeFilter !== 'all' && <span style={{ color: '#0891B2', marginLeft: '6px' }}>· filtered</span>}
+                </p>
               </div>
 
-              {/* Filter Tabs */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {[
-                  { key: 'all',       label: 'All Cases'    },
-                  { key: 'urgent',    label: '🔴 Urgent',    urgentColor: true },
-                  { key: 'review',    label: 'Needs Review' },
-                  { key: 'completed', label: 'Completed'    },
-                ].map(filter => {
-                  const isActive = activeFilter === filter.key;
-                  const activeColor = (filter as any).urgentColor ? '#ef4444' : '#0891B2';
+              {/* Tiles — right side, compact, act as filter buttons */}
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'stretch', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {([
+                  { key: 'all',        label: 'Total Cases',     count: stats.total,          color: '#e2e8f0', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.10)', activeBg: 'rgba(255,255,255,0.12)', activeBorder: 'rgba(255,255,255,0.5)',  glow: 'none' },
+                  { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
+                  { key: 'inprogress', label: 'In Progress',     count: stats.inProgress,     color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
+                  { key: 'review',     label: 'Needs Review',    count: stats.needsReview,    color: '#F59E0B', bg: 'rgba(245,158,11,0.05)',  border: 'rgba(245,158,11,0.18)',  activeBg: 'rgba(245,158,11,0.18)',  activeBorder: '#F59E0B',               glow: '0 0 12px rgba(245,158,11,0.4)' },
+                  { key: 'amended',    label: 'Amended',         count: stats.amended,        color: '#8B5CF6', bg: 'rgba(139,92,246,0.05)',  border: 'rgba(139,92,246,0.18)',  activeBg: 'rgba(139,92,246,0.18)',  activeBorder: '#8B5CF6',               glow: '0 0 12px rgba(139,92,246,0.4)' },
+                  { key: 'completed',  label: 'Completed Today', count: stats.completedToday, color: '#10B981', bg: 'rgba(16,185,129,0.05)',  border: 'rgba(16,185,129,0.18)',  activeBg: 'rgba(16,185,129,0.18)',  activeBorder: '#10B981',               glow: '0 0 12px rgba(16,185,129,0.4)' },
+                ] as const).map(tile => {
+                  const isActive = activeFilter === tile.key;
                   return (
                     <button
-                      key={filter.key}
-                      onClick={() => { setActiveFilter(filter.key as any); setSelectedIndex(-1); setSelectedCaseId(null); }}
+                      key={tile.key}
+                      title={isActive ? `Showing: ${tile.label} — click to reset` : `Filter by: ${tile.label}`}
+                      onClick={() => { setActiveFilter(isActive ? 'all' : tile.key as any); setSelectedIndex(-1); setSelectedCaseId(null); }}
                       style={{
-                        padding: '10px 20px',
-                        background: isActive ? activeColor : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${isActive ? activeColor : 'rgba(255,255,255,0.1)'}`,
-                        borderRadius: '8px',
-                        color: isActive ? '#fff' : '#94a3b8',
-                        fontWeight: 700, fontSize: '14px',
-                        cursor: 'pointer', transition: 'all 0.2s',
+                        background:     isActive ? tile.activeBg  : tile.bg,
+                        border:         `1.5px solid ${isActive ? tile.activeBorder : tile.border}`,
+                        boxShadow:      isActive ? tile.glow : 'none',
+                        borderRadius:   '8px',
+                        padding:        '6px 12px',
+                        backdropFilter: 'blur(10px)',
+                        minWidth:       '80px',
+                        cursor:         'pointer',
+                        transition:     'all 0.15s ease',
+                        textAlign:      'left' as const,
+                        outline:        'none',
+                        transform:      isActive ? 'translateY(-1px)' : 'none',
                       }}
-                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; } }}
-                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#94a3b8'; } }}
                     >
-                      {filter.label}
+                      <div style={{ fontSize: '8px', fontWeight: 800, color: isActive ? tile.color : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        {isActive && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: tile.color, display: 'inline-block', flexShrink: 0 }} />}
+                        {tile.label}
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: 800, color: tile.color, lineHeight: 1 }}>
+                        {tile.count}
+                      </div>
                     </button>
                   );
                 })}
-                {/* Active physician filter chip */}
                 {activeFilter === 'physician' && physicianFilter && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', fontSize: '13px', color: '#a78bfa', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(139,92,246,0.15)', border: '1.5px solid rgba(139,92,246,0.4)', borderRadius: '8px', fontSize: '12px', color: '#a78bfa', fontWeight: 600 }}>
                     👤 {physicianFilter}
                     <button onClick={() => { setActiveFilter('all'); setPhysicianFilter(''); }} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '14px', padding: '0 0 0 4px', lineHeight: 1 }}>✕</button>
                   </div>
@@ -1233,255 +1195,47 @@ const WorklistPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Physician clarification prompt */}
+            {/* Physician voice prompt — conditional, fixed height */}
             {physicianPrompt && (
-              <div style={{ margin: '8px 0', padding: '10px 16px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ flexShrink: 0, marginBottom: '8px', padding: '8px 14px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <span style={{ fontSize: '13px', color: '#fbbf24', fontWeight: 500 }}>🎙️ {physicianPrompt}</span>
                 <button onClick={() => setPhysicianPrompt(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '16px' }}>✕</button>
               </div>
             )}
 
-            {/* Worklist Table — PHI: entire table hidden during screen capture */}
-            <div data-capture-hide="true">
+            {/* Worklist table — takes all remaining vertical space, scrolls internally */}
+            <div data-capture-hide="true" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <WorklistTable
-                cases={filteredCases}
+                cases={realCases}
                 activeFilter={activeFilter}
                 selectedIndex={selectedIndex}
                 selectedCaseId={selectedCaseId}
-                onRowSelect={(idx, id) => { setSelectedIndex(idx); setSelectedCaseId(id); }}
-                onFirstCaseId={(id) => {
-                  // Only apply on fresh load — return-from-case is handled separately
+                onRowSelect={(idx: number, id: string) => { setSelectedIndex(idx); setSelectedCaseId(id); }}
+                onFirstCaseId={(id: string | null) => {
                   if ((location.state as any)?.fromCaseId) return;
-                  if (selectedCaseId) return; // already set
+                  if (selectedCaseId) return;
                   if (id) { setSelectedIndex(0); setSelectedCaseId(id); }
                 }}
-                onDisplayOrder={(ids) => setDisplayOrder(ids)}
+                onDisplayOrder={useCallback((ids: string[]) => setDisplayOrder(ids), [])}
               />
             </div>
+
           </div>
         </main>
+
       </div>
 
-      {/* Resources Modal */}
-      {isResourcesOpen && (
-        <div
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}
-          onClick={() => setIsResourcesOpen(false)}
-        >
-          <div
-            style={{
-              width: '400px',
-              backgroundColor: '#111', 
-              borderRadius: '20px', 
-              padding: '40px', 
-              border: '1px solid rgba(8, 145, 178, 0.3)', 
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ 
-              color: '#0891B2', 
-              fontSize: '24px', 
-              fontWeight: 700, 
-              marginBottom: '24px',
-              textAlign: 'center'
-            }}>
-              Quick Links
-            </div>
+      <ResourcesModal
+        isOpen={isResourcesOpen}
+        onClose={() => setIsResourcesOpen(false)}
+        quickLinks={quickLinks}
+      />
+      <LogoutWarningModal
+        isOpen={showLogoutWarning}
+        onClose={() => setShowLogoutWarning(false)}
+        onLogout={handleLogout}
+      />
 
-            {/* Protocols Section */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ 
-                color: '#94a3b8', 
-                fontSize: '12px', 
-                fontWeight: 700, 
-                marginBottom: '12px',
-                textTransform: 'uppercase'
-              }}>
-                Protocols
-              </div>
-              {quickLinks.protocols.map((link, i) => (
-                <a            
-                  key={i}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsResourcesOpen(false)}
-                  style={{
-                    display: 'block',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    transition: 'all 0.2s',
-                    borderRadius: '8px',
-                    marginBottom: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#0891B2';
-                    e.currentTarget.style.backgroundColor = 'rgba(8, 145, 178, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#cbd5e1';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  → {link.title}
-                </a>
-              ))}
-            </div>
-
-            {/* References Section */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ 
-                color: '#94a3b8', 
-                fontSize: '12px', 
-                fontWeight: 700, 
-                marginBottom: '12px',
-                textTransform: 'uppercase'
-              }}>
-                References
-              </div>
-              {quickLinks.references.map((link, i) => (
-                <a
-                  key={i}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsResourcesOpen(false)}
-                  style={{
-                    display: 'block',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    transition: 'all 0.2s',
-                    borderRadius: '8px',
-                    marginBottom: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#0891B2';
-                    e.currentTarget.style.backgroundColor = 'rgba(8, 145, 178, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#cbd5e1';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  → {link.title}
-                </a>
-              ))}
-            </div>
-
-            {/* Systems Section */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ 
-                color: '#94a3b8', 
-                fontSize: '12px', 
-                fontWeight: 700, 
-                marginBottom: '12px',
-                textTransform: 'uppercase'
-              }}>
-                Systems
-              </div>
-              {quickLinks.systems.map((link, i) => (
-                <a
-                  key={i}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsResourcesOpen(false)}
-                  style={{
-                    display: 'block',
-                    color: '#cbd5e1',
-                    textDecoration: 'none',
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    transition: 'all 0.2s',
-                    borderRadius: '8px',
-                    marginBottom: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#0891B2';
-                    e.currentTarget.style.backgroundColor = 'rgba(8, 145, 178, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#cbd5e1';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  → {link.title}
-                </a>
-              ))}
-            </div>
-
-            <button 
-              onClick={() => setIsResourcesOpen(false)} 
-              autoFocus
-              style={{
-                padding: '12px 24px',
-                borderRadius: '10px',
-                background: 'rgba(8, 145, 178, 0.15)',
-                border: '1px solid rgba(8, 145, 178, 0.3)',
-                color: '#0891B2',
-                fontWeight: 600,
-                fontSize: '15px',
-                cursor: 'pointer',
-                width: '100%',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(8, 145, 178, 0.25)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(8, 145, 178, 0.15)';
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* LOGOUT WARNING MODAL */}
-      {showLogoutWarning && (
-        <div
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}
-          tabIndex={-1}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowLogoutWarning(false); }}
-        >
-          <div style={{ width: '400px', backgroundColor: '#111', padding: '40px', borderRadius: '28px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', margin: '0 0 12px 0' }}>Unsaved Data</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '30px', lineHeight: '1.6', fontSize: '15px' }}>
-              You have an active session with unsaved changes. Logging out now will discard your current progress.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button
-                onClick={() => setShowLogoutWarning(false)}
-                autoFocus
-                style={{ padding: '16px 24px', borderRadius: '12px', background: '#0891B2', border: 'none', color: '#fff', fontWeight: 700, fontSize: '16px', cursor: 'pointer', width: '100%', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#0E7490'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#0891B2'}
-              >
-                ← Return to Page
-              </button>
-              <button
-                onClick={handleLogout}
-                style={{ padding: '16px 24px', borderRadius: '12px', background: 'transparent', border: '2px solid #F59E0B', color: '#F59E0B', fontWeight: 600, fontSize: '15px', cursor: 'pointer', width: '100%', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#F59E0B'; e.currentTarget.style.color = '#000'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#F59E0B'; }}
-              >
-                Log Out & Discard Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

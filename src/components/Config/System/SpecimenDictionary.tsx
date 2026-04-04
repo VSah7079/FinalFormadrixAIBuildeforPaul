@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { useSpecimens } from "../../../contexts/useSpecimens";
 import { useSubspecialties } from "../../../contexts/useSubspecialties";
 import { Specimen } from "../../Config/Models/specimenTypes";

@@ -1,6 +1,6 @@
 ﻿{
   "version": "1.0",
-  "notes": "ForMedrix starter specimen dictionary â€” generic English set, British spelling canonical. Covers common pathology specimen types across major organ systems. Customise via Configuration > Specimen Dictionary.",
+  "notes": "pathscribe starter specimen dictionary â€” generic English set, British spelling canonical. Covers common pathology specimen types across major organ systems. Customise via Configuration > Specimen Dictionary.",
   "specimens": [
     {
       "id": "sp001", "type": "Biopsy", "procedure": "Core Needle Biopsy",

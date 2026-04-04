@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { TerminologyAlert } from '../../../hooks/useTerminologyAlerts';
 
 // ─── Shared style tokens (matches SynopticEditor) ─────────────────────────────

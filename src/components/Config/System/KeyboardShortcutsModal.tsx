@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { SHORTCUT_GROUPS } from "../../constants/systemActions";
 
 export type Shortcut = {

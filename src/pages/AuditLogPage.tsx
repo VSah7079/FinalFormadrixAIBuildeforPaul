@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import '../formedrix.css';
+import '../pathscribe.css';
 import { useNavigate } from 'react-router-dom';
 
 // ── Types & Data ─────────────────────────────────────────────────────────────
 // Components import ONLY from services/index.ts — never directly from mock/firestore files.
 import type { AuditLog, ErrorLog } from '../services/auditLog/IAuditService';
 import { auditService } from '../services';
-import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
-import { VOICE_CONTEXT } from '../constants/systemActions';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -46,7 +44,7 @@ function buildMetaHeader(
     .map(([k, v]) => `${k}: ${v}`)
     .join(' | ') || 'None';
   return [
-    `${esc('ForMedrix AI — System Audit Log Export')}`,
+    `${esc('PathScribe AI — System Audit Log Export')}`,
     `${esc('NOTICE: For authorised audit and compliance purposes only. Do not distribute.')}`,
     `${esc('No direct patient identifiers included (HIPAA / GDPR / Privacy Act compliant).')}`,
     ``,
@@ -66,7 +64,7 @@ function exportAuditCSV(rows: AuditLog[], requestedBy: string, filters: Record<s
     ['ID', 'Timestamp', 'Type', 'Event', 'Detail', 'Actioned By', 'Accession No.', 'AI Confidence'].join(','),
     ...rows.map(r => [r.id, r.timestamp, r.type, r.event, r.detail, r.user, r.caseId ?? '', r.confidence ?? ''].map(esc).join(','))
   ];
-  downloadCSV(meta + data.join('\n'), `formedrix-audit-log-${new Date().toISOString().slice(0,10)}.csv`);
+  downloadCSV(meta + data.join('\n'), `pathscribe-audit-log-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 function exportErrorCSV(rows: ErrorLog[], requestedBy: string, filters: Record<string, string>) {
@@ -76,7 +74,7 @@ function exportErrorCSV(rows: ErrorLog[], requestedBy: string, filters: Record<s
     ['ID', 'Timestamp', 'Severity', 'Code', 'Message', 'Source', 'Accession No.', 'Resolved'].join(','),
     ...rows.map(r => [r.id, r.timestamp, r.severity, r.code, r.message, r.source, r.caseId ?? '', r.resolved].map(esc).join(','))
   ];
-  downloadCSV(meta + data.join('\n'), `formedrix-error-log-${new Date().toISOString().slice(0,10)}.csv`);
+  downloadCSV(meta + data.join('\n'), `pathscribe-error-log-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 // UNIQUE_USERS is derived from loaded data — see useMemo below
@@ -91,7 +89,7 @@ const AuditLogPage: React.FC = () => {
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [errorLogs,       setErrorLogs]       = useState<ErrorLog[]>([]);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
-  const [activeTab,       setActiveTab]       = useState<string>('audit');
+  const [activeTab,       setActiveTab]       = useState<ActiveTab>('audit');
 
   // Audit filters
   const [typeFilter,  setTypeFilter]  = useState<'all' | 'ai' | 'user' | 'system'>('all');
@@ -112,12 +110,6 @@ const AuditLogPage: React.FC = () => {
     auditService.getAuditLogs().then(r => { if (r.ok) setAuditLogs(r.data); });
     auditService.getErrorLogs().then(r => { if (r.ok) setErrorLogs(r.data); });
     return () => clearTimeout(t);
-  }, []);
-
-  // -- Voice: set WORKLIST context on mount ----------------------------------
-  useEffect(() => {
-    mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
-    return () => mockActionRegistryService.setCurrentContext(VOICE_CONTEXT.WORKLIST);
   }, []);
 
 
@@ -385,7 +377,7 @@ const AuditLogPage: React.FC = () => {
 
         {/* Footer */}
         <footer style={{ padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
-          <div>&copy; 2026 ForMedrix AI Systems &bull; HIPAA Compliant</div>
+          <div>© 2026 PathScribe AI Systems • HIPAA Compliant</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%', boxShadow: '0 0 8px #10B981', display: 'inline-block' }} />
             SYSTEMS OPERATIONAL
@@ -415,4 +407,3 @@ const AuditLogPage: React.FC = () => {
 };
 
 export default AuditLogPage;
-

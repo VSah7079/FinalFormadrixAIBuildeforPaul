@@ -66,7 +66,7 @@ const SEED_NOTES: InternalNote[] = [
 //     report exports, PDF generation, or LIS transmissions. Do not expose
 //     this collection through any patient-facing API or report template.
 
-const STORAGE_KEY = 'formedrix_internal_notes';
+const STORAGE_KEY = 'pathscribe_internal_notes';
 const load    = () => storageGet<InternalNote[]>(STORAGE_KEY, SEED_NOTES);
 const persist = (data: InternalNote[]) => storageSet(STORAGE_KEY, data);
 

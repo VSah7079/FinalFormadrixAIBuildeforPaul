@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { mockUserService } from '../../services/users/mockUserService'; // Adjust path if needed
 import { StaffUser } from '../../services/users/IUserService';
 

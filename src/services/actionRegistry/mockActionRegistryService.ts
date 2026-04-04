@@ -9,9 +9,15 @@ const GLOBAL_CATEGORIES = new Set(['SYSTEM', 'NAVIGATION']);
 // ─────────────────────────────────────────────────────────────────────────────
 // Actions dispatched via custom DOM events rather than internalKey keyboard
 // events — either React state targets, browser-reserved keys, or dictation.
-// Pattern: ForMedrix_<ACTION_ID>
+// Pattern: PATHSCRIBE_<ACTION_ID>
 // ─────────────────────────────────────────────────────────────────────────────
 const CUSTOM_EVENT_ACTIONS = new Set([
+  //Delegation Module
+  'DELEGATE_PEER_REVIEW', 
+  'DELEGATE_FORMAL_CONSULT', 
+  'DELEGATE_FULL_TRANSFER',
+  'DELEGATE_CONFIRM',
+  'OPEN_DELEGATE_MODAL',
   // Page navigation (React Router)
   'OPEN_MESSAGES', 'OPEN_WORKLIST', 'OPEN_CONFIGURATION',
   'OPEN_SEARCH', 'OPEN_AUDIT', 'OPEN_CONTRIBUTION', 'OPEN_HOME',
@@ -87,6 +93,63 @@ const CUSTOM_EVENT_ACTIONS = new Set([
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MOCK_ACTIONS: SystemAction[] = [
+
+// ── DELEGATION — Case Hand-off & Review ────────────────────────────────────
+  {
+    id: 'OPEN_DELEGATE_MODAL', 
+    label: 'Open Delegation Menu', 
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+D', 
+    internalKey: 'F13+PS150',
+    voiceTriggers: ['open delegation', 'delegate case', 'transfer case', 'show handoff'],
+    learnedTriggers: [], 
+    requiredRole: 'Pathologist', 
+    isActive: true,
+  },
+  {
+    id: 'DELEGATE_PEER_REVIEW', 
+    label: 'Select Peer Review', 
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+1', 
+    internalKey: 'F13+PS151',
+    voiceTriggers: ['request peer review', 'internal review', 'informal opinion'],
+    learnedTriggers: [], 
+    requiredRole: 'Pathologist', 
+    isActive: true,
+  },
+  {
+    id: 'DELEGATE_FORMAL_CONSULT', 
+    label: 'Select Formal Consult', 
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+2', 
+    internalKey: 'F13+PS152',
+    voiceTriggers: ['formal consultation', 'add consultant', 'official consult'],
+    learnedTriggers: [], 
+    requiredRole: 'Pathologist', 
+    isActive: true,
+  },
+  {
+    id: 'DELEGATE_FULL_TRANSFER', 
+    label: 'Select Full Transfer', 
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+3', 
+    internalKey: 'F13+PS153',
+    voiceTriggers: ['full transfer', 'transfer ownership', 'assign to pool'],
+    learnedTriggers: [], 
+    requiredRole: 'Pathologist', 
+    isActive: true,
+  },
+  {
+    id: 'DELEGATE_CONFIRM', 
+    label: 'Confirm Delegation', 
+    category: 'SYNOPTIC',
+    shortcut: 'Ctrl+Enter', 
+    internalKey: 'F13+PS154',
+    voiceTriggers: ['confirm delegation', 'send case', 'complete transfer'],
+    learnedTriggers: [], 
+    requiredRole: 'Pathologist', 
+    isActive: true,
+  },
 
   // ── SYSTEM — always available ─────────────────────────────────────────────
   {
@@ -324,11 +387,16 @@ const MOCK_ACTIONS: SystemAction[] = [
     voiceTriggers: ['read specimen', 'what is the specimen', 'specimen type', 'confirm specimen'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
-  {
-    id: 'TABLE_FILTER_COMPLETED', label: 'Filter Completed', category: VOICE_CONTEXT.WORKLIST,
-    shortcut: '', internalKey: ACTION_MAP['worklist.tableFilterUrgent']?.internalKey ?? 'F15+PS006',
+{
+    id: 'TABLE_FILTER_COMPLETED',
+    label: 'Filter Completed',
+    category: VOICE_CONTEXT.WORKLIST,
+    shortcut: '', 
+    internalKey: ACTION_MAP['table.filterUrgent']?.internalKey ?? 'F15+PS020',
     voiceTriggers: ['filter completed', 'show completed', 'completed cases', 'show completed cases'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+    learnedTriggers: [], 
+    requiredRole: 'All Staff', 
+    isActive: true,
   },
   {
     id: 'TABLE_CLEAR_FILTER', label: 'Clear Filter', category: VOICE_CONTEXT.WORKLIST,
@@ -947,9 +1015,14 @@ export const mockActionRegistryService: IActionRegistryService = {
 
   setCurrentContext: (c: string) => {
     currentAppContext = c;
-    console.log('[VoiceRegistry] Context ->', c);
   },
-
+onAction: (callback: (actionId: string) => void) => {
+    const handler = (e: any) => {
+      if (e.detail?.id) callback(e.detail.id);
+    };
+    window.addEventListener('VOICE_ACTION_TRIGGERED', handler);
+    return () => window.removeEventListener('VOICE_ACTION_TRIGGERED', handler);
+  },
   findActionByTrigger: (transcript: string): SystemAction | undefined => {
     const eligible = MOCK_ACTIONS.filter(
       a => a.isActive && (
@@ -979,19 +1052,20 @@ export const mockActionRegistryService: IActionRegistryService = {
 
   executeAction: (action: SystemAction, transcript?: string) => {
     console.log('[VoiceRegistry] Executing:', action.id, '->', action.internalKey);
+    window.dispatchEvent(new CustomEvent('VOICE_ACTION_TRIGGERED', { detail: action }));
     const notify = () =>
       window.dispatchEvent(new CustomEvent('VOICE_ACTION_TRIGGERED', { detail: action }));
 
     // Special case: TABLE_SORT_BY_COLUMN — pass transcript so WorklistPage can extract column name
     if (action.id === 'TABLE_SORT_BY_COLUMN' && transcript) {
-      window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_SORT_BY_COLUMN', { detail: { transcript } }));
+      window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_BY_COLUMN', { detail: { transcript } }));
       notify();
       return;
     }
 
     // Special case: TABLE_FILTER_PHYSICIAN — pass transcript as detail so WorklistPage can extract the name
     if (action.id === 'TABLE_FILTER_PHYSICIAN' && transcript) {
-      window.dispatchEvent(new CustomEvent('ForMedrix_TABLE_FILTER_PHYSICIAN', { detail: { transcript } }));
+      window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', { detail: { transcript } }));
       notify();
       return;
     }
@@ -1001,13 +1075,13 @@ export const mockActionRegistryService: IActionRegistryService = {
       const match = norm(transcript).match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/);
       const wordToNum: Record<string, number> = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10 };
       const n = match ? (wordToNum[match[1]] ?? parseInt(match[1], 10)) : 1;
-      window.dispatchEvent(new CustomEvent('ForMedrix_SELECT_SPECIMEN', { detail: { index: n - 1 } }));
+      window.dispatchEvent(new CustomEvent('PATHSCRIBE_SELECT_SPECIMEN', { detail: { index: n - 1 } }));
       notify();
       return;
     }
 
     if (CUSTOM_EVENT_ACTIONS.has(action.id)) {
-      window.dispatchEvent(new CustomEvent(`ForMedrix_${action.id}`, { detail: action }));
+      window.dispatchEvent(new CustomEvent(`PATHSCRIBE_${action.id}`, { detail: action }));
       notify();
       return;
     }

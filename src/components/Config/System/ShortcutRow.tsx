@@ -1,5 +1,5 @@
 import React from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { ActionDefinition, PSShortcut } from "../../../actions/actionRegistry";
 
 interface ShortcutRowProps {

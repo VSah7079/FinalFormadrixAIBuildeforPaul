@@ -1,7 +1,7 @@
 // src/components/CasePanel/CasePreviewDrawer.tsx
 
 import React, { useState } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import { useLISFreshnessCheck } from "../../hooks/useLISFreshnessCheck";
 import type { FullReport, MinimalReport } from "../../mock/mockReports";
 

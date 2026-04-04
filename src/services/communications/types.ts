@@ -7,6 +7,7 @@
 
 export interface EmailPayload {
   to:       string[];
+  cc?: string[];
   subject:  string;
   bodyHtml: string;
   bodyText: string;

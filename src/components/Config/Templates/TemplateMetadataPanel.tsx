@@ -1,5 +1,5 @@
 import React from "react";
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 
 interface Props {
   name: string;

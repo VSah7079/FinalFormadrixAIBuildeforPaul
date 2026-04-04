@@ -1,20 +1,77 @@
+// src/services/subspecialties/mockSubspecialtyService.ts
 import { ISubspecialtyService, Subspecialty } from './ISubspecialtyService';
 import { ServiceResult, ID } from '../types';
 import { storageGet, storageSet } from '../mockStorage';
 
 const SEED_SUBSPECIALTIES: Subspecialty[] = [
-  { id: 'gi',       name: 'Gastrointestinal',    userIds: ['1', '7'], specimenIds: ['sp1', 'sp2'], status: 'Active'   },
-  { id: 'breast',   name: 'Breast',              userIds: ['1', '6'], specimenIds: ['sp3'],        status: 'Active'   },
-  { id: 'derm',     name: 'Dermatopathology',    userIds: ['6'],      specimenIds: ['sp4', 'sp5'], status: 'Active'   },
-  { id: 'neuro',    name: 'Neuropathology',      userIds: ['6'],      specimenIds: ['sp6'],        status: 'Active'   },
-  { id: 'heme',     name: 'Hematopathology',     userIds: ['9'],      specimenIds: ['sp7'],        status: 'Active'   },
-  { id: 'gyn',      name: 'Gynecological',       userIds: ['1'],      specimenIds: ['sp8'],        status: 'Active'   },
-  { id: 'uro',      name: 'Urological',          userIds: ['7'],      specimenIds: ['sp9'],        status: 'Active'   },
-  { id: 'thoracic', name: 'Thoracic',            userIds: [],         specimenIds: [],             status: 'Inactive' },
+  {
+    id: 'gi', name: 'Gastrointestinal',
+    description: 'GI tract and hepatobiliary pathology.',
+    userIds: ['1', '7'], specimenIds: ['sp1', 'sp2'], clientIds: ['c1'],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'breast', name: 'Breast',
+    description: 'Breast pathology including oncology and benign disease.',
+    userIds: ['1', '6'], specimenIds: ['sp3'], clientIds: ['c1', 'c2'],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'derm', name: 'Dermatopathology',
+    description: 'Skin and soft tissue pathology.',
+    userIds: ['6'], specimenIds: ['sp4', 'sp5'], clientIds: [],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'neuro', name: 'Neuropathology',
+    description: 'CNS and peripheral nervous system pathology.',
+    userIds: ['6'], specimenIds: ['sp6'], clientIds: [],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'heme', name: 'Hematopathology',
+    description: 'Blood, bone marrow, and lymph node pathology.',
+    userIds: ['9'], specimenIds: ['sp7'], clientIds: ['c3'],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'gyn', name: 'Gynecological',
+    description: 'Female reproductive tract pathology.',
+    userIds: ['1'], specimenIds: ['sp8'], clientIds: [],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'uro', name: 'Urological',
+    description: 'Urinary tract and male reproductive pathology.',
+    userIds: ['7'], specimenIds: ['sp9'], clientIds: [],
+    isWorkgroup: false, active: true, status: 'Active',
+  },
+  {
+    id: 'thoracic', name: 'Thoracic',
+    description: 'Pulmonary and mediastinal pathology.',
+    userIds: [], specimenIds: [], clientIds: [],
+    isWorkgroup: false, active: false, status: 'Inactive',
+  },
+  // ── Workgroup example ─────────────────────────────────────────────────────
+  {
+    id: 'oncology-pool', name: 'Oncology Pool',
+    description: 'Shared queue for general oncology cases — any member can claim.',
+    userIds: ['1', '6', '7', '9'], specimenIds: [], clientIds: ['c1', 'c2', 'c4'],
+    isWorkgroup: true, active: true, status: 'Active',
+  },
 ];
 
-const load = () => storageGet<Subspecialty[]>('formedrix_subspecialties', SEED_SUBSPECIALTIES);
-const persist = (data: Subspecialty[]) => storageSet('formedrix_subspecialties', data);
+// Migrate legacy entries that may not have new fields
+const migrate = (s: any): Subspecialty => ({
+  ...s,
+  description:  s.description  ?? '',
+  clientIds:    s.clientIds    ?? [],
+  isWorkgroup:  s.isWorkgroup  ?? false,
+  active:       s.active       ?? (s.status === 'Active'),
+});
+
+const load    = () => storageGet<Subspecialty[]>('pathscribe_subspecialties', SEED_SUBSPECIALTIES).map(migrate);
+const persist = (data: Subspecialty[]) => storageSet('pathscribe_subspecialties', data);
 let MOCK_SUBSPECIALTIES: Subspecialty[] = load();
 
 const ok    = <T>(data: T): ServiceResult<T> => ({ ok: true, data });
@@ -41,7 +98,14 @@ export const mockSubspecialtyService: ISubspecialtyService = {
 
   async add(sub) {
     await delay();
-    const newSub: Subspecialty = { ...sub, id: sub.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now() };
+    const newSub: Subspecialty = {
+      ...sub,
+      id:          sub.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      description: sub.description ?? '',
+      clientIds:   sub.clientIds   ?? [],
+      isWorkgroup: sub.isWorkgroup  ?? false,
+      active:      sub.active       ?? true,
+    };
     MOCK_SUBSPECIALTIES = [...MOCK_SUBSPECIALTIES, newSub];
     persist(MOCK_SUBSPECIALTIES);
     return ok({ ...newSub });
@@ -54,12 +118,12 @@ export const mockSubspecialtyService: ISubspecialtyService = {
 
   async deactivate(id) {
     await delay();
-    return findAndUpdate(id, s => ({ ...s, status: 'Inactive', userIds: [], specimenIds: [] }));
+    return findAndUpdate(id, s => ({ ...s, status: 'Inactive', active: false, userIds: [], specimenIds: [] }));
   },
 
   async reactivate(id) {
     await delay();
-    return findAndUpdate(id, s => ({ ...s, status: 'Active' }));
+    return findAndUpdate(id, s => ({ ...s, status: 'Active', active: true }));
   },
 
   async assignUser(subspecialtyId, userId) {

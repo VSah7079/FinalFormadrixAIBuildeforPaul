@@ -2,7 +2,7 @@
  * components/Config/System/GoverningBodiesSection.tsx
  * ─────────────────────────────────────────────────────────────────────────────
  * Super-***REMOVED*** only section for configuring which governing bodies are active
- * in ForMedrix's Synoptic Library and nightly sync.
+ * in pathscribe's Synoptic Library and nightly sync.
  *
  * Current scope (v1 stub):
  *   - Enable / disable each governing body
@@ -32,7 +32,7 @@
  */
 
 import React, { useState } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

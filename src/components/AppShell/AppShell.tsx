@@ -18,7 +18,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLogout } from '../../hooks/useLogout';
 import { UserSelectorModal } from '../Users/UserSelectorModal';
@@ -26,7 +26,7 @@ import { messageService } from '../../services';
 import type { MessageThread } from '../../services';
 import { useMessaging } from '../../contexts/MessagingContext';
 import NavBar from '../NavBar/NavBar';
-import '../../formedrix.css';
+import '../../pathscribe.css';
 
 const formatMessageDate = (date: Date | string | number) => {
   try {
@@ -61,6 +61,17 @@ const AppShell: React.FC = () => {
   const { user } = useAuth();
   const userInitials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'DR';
   const handleLogout = useLogout();
+  const location = useLocation();
+  const breadcrumbMap: Record<string, { label: string; parent?: string; parentPath?: string }> = {
+    '/':              { label: 'Home' },
+    '/worklist':      { label: 'Worklist', parent: 'Home', parentPath: '/' },
+    '/search':        { label: 'Search', parent: 'Home', parentPath: '/' },
+    '/audit':         { label: 'Audit Log', parent: 'Home', parentPath: '/' },
+    '/configuration': { label: 'Configuration', parent: 'Home', parentPath: '/' },
+    '/contribution':  { label: 'Contributions', parent: 'Home', parentPath: '/' },
+  };
+  const crumb = breadcrumbMap[location.pathname];
+
   const {
     messages, setMessages,
     unreadCount,
@@ -244,14 +255,14 @@ const AppShell: React.FC = () => {
     const openContribution       = () => navigate('/contribution');
     const goBack                 = () => navigate(-1);
     const goForward              = () => navigate(1);
-    const nextCase               = () => window.dispatchEvent(new CustomEvent('ForMedrix_NAV_NEXT_CASE'));
-    const previousCase           = () => window.dispatchEvent(new CustomEvent('ForMedrix_NAV_PREVIOUS_CASE'));
+    const nextCase               = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_NEXT_CASE'));
+    const previousCase           = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_PREVIOUS_CASE'));
 
     // ── Home page actions ────────────────────────────────────────────────────
-    const openEnhancementRequest = () => window.dispatchEvent(new CustomEvent('ForMedrix_HOME_OPEN_ENHANCEMENT_REQUEST'));
-    const openTestingFeedback    = () => window.dispatchEvent(new CustomEvent('ForMedrix_HOME_OPEN_TESTING_FEEDBACK'));
+    const openEnhancementRequest = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST'));
+    const openTestingFeedback    = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK'));
     const viewHelp               = () => window.open('/help/documentation.pdf', '_blank');
-    const openResources          = () => window.dispatchEvent(new CustomEvent('ForMedrix_PAGE_OPEN_RESOURCES'));
+    const openResources          = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_PAGE_OPEN_RESOURCES'));
     const systemLogout           = () => handleLogout();
 
     // ── Messages: navigation ─────────────────────────────────────────────────
@@ -317,82 +328,82 @@ const AppShell: React.FC = () => {
     const msgUrgent          = () => setIsUrgentNew(u => !u);
     const msgRecipientSearch = () => setUserModalOpen(true);
 
-    window.addEventListener('ForMedrix_OPEN_HOME',               openHome);
-    window.addEventListener('ForMedrix_OPEN_MESSAGES',           openMessages);
-    window.addEventListener('ForMedrix_OPEN_WORKLIST',           openWorklist);
-    window.addEventListener('ForMedrix_OPEN_CONFIGURATION',      openConfig);
-    window.addEventListener('ForMedrix_OPEN_SEARCH',             openSearch);
-    window.addEventListener('ForMedrix_OPEN_AUDIT',              openAudit);
-    window.addEventListener('ForMedrix_OPEN_CONTRIBUTION',       openContribution);
-    window.addEventListener('ForMedrix_GO_BACK',                 goBack);
-    window.addEventListener('ForMedrix_GO_FORWARD',              goForward);
-    window.addEventListener('ForMedrix_NEXT_CASE',               nextCase);
-    window.addEventListener('ForMedrix_PREVIOUS_CASE',           previousCase);
-    window.addEventListener('ForMedrix_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
-    window.addEventListener('ForMedrix_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
-    window.addEventListener('ForMedrix_VIEW_HELP',               viewHelp);
-    window.addEventListener('ForMedrix_OPEN_RESOURCES',          openResources);
-    window.addEventListener('ForMedrix_SYSTEM_LOGOUT',           systemLogout);
-    window.addEventListener('ForMedrix_MSG_NEXT',                msgNext);
-    window.addEventListener('ForMedrix_MSG_PREVIOUS',            msgPrevious);
-    window.addEventListener('ForMedrix_MSG_REPLY',               msgReply);
-    window.addEventListener('ForMedrix_MSG_DELETE',              msgDelete);
-    window.addEventListener('ForMedrix_MSG_MARK_READ',           msgMarkRead);
-    window.addEventListener('ForMedrix_MSG_MARK_READ_ALL',       msgMarkReadAll);
-    window.addEventListener('ForMedrix_MSG_COMPOSE',             msgCompose);
-    window.addEventListener('ForMedrix_MSG_SEND',                msgSend);
-    window.addEventListener('ForMedrix_MSG_CLOSE',               msgClose);
-    window.addEventListener('ForMedrix_MSG_EDIT',                msgEdit);
-    window.addEventListener('ForMedrix_MSG_SEARCH',              msgSearch);
-    window.addEventListener('ForMedrix_MSG_VIEW_DELETED',        msgViewDeleted);
-    window.addEventListener('ForMedrix_MSG_VIEW_MESSAGES',       msgViewMessages);
-    window.addEventListener('ForMedrix_MSG_RESTORE',             msgRestore);
-    window.addEventListener('ForMedrix_MSG_DELETE_ALL',          msgDeleteAll);
-    window.addEventListener('ForMedrix_MSG_GOTO_SUBJECT',        msgGotoSubject);
-    window.addEventListener('ForMedrix_MSG_GOTO_BODY',           msgGotoBody);
-    window.addEventListener('ForMedrix_MSG_CLEAR_SUBJECT',       msgClearSubject);
-    window.addEventListener('ForMedrix_MSG_CLEAR_BODY',          msgClearBody);
-    window.addEventListener('ForMedrix_MSG_URGENT',              msgUrgent);
-    window.addEventListener('ForMedrix_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
+    window.addEventListener('PATHSCRIBE_OPEN_HOME',               openHome);
+    window.addEventListener('PATHSCRIBE_OPEN_MESSAGES',           openMessages);
+    window.addEventListener('PATHSCRIBE_OPEN_WORKLIST',           openWorklist);
+    window.addEventListener('PATHSCRIBE_OPEN_CONFIGURATION',      openConfig);
+    window.addEventListener('PATHSCRIBE_OPEN_SEARCH',             openSearch);
+    window.addEventListener('PATHSCRIBE_OPEN_AUDIT',              openAudit);
+    window.addEventListener('PATHSCRIBE_OPEN_CONTRIBUTION',       openContribution);
+    window.addEventListener('PATHSCRIBE_GO_BACK',                 goBack);
+    window.addEventListener('PATHSCRIBE_GO_FORWARD',              goForward);
+    window.addEventListener('PATHSCRIBE_NEXT_CASE',               nextCase);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_CASE',           previousCase);
+    window.addEventListener('PATHSCRIBE_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
+    window.addEventListener('PATHSCRIBE_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
+    window.addEventListener('PATHSCRIBE_VIEW_HELP',               viewHelp);
+    window.addEventListener('PATHSCRIBE_OPEN_RESOURCES',          openResources);
+    window.addEventListener('PATHSCRIBE_SYSTEM_LOGOUT',           systemLogout);
+    window.addEventListener('PATHSCRIBE_MSG_NEXT',                msgNext);
+    window.addEventListener('PATHSCRIBE_MSG_PREVIOUS',            msgPrevious);
+    window.addEventListener('PATHSCRIBE_MSG_REPLY',               msgReply);
+    window.addEventListener('PATHSCRIBE_MSG_DELETE',              msgDelete);
+    window.addEventListener('PATHSCRIBE_MSG_MARK_READ',           msgMarkRead);
+    window.addEventListener('PATHSCRIBE_MSG_MARK_READ_ALL',       msgMarkReadAll);
+    window.addEventListener('PATHSCRIBE_MSG_COMPOSE',             msgCompose);
+    window.addEventListener('PATHSCRIBE_MSG_SEND',                msgSend);
+    window.addEventListener('PATHSCRIBE_MSG_CLOSE',               msgClose);
+    window.addEventListener('PATHSCRIBE_MSG_EDIT',                msgEdit);
+    window.addEventListener('PATHSCRIBE_MSG_SEARCH',              msgSearch);
+    window.addEventListener('PATHSCRIBE_MSG_VIEW_DELETED',        msgViewDeleted);
+    window.addEventListener('PATHSCRIBE_MSG_VIEW_MESSAGES',       msgViewMessages);
+    window.addEventListener('PATHSCRIBE_MSG_RESTORE',             msgRestore);
+    window.addEventListener('PATHSCRIBE_MSG_DELETE_ALL',          msgDeleteAll);
+    window.addEventListener('PATHSCRIBE_MSG_GOTO_SUBJECT',        msgGotoSubject);
+    window.addEventListener('PATHSCRIBE_MSG_GOTO_BODY',           msgGotoBody);
+    window.addEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
+    window.addEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
+    window.addEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
+    window.addEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
 
     return () => {
-      window.removeEventListener('ForMedrix_OPEN_HOME',               openHome);
-      window.removeEventListener('ForMedrix_OPEN_MESSAGES',           openMessages);
-      window.removeEventListener('ForMedrix_OPEN_WORKLIST',           openWorklist);
-      window.removeEventListener('ForMedrix_OPEN_CONFIGURATION',      openConfig);
-      window.removeEventListener('ForMedrix_OPEN_SEARCH',             openSearch);
-      window.removeEventListener('ForMedrix_OPEN_AUDIT',              openAudit);
-      window.removeEventListener('ForMedrix_OPEN_CONTRIBUTION',       openContribution);
-      window.removeEventListener('ForMedrix_GO_BACK',                 goBack);
-      window.removeEventListener('ForMedrix_GO_FORWARD',              goForward);
-      window.removeEventListener('ForMedrix_NEXT_CASE',               nextCase);
-      window.removeEventListener('ForMedrix_PREVIOUS_CASE',           previousCase);
-      window.removeEventListener('ForMedrix_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
-      window.removeEventListener('ForMedrix_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
-      window.removeEventListener('ForMedrix_VIEW_HELP',               viewHelp);
-      window.removeEventListener('ForMedrix_OPEN_RESOURCES',          openResources);
-      window.removeEventListener('ForMedrix_SYSTEM_LOGOUT',           systemLogout);
-      window.removeEventListener('ForMedrix_MSG_NEXT',                msgNext);
-      window.removeEventListener('ForMedrix_MSG_PREVIOUS',            msgPrevious);
-      window.removeEventListener('ForMedrix_MSG_REPLY',               msgReply);
-      window.removeEventListener('ForMedrix_MSG_DELETE',              msgDelete);
-      window.removeEventListener('ForMedrix_MSG_MARK_READ',           msgMarkRead);
-      window.removeEventListener('ForMedrix_MSG_MARK_READ_ALL',       msgMarkReadAll);
-      window.removeEventListener('ForMedrix_MSG_COMPOSE',             msgCompose);
-      window.removeEventListener('ForMedrix_MSG_SEND',                msgSend);
-      window.removeEventListener('ForMedrix_MSG_CLOSE',               msgClose);
-      window.removeEventListener('ForMedrix_MSG_EDIT',                msgEdit);
-      window.removeEventListener('ForMedrix_MSG_SEARCH',              msgSearch);
-      window.removeEventListener('ForMedrix_MSG_VIEW_DELETED',        msgViewDeleted);
-      window.removeEventListener('ForMedrix_MSG_VIEW_MESSAGES',       msgViewMessages);
-      window.removeEventListener('ForMedrix_MSG_RESTORE',             msgRestore);
-      window.removeEventListener('ForMedrix_MSG_DELETE_ALL',          msgDeleteAll);
-      window.removeEventListener('ForMedrix_MSG_GOTO_SUBJECT',        msgGotoSubject);
-      window.removeEventListener('ForMedrix_MSG_GOTO_BODY',           msgGotoBody);
-      window.removeEventListener('ForMedrix_MSG_CLEAR_SUBJECT',       msgClearSubject);
-      window.removeEventListener('ForMedrix_MSG_CLEAR_BODY',          msgClearBody);
-      window.removeEventListener('ForMedrix_MSG_URGENT',              msgUrgent);
-      window.removeEventListener('ForMedrix_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
+      window.removeEventListener('PATHSCRIBE_OPEN_HOME',               openHome);
+      window.removeEventListener('PATHSCRIBE_OPEN_MESSAGES',           openMessages);
+      window.removeEventListener('PATHSCRIBE_OPEN_WORKLIST',           openWorklist);
+      window.removeEventListener('PATHSCRIBE_OPEN_CONFIGURATION',      openConfig);
+      window.removeEventListener('PATHSCRIBE_OPEN_SEARCH',             openSearch);
+      window.removeEventListener('PATHSCRIBE_OPEN_AUDIT',              openAudit);
+      window.removeEventListener('PATHSCRIBE_OPEN_CONTRIBUTION',       openContribution);
+      window.removeEventListener('PATHSCRIBE_GO_BACK',                 goBack);
+      window.removeEventListener('PATHSCRIBE_GO_FORWARD',              goForward);
+      window.removeEventListener('PATHSCRIBE_NEXT_CASE',               nextCase);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_CASE',           previousCase);
+      window.removeEventListener('PATHSCRIBE_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
+      window.removeEventListener('PATHSCRIBE_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
+      window.removeEventListener('PATHSCRIBE_VIEW_HELP',               viewHelp);
+      window.removeEventListener('PATHSCRIBE_OPEN_RESOURCES',          openResources);
+      window.removeEventListener('PATHSCRIBE_SYSTEM_LOGOUT',           systemLogout);
+      window.removeEventListener('PATHSCRIBE_MSG_NEXT',                msgNext);
+      window.removeEventListener('PATHSCRIBE_MSG_PREVIOUS',            msgPrevious);
+      window.removeEventListener('PATHSCRIBE_MSG_REPLY',               msgReply);
+      window.removeEventListener('PATHSCRIBE_MSG_DELETE',              msgDelete);
+      window.removeEventListener('PATHSCRIBE_MSG_MARK_READ',           msgMarkRead);
+      window.removeEventListener('PATHSCRIBE_MSG_MARK_READ_ALL',       msgMarkReadAll);
+      window.removeEventListener('PATHSCRIBE_MSG_COMPOSE',             msgCompose);
+      window.removeEventListener('PATHSCRIBE_MSG_SEND',                msgSend);
+      window.removeEventListener('PATHSCRIBE_MSG_CLOSE',               msgClose);
+      window.removeEventListener('PATHSCRIBE_MSG_EDIT',                msgEdit);
+      window.removeEventListener('PATHSCRIBE_MSG_SEARCH',              msgSearch);
+      window.removeEventListener('PATHSCRIBE_MSG_VIEW_DELETED',        msgViewDeleted);
+      window.removeEventListener('PATHSCRIBE_MSG_VIEW_MESSAGES',       msgViewMessages);
+      window.removeEventListener('PATHSCRIBE_MSG_RESTORE',             msgRestore);
+      window.removeEventListener('PATHSCRIBE_MSG_DELETE_ALL',          msgDeleteAll);
+      window.removeEventListener('PATHSCRIBE_MSG_GOTO_SUBJECT',        msgGotoSubject);
+      window.removeEventListener('PATHSCRIBE_MSG_GOTO_BODY',           msgGotoBody);
+      window.removeEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
+      window.removeEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
+      window.removeEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
+      window.removeEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
     };
   }, [
     navigate, setPortalOpen, displayMessages, selectedMsgId,
@@ -403,7 +414,7 @@ const AppShell: React.FC = () => {
   ]);
 
  return (
-    <div style={{ minHeight: '100vh', color: '#f1f5f9', background: '#020617', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', color: '#f1f5f9', background: '#020617', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
      {/* ── NAVBAR ── */}
       <NavBar
@@ -412,7 +423,26 @@ const AppShell: React.FC = () => {
         onProfileClick={() => setAboutOpen(true)}
       />
 
-      <Outlet />
+
+      {/* Breadcrumb bar */}
+      {crumb && crumb.parent && (
+        <div style={{ flexShrink: 0, padding: '5px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => navigate(crumb.parentPath!)}
+            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', padding: 0, fontWeight: 500 }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
+          >
+            {crumb.parent}
+          </button>
+          <span style={{ color: '#334155', fontSize: '11px' }}>{'›'}</span>
+          <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>{crumb.label}</span>
+        </div>
+      )}
+      {/* Outlet — flex:1 so it fills remaining height exactly */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Outlet />
+      </div>
 
       {/* ── MESSAGES DRAWER ── */}
       {portalOpen && (

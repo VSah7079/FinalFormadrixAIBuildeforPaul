@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import '../../formedrix.css';
+import '../../pathscribe.css';
 import {
   Client,
   ClientInput,
@@ -39,7 +39,7 @@ const blank = (): ClientInput => ({
   address: "",
   active: true,
   hl7: {
-    sendingFacility: "ForMedrix",
+    sendingFacility: "pathscribe",
     receivingFacility: "",
     hl7Version: "2.5.1",
     enabled: false,
@@ -392,7 +392,7 @@ export const ClientEditorModal: React.FC<ClientEditorModalProps> = ({
                       value={form.hl7.sendingFacility}
                       onChange={(e) => setHL7("sendingFacility", e.target.value)}
                       onFocus={onF} onBlur={onB}
-                      placeholder="ForMedrix"
+                      placeholder="pathscribe"
                     />
                   </Field>
                   <Field label="Receiving Facility (MSH-6)">

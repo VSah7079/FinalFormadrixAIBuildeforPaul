@@ -33,7 +33,7 @@ export const ActionsTab: React.FC = () => {
   const exportCurrentRegistry = () => {
     const instructions = [
       ["# ================================================================================"],
-      ["# ForMedrix SYSTEM ACTION REGISTRY - EDITING RULES"],
+      ["# pathscribe SYSTEM ACTION REGISTRY - EDITING RULES"],
       ["# ================================================================================"],
       ["# 1. ONLY edit columns 'Shortcut' and 'Voice Triggers'."],
       ["# 2. SHORTCUTS MUST BE UNIQUE: The system will block duplicate keyboard combos."],
@@ -58,7 +58,7 @@ export const ActionsTab: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "formedrix_system_config.csv");
+    link.setAttribute("download", "pathscribe_system_config.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

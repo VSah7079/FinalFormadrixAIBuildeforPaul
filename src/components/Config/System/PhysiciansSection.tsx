@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../../formedrix.css';
+import '../../../pathscribe.css';
 import { physicianService, clientService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
