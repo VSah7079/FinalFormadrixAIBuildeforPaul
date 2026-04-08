@@ -38,12 +38,13 @@ const CUSTOM_EVENT_ACTIONS = new Set([
   'TABLE_DELETE',
   // Messages (component state in AppShell)
   'MSG_NEXT', 'MSG_PREVIOUS', 'MSG_REPLY', 'MSG_DELETE',
-  'MSG_MARK_READ', 'MSG_MARK_READ_ALL', 'MSG_MARK_URGENT',
+  'MSG_MARK_READ', 'MSG_MARK_READ_ALL', 'MSG_MARK_UNREAD', 'MSG_MARK_URGENT',
   'MSG_COMPOSE', 'MSG_SEND', 'MSG_CLOSE', 'MSG_SEARCH', 'MSG_EDIT',
   'MSG_VIEW_DELETED', 'MSG_VIEW_MESSAGES', 'MSG_RESTORE',
   'MSG_DELETE_ALL', 'MSG_URGENT',
   'MSG_CLEAR_SUBJECT', 'MSG_CLEAR_BODY',
-  'MSG_GOTO_SUBJECT', 'MSG_GOTO_BODY', 'MSG_RECIPIENT_SEARCH',
+  'MSG_GOTO_SUBJECT', 'MSG_GOTO_BODY',
+  'MSG_RECIPIENT_SEARCH', 'MSG_RECIPIENT_ADD', 'MSG_SECURE_EMAIL',
   // Home page
   'OPEN_ENHANCEMENT_REQUEST', 'OPEN_TESTING_FEEDBACK',
   'VIEW_HELP', 'OPEN_RESOURCES', 'SYSTEM_LOGOUT',
@@ -829,6 +830,7 @@ const MOCK_ACTIONS: SystemAction[] = [
   },
 
   // ── MESSAGES context ──────────────────────────────────────────────────────
+  // Navigation
   {
     id: 'MSG_NEXT', label: 'Next Message', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Alt+ArrowDown', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
@@ -841,6 +843,7 @@ const MOCK_ACTIONS: SystemAction[] = [
     voiceTriggers: ['previous message', 'previous', 'prior message'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
+  // Core actions
   {
     id: 'MSG_REPLY', label: 'Reply', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Alt+Shift+R', internalKey: ACTION_MAP['messages.reply']?.internalKey ?? 'F18+PS003',
@@ -849,7 +852,7 @@ const MOCK_ACTIONS: SystemAction[] = [
   },
   {
     // Disambiguated: AppShell listener checks filterType/isEditing to decide
-    // soft delete vs permanent delete. Single trigger covers all states.
+    // soft delete vs permanent delete. Single trigger covers all UI states.
     id: 'MSG_DELETE', label: 'Delete Message', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Alt+Delete', internalKey: ACTION_MAP['messages.delete']?.internalKey ?? 'F18+PS004',
     voiceTriggers: ['delete message', 'delete this message', 'remove message', 'delete'],
@@ -868,94 +871,121 @@ const MOCK_ACTIONS: SystemAction[] = [
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
-    id: 'MSG_COMPOSE', label: 'Compose Message', category: VOICE_CONTEXT.MESSAGES,
+    // Marks the currently open thread message as unread — available via ⋯ menu or voice
+    id: 'MSG_MARK_UNREAD', label: 'Mark as Unread', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.markUnread']?.internalKey ?? 'F18+PS014',
+    voiceTriggers: ['mark as unread', 'mark unread', 'unread', 'set as unread'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  // Compose
+  {
+    id: 'MSG_COMPOSE', label: 'New Internal Message', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Alt+Shift+C', internalKey: ACTION_MAP['messages.compose']?.internalKey ?? 'F18+PS007',
-    voiceTriggers: ['compose', 'compose message', 'new message', 'write message', 'create message'],
+    voiceTriggers: ['compose', 'compose message', 'new message', 'write message', 'create message', 'internal message'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'MSG_SEND', label: 'Send Message', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Alt+Shift+Enter', internalKey: ACTION_MAP['messages.send']?.internalKey ?? 'F18+PS008',
-    voiceTriggers: ['send', 'send message', 'send this message', 'submit message'],
+    voiceTriggers: ['send', 'send message', 'send this message', 'submit message', 'send internally'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
+    // Routes to external secure email gateway (Paubox / Virtru / Zix).
+    // Requires at least one recipient and a subject/body to be active.
+    id: 'MSG_SECURE_EMAIL', label: 'Send Secure Email', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: 'Alt+Shift+E', internalKey: ACTION_MAP['messages.secureEmail']?.internalKey ?? 'F18+PS015',
+    voiceTriggers: ['secure email', 'send secure email', 'send email', 'external email', 'secure message'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  // To: field — recipient management
+  {
+    // Opens full UserSearchOverlay from the To: field spyglass button
+    id: 'MSG_RECIPIENT_SEARCH', label: 'Search Recipients', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.recipientSearch']?.internalKey ?? 'F18+PS016',
+    voiceTriggers: ['search recipients', 'find user', 'search for user', 'browse users', 'open recipient search'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  {
+    // Confirms the highlighted suggestion in the To: inline dropdown (same as Enter/Tab key)
+    id: 'MSG_RECIPIENT_ADD', label: 'Add Recipient', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.recipientAdd']?.internalKey ?? 'F18+PS017',
+    voiceTriggers: ['add recipient', 'add this person', 'select recipient', 'confirm recipient'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  // Compose field helpers
+  {
+    id: 'MSG_GOTO_SUBJECT', label: 'Go to Subject', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.gotoSubject']?.internalKey ?? 'F18+PS010',
+    voiceTriggers: ['goto subject', 'go to subject', 'enter subject', 'type subject', 'subject field'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  {
+    id: 'MSG_GOTO_BODY', label: 'Go to Message Body', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.gotoBody']?.internalKey ?? 'F18+PS011',
+    voiceTriggers: ['goto message', 'go to message', 'enter message', 'type message', 'message body', 'message field'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  {
+    id: 'MSG_CLEAR_SUBJECT', label: 'Clear Subject', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.clearSubject']?.internalKey ?? 'F18+PS012',
+    voiceTriggers: ['clear subject', 'erase subject', 'delete subject', 'remove subject'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  {
+    id: 'MSG_CLEAR_BODY', label: 'Clear Message Body', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.clearBody']?.internalKey ?? 'F18+PS013',
+    voiceTriggers: ['clear message', 'erase message', 'delete message body', 'start over', 'clear body'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  // Urgent toggle — in compose panel
+  {
+    id: 'MSG_URGENT', label: 'Toggle Urgent', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.markUrgent']?.internalKey ?? 'F18+PS006',
+    voiceTriggers: ['urgent', 'mark urgent', 'toggle urgent', 'set urgent', 'mark as urgent'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  // View and management
+  {
     id: 'MSG_CLOSE', label: 'Close Messages', category: VOICE_CONTEXT.MESSAGES,
     shortcut: 'Escape', internalKey: ACTION_MAP['messages.close']?.internalKey ?? 'F18+PS009',
-    voiceTriggers: ['close messages', 'close', 'dismiss messages', 'hide messages'],
+    voiceTriggers: ['close messages', 'close', 'dismiss messages', 'hide messages', 'close drawer'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'MSG_SEARCH', label: 'Search Messages', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
+    shortcut: '', internalKey: ACTION_MAP['messages.search']?.internalKey ?? 'F18+PS018',
     voiceTriggers: ['search messages', 'search', 'find message', 'filter messages'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
-    id: 'MSG_EDIT', label: 'Edit Messages', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['edit', 'edit messages', 'select messages', 'manage messages'],
+    id: 'MSG_EDIT', label: 'Toggle Edit Mode', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.edit']?.internalKey ?? 'F18+PS019',
+    voiceTriggers: ['edit', 'edit messages', 'select messages', 'manage messages', 'edit mode'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
-    id: 'MSG_VIEW_DELETED', label: 'View Deleted Messages', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
+    id: 'MSG_VIEW_DELETED', label: 'View Recently Deleted', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.viewDeleted']?.internalKey ?? 'F18+PS021',
     voiceTriggers: ['view deleted', 'show deleted', 'recently deleted', 'deleted messages'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'MSG_VIEW_MESSAGES', label: 'View Messages', category: VOICE_CONTEXT.MESSAGES,
     shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['view messages', 'show messages list', 'back to messages'],
+    voiceTriggers: ['view messages', 'show messages list', 'back to messages', 'inbox'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'MSG_RESTORE', label: 'Restore Message', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['restore', 'restore message', 'undelete', 'undelete message'],
+    shortcut: '', internalKey: ACTION_MAP['messages.restore']?.internalKey ?? 'F18+PS020',
+    voiceTriggers: ['restore', 'restore message', 'undelete', 'undelete message', 'recover message'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'MSG_DELETE_ALL', label: 'Delete All Selected', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.delete']?.internalKey ?? 'F18+PS004',
-    voiceTriggers: ['delete all', 'delete all selected', 'delete all messages'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  // ── Messages compose sub-context ─────────────────────────────────────────
-  {
-    id: 'MSG_URGENT', label: 'Toggle Urgent', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.markUrgent']?.internalKey ?? 'F18+PS006',
-    voiceTriggers: ['urgent', 'mark urgent', 'toggle urgent', 'set urgent'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    id: 'MSG_GOTO_SUBJECT', label: 'Go to Subject', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['goto subject', 'go to subject', 'enter subject', 'type subject'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    id: 'MSG_GOTO_BODY', label: 'Go to Message Body', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['goto message', 'go to message', 'enter message', 'type message', 'message body'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    id: 'MSG_CLEAR_SUBJECT', label: 'Clear Subject', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['clear subject', 'erase subject', 'delete subject'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    id: 'MSG_CLEAR_BODY', label: 'Clear Message', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['clear message', 'erase message', 'delete message body', 'start over'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    id: 'MSG_RECIPIENT_SEARCH', label: 'Search Recipients', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.next']?.internalKey ?? 'F18+PS001',
-    voiceTriggers: ['search recipients', 'find user', 'search for user', 'add recipient'],
+    shortcut: '', internalKey: ACTION_MAP['messages.deleteAll']?.internalKey ?? 'F18+PS022',
+    voiceTriggers: ['delete all', 'delete all selected', 'delete all messages', 'empty deleted'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
 ];

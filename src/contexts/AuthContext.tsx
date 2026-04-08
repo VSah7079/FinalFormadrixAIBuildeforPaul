@@ -44,20 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let authenticatedUser: User | null = null;
 
         // Mock Login Data with Voice Profiles
-        if (email === "demo@pathscribe.ai" && password === "demo") {
+        if (email === import.meta.env.VITE_DEMO_EMAIL && password === import.meta.env.VITE_DEMO_PASS) {
           authenticatedUser = {
             id: "u1",
             name: "Dr. Sarah Johnson",
-            email: "demo@pathscribe.ai",
+            email: import.meta.env.VITE_DEMO_EMAIL,
             role: "pathologist",
             initials: "SJ",
             voiceProfile: "EN-US",
           };
-        } else if (email === "admin@pathscribe.ai" && password === "admin") {
+        } else if (email === import.meta.env.VITE_ADMIN_EMAIL && password === import.meta.env.VITE_ADMIN_PASS) {
           authenticatedUser = {
             id: "u3",
             name: "System Admin",
-            email: "admin@pathscribe.ai",
+            email: import.meta.env.VITE_ADMIN_EMAIL,
             role: "admin",
             initials: "SA",
             voiceProfile: "EN-US",
