@@ -884,6 +884,58 @@ const MOCK_CASES: Case[] = [
     coding: { icd10: ['C61'], snomed: ['254900004'] },
   },
 
+  // ── Pool Cases ──────────────────────────────────────────────────────────────
+  {
+    id: 'S26-4415-BX-001',
+    accession: { accessionNumber: '4415', accessionPrefix: 'S', accessionYear: 2026, fullAccession: 'S26-4415-BX-001' },
+    originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
+    patient: { id: 'PAT-015', mrn: '100015', firstName: 'Robert', lastName: 'Hawkins', dateOfBirth: '1958-11-22T07:00:00.000Z', sex: 'M', phone: '555-301-7711', email: 'rhawkins@example.org', address: '88 Cedar Rd, Phoenix, AZ 85004' },
+    specimens: [{ id: 'S26-4415-SP-1', label: 'A', description: 'Sigmoid colon biopsy — three fragments', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Amanda Chen', clinicalIndication: 'Change in bowel habits. Colonoscopy: 15mm polyp sigmoid colon.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: 'Received in formalin labeled "sigmoid colon biopsy" are three tan-pink fragments measuring 0.4–0.8 cm.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: '1',
+    poolName: 'Gastrointestinal',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  {
+    id: 'S26-4416-BX-001',
+    accession: { accessionNumber: '4416', accessionPrefix: 'S', accessionYear: 2026, fullAccession: 'S26-4416-BX-001' },
+    originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
+    patient: { id: 'PAT-016', mrn: '100016', firstName: 'Linda', lastName: 'Okafor', dateOfBirth: '1971-04-09T07:00:00.000Z', sex: 'F', phone: '555-302-8822', email: 'lokafor@example.org', address: '22 Maple St, Phoenix, AZ 85006' },
+    specimens: [{ id: 'S26-4416-SP-1', label: 'A', description: 'Skin punch biopsy — right forearm', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] }],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Susan Park', clinicalIndication: 'Pigmented lesion right forearm, irregular border. Rule out melanoma.', receivedDate: isoDaysAgo(1), assignedTo: null },
+    diagnostic: { grossDescription: 'Received in formalin labeled "skin punch biopsy right forearm" is a punch biopsy measuring 0.4 cm in diameter and 0.3 cm deep.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: '2',
+    poolName: 'Dermatopathology',
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(1),
+    caseFlags: [], specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  {
+    id: 'S26-4417-BX-001',
+    accession: { accessionNumber: '4417', accessionPrefix: 'S', accessionYear: 2026, fullAccession: 'S26-4417-BX-001' },
+    originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
+    patient: { id: 'PAT-017', mrn: '100017', firstName: 'Marcus', lastName: 'Delgado', dateOfBirth: '1965-07-30T07:00:00.000Z', sex: 'M', phone: '555-303-9933', email: 'mdelgado@example.org', address: '54 Oak Ave, Phoenix, AZ 85008' },
+    specimens: [{ id: 'S26-4417-SP-1', label: 'A', description: 'Colon resection — right hemicolectomy', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
+    order: { priority: 'STAT', requestingProvider: 'Dr. Kevin Ng', clinicalIndication: 'Ascending colon adenocarcinoma diagnosed on biopsy. CT: T3N0. STAT — OR case.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: 'Received fresh labeled "right hemicolectomy" is a 28 cm segment of right colon with attached terminal ileum. A fungating tumor measuring 3.8 × 3.2 cm is identified in the ascending colon.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: '1',
+    poolName: 'Gastrointestinal',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [{ id: 'stat_rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }],
+    specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
 
 ];
 
@@ -1160,6 +1212,561 @@ export async function saveReportSuggestions(
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
+// ─── Delegation & Pool Claim Functions ───────────────────────────────────────
+
+const CLAIM_TTL_MS        = 30_000;
+const DELEGATION_STORE_KEY = 'ps_delegations_v1';
+const CLAIM_STORE_KEY      = 'ps_claims_v1';
+
+export interface ClaimResult {
+  success: boolean;
+  claimedBy?: string;
+  error?: string;
+}
+
+export interface DelegationRecord {
+  id: string;
+  caseId: string;
+  fromUserId: string;
+  toUserId?: string;
+  toPoolId?: string;
+  toPoolName?: string;
+  delegationType: string;
+  note?: string;
+  timestamp: string;
+  status: 'pending' | 'accepted' | 'passed' | 'completed';
+}
+
+function loadDelegations(): DelegationRecord[] {
+  try { return JSON.parse(localStorage.getItem(DELEGATION_STORE_KEY) ?? '[]'); } catch { return []; }
+}
+function saveDelegations(records: DelegationRecord[]): void {
+  try { localStorage.setItem(DELEGATION_STORE_KEY, JSON.stringify(records)); } catch {}
+}
+function loadClaims(): Record<string, { userId: string; expiresAt: number }> {
+  try { return JSON.parse(localStorage.getItem(CLAIM_STORE_KEY) ?? '{}'); } catch { return {}; }
+}
+function saveClaims(claims: Record<string, { userId: string; expiresAt: number }>): void {
+  try { localStorage.setItem(CLAIM_STORE_KEY, JSON.stringify(claims)); } catch {}
+}
+
+/** Attempt to claim a pool case before showing accept/pass prompt */
+export async function claimPoolCase(caseId: string, userId: string): Promise<ClaimResult> {
+  await delay(200);
+  const claims = loadClaims();
+  const existing = claims[caseId];
+  if (existing && existing.expiresAt > Date.now() && existing.userId !== userId) {
+    return { success: false, claimedBy: existing.userId, error: 'Case is being claimed by another pathologist' };
+  }
+  claims[caseId] = { userId, expiresAt: Date.now() + CLAIM_TTL_MS };
+  saveClaims(claims);
+  return { success: true };
+}
+
+/** Accept a pool case — assigns to pathologist, removes from pool */
+export async function acceptPoolCase(caseId: string, userId: string): Promise<void> {
+  await delay(300);
+  const claims = loadClaims();
+  delete claims[caseId];
+  saveClaims(claims);
+  // Update case in CASES array
+  const idx = CASES.findIndex((c: any) => c.id === caseId);
+  if (idx >= 0) {
+    CASES[idx] = { ...CASES[idx], status: 'in-progress' as CaseStatus, order: { ...CASES[idx].order, assignedTo: userId }, updatedAt: new Date().toISOString() } as any;
+    storageSet(STORAGE_KEY, CASES);
+  }
+  const delegations = loadDelegations();
+  const delIdx = delegations.findIndex(d => d.caseId === caseId && d.status === 'pending');
+  if (delIdx >= 0) { delegations[delIdx].status = 'accepted'; saveDelegations(delegations); }
+}
+
+/** Pass on a pool case — release claim, case stays in pool */
+export async function passPoolCase(caseId: string): Promise<void> {
+  await delay(200);
+  const claims = loadClaims();
+  delete claims[caseId];
+  saveClaims(claims);
+}
+
+/** Delegate a case to an individual or pool */
+export async function delegateCase(
+  caseId: string,
+  fromUserId: string,
+  delegationType: string,
+  toUserId?: string,
+  toPoolId?: string,
+  toPoolName?: string,
+  note?: string,
+): Promise<DelegationRecord> {
+  await delay(400);
+  const record: DelegationRecord = {
+    id: Math.random().toString(36).slice(2),
+    caseId, fromUserId, toUserId, toPoolId, toPoolName, delegationType,
+    note, timestamp: new Date().toISOString(), status: 'pending',
+  };
+  const idx = CASES.findIndex((c: any) => c.id === caseId);
+  if (idx >= 0) {
+    const newStatus: CaseStatus = delegationType === 'POOL' ? 'pool'
+      : delegationType === 'REASSIGN' ? 'in-progress'
+      : 'pending-review';
+    CASES[idx] = {
+      ...CASES[idx],
+      status: newStatus,
+      ...(toPoolId   ? { poolId: toPoolId }     : {}),
+      ...(toPoolName ? { poolName: toPoolName }  : {}),
+      order: { ...CASES[idx].order, assignedTo: toUserId ?? CASES[idx].order?.assignedTo },
+      updatedAt: new Date().toISOString(),
+    } as any;
+    storageSet(STORAGE_KEY, CASES);
+  }
+  const delegations = loadDelegations();
+  delegations.push(record);
+  saveDelegations(delegations);
+  return record;
+}
+
+/** Get delegation history, optionally filtered by case */
+export async function getDelegations(caseId?: string): Promise<DelegationRecord[]> {
+  await delay(100);
+  const all = loadDelegations();
+  return caseId ? all.filter(d => d.caseId === caseId) : all;
+}
+
+// ─── Synoptic-level Assignment ────────────────────────────────────────────────
+
+export interface SynopticAssignment {
+  caseId: string;
+  instanceId: string;
+  assignedTo: string;
+  assignedToName: string;
+  assignedBy: string;
+  assignedAt: string;
+  requiresCountersign: boolean;
+  note?: string;
+}
+
+/** Assign a specific synoptic report instance to another pathologist */
+export async function assignSynoptic(
+  caseId: string,
+  instanceId: string,
+  assignedTo: string,
+  assignedToName: string,
+  assignedBy: string,
+  requiresCountersign = true,
+  note?: string,
+): Promise<void> {
+  await delay(300);
+  const idx = CASES.findIndex((c: any) => c.id === caseId);
+  if (idx < 0) return;
+  const reportIdx = (CASES[idx].synopticReports ?? []).findIndex(
+    (r: any) => r.instanceId === instanceId
+  );
+  if (reportIdx < 0) return;
+
+  const updated = { ...CASES[idx] };
+  const reports = [...(updated.synopticReports ?? [])];
+  reports[reportIdx] = {
+    ...reports[reportIdx],
+    assignedTo,
+    assignedToName,
+    assignedBy,
+    assignedAt: new Date().toISOString(),
+    requiresCountersign,
+    assignmentNote: note,
+    status: 'draft',
+  };
+  updated.synopticReports = reports;
+  CASES[idx] = updated as any;
+  storageSet(STORAGE_KEY, CASES);
+
+  // Record delegation entry
+  const record: DelegationRecord = {
+    id: Math.random().toString(36).slice(2),
+    caseId, fromUserId: assignedBy, toUserId: assignedTo,
+    delegationType: 'SYNOPTIC_ASSIGN',
+    note, timestamp: new Date().toISOString(), status: 'pending',
+  };
+  const delegations = loadDelegations();
+  delegations.push(record);
+  saveDelegations(delegations);
+}
+
+/** Countersign a synoptic that was finalised by an assigned pathologist */
+export async function countersignSynoptic(
+  caseId: string,
+  instanceId: string,
+  countersignedBy: string,
+): Promise<void> {
+  await delay(300);
+  const idx = CASES.findIndex((c: any) => c.id === caseId);
+  if (idx < 0) return;
+  const reportIdx = (CASES[idx].synopticReports ?? []).findIndex(
+    (r: any) => r.instanceId === instanceId
+  );
+  if (reportIdx < 0) return;
+
+  const updated = { ...CASES[idx] };
+  const reports = [...(updated.synopticReports ?? [])];
+  reports[reportIdx] = {
+    ...reports[reportIdx],
+    countersignedBy,
+    countersignedAt: new Date().toISOString(),
+    status: 'finalized',
+  };
+  updated.synopticReports = reports;
+  CASES[idx] = updated as any;
+  storageSet(STORAGE_KEY, CASES);
+}
+
+// ─── Pathologist ID → Name map ────────────────────────────────────────────────
+// Matches the assignedTo IDs used in MOCK_CASES orders.
+const PATHOLOGIST_NAMES: Record<string, string> = {
+  'PATH-001': 'Dr. Sarah Chen',
+  'PATH-002': 'Dr. Michael Torres',
+  'PATH-003': 'Dr. Anil Sharma',
+  'PATH-004': 'Dr. Linda Park',
+  'PATH-005': 'Dr. James Nguyen',
+};
+
+// ─── Patient History ──────────────────────────────────────────────────────────
+// Prior pathology for known patients, keyed by MRN.
+// This is the "query input" the AI uses to find similar cases.
+
+export interface PatientHistoryCase {
+  id: string;
+  date: string;
+  diagnosis: string;
+  site: string;
+  procedure: string;
+  physician: string;
+  receptors: string;
+  ki67: string;
+  margins: string;
+  nodes: string;
+  gross: string;
+  microscopic: string;
+  comment: string;
+  tags: string[];
+  // Internal fields used by the similarity scorer
+  _templateId?: string;
+  _grade?: number;
+  _erPositive?: boolean;
+  _her2Positive?: boolean;
+}
+
+export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
+  '100001': [
+    {
+      id: 'S24-04821',
+      date: 'Mar 14, 2024',
+      diagnosis: 'Invasive Ductal Carcinoma, Grade II',
+      site: 'Right breast, upper outer quadrant',
+      procedure: 'Core needle biopsy',
+      physician: 'Dr. A. Patel',
+      receptors: 'ER+ (95%), PR+ (80%), HER2−',
+      ki67: '18%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: 'Core needle biopsy, 3 cores each 1.4 cm in length. Tan-white firm tissue submitted in entirety.',
+      microscopic: 'Sections show invasive carcinoma of ductal type arranged in nests and cords with moderate nuclear pleomorphism. Mitotic rate 8/10 HPF. No lymphovascular invasion identified.',
+      comment: 'Morphology and IHC profile consistent with invasive ductal carcinoma, Grade II (Nottingham score 6). Recommend correlation with clinical and imaging findings.',
+      tags: ['ER+', 'PR+', 'HER2−', 'Grade II', 'Core biopsy'],
+      _templateId: 'breast_invasive', _grade: 2, _erPositive: true, _her2Positive: false,
+    },
+    {
+      id: 'S23-17340',
+      date: 'Oct 3, 2023',
+      diagnosis: 'Atypical Ductal Hyperplasia',
+      site: 'Left breast, 2 o\'clock position',
+      procedure: 'Excisional biopsy',
+      physician: 'Dr. T. Nguyen',
+      receptors: 'N/A',
+      ki67: '< 5%',
+      margins: 'Clear (> 2 mm)',
+      nodes: 'Not sampled',
+      gross: 'Excisional biopsy specimen 2.8 × 1.9 × 1.2 cm. Grey-white fibrous tissue with a small firm nodule centrally.',
+      microscopic: 'Sections reveal ductal proliferation with architectural atypia involving fewer than 2 complete duct spaces. Features fall short of DCIS quantitatively. No invasive carcinoma identified.',
+      comment: 'Atypical ductal hyperplasia. Excision with clear margins. Recommend 6-month surveillance imaging and high-risk clinical assessment.',
+      tags: ['ADH', 'Excision', 'Clear margins', 'Surveillance'],
+      _templateId: 'breast_dcis_resection', _grade: 1, _erPositive: true, _her2Positive: false,
+    },
+    {
+      id: 'S22-02190',
+      date: 'Feb 9, 2022',
+      diagnosis: 'Fibroadenoma, Benign',
+      site: 'Right breast, 10 o\'clock position',
+      procedure: 'Fine needle aspiration',
+      physician: 'Dr. J. Kim',
+      receptors: 'N/A',
+      ki67: '< 2%',
+      margins: 'N/A (FNA)',
+      nodes: 'Not sampled',
+      gross: 'Fine needle aspirate submitted in CytoLyt fixative. Adequate cellularity on review.',
+      microscopic: 'Smears show cohesive sheets of benign ductal epithelial cells with bipolar bare nuclei in a clean background. Features consistent with fibroadenoma.',
+      comment: 'Benign fibroepithelial lesion consistent with fibroadenoma. No malignant cells identified. Clinical correlation recommended.',
+      tags: ['Benign', 'Fibroadenoma', 'FNA', 'No atypia'],
+      _templateId: 'breast_invasive', _grade: 1, _erPositive: false, _her2Positive: false,
+    },
+    {
+      id: 'S20-08855',
+      date: 'Jun 22, 2020',
+      diagnosis: 'Fibrocystic Changes, No Atypia',
+      site: 'Bilateral',
+      procedure: 'Core biopsy',
+      physician: 'Dr. A. Patel',
+      receptors: 'N/A',
+      ki67: 'N/A',
+      margins: 'N/A',
+      nodes: 'Not sampled',
+      gross: 'Bilateral core biopsies submitted in formalin. Grey-tan fibrous tissue.',
+      microscopic: 'Sections show fibrocystic changes with apocrine metaplasia, adenosis, and mild ductal hyperplasia of usual type. No atypia. No malignancy identified.',
+      comment: 'Benign fibrocystic changes bilaterally. Routine screening follow-up recommended.',
+      tags: ['Benign', 'Fibrocystic', 'No atypia', 'Bilateral'],
+      _templateId: 'breast_invasive', _grade: 1, _erPositive: false, _her2Positive: false,
+    },
+  ],
+};
+
+// ─── AI Similar Case Matching ─────────────────────────────────────────────────
+// In production this calls callAi() with the patient's history as context and
+// the case corpus as the search space. In mock/dev mode we score deterministically
+// by comparing synoptic answers against the patient's most recent malignant case.
+
+export interface AiMatchedCase {
+  caseId: string;
+  accession: string;
+  patientInitials: string;
+  date: string;
+  diagnosis: string;
+  site: string;
+  procedure: string;
+  receptors: string;
+  ki67: string;
+  matchPct: number;
+  matchReason: string;
+  // Full report fields for detail view
+  physician: string;
+  margins: string;
+  nodes: string;
+  gross: string;
+  microscopic: string;
+  ancillaryStudies: string;
+  tags: string[];
+}
+
+/**
+ * Scores a case's synoptic answers against the patient's most recent
+ * malignant prior pathology entry. Returns 0–100.
+ *
+ * Scoring weights (must sum to 100):
+ *   templateId match (same organ system)  → 30 pts
+ *   grade match                            → 25 pts
+ *   ER status match                        → 20 pts
+ *   HER2 status match                      → 15 pts
+ *   site/laterality overlap                → 10 pts
+ */
+function scoreCaseAgainstHistory(
+  c: Case,
+  anchor: PatientHistoryCase,
+): number {
+  const reports = c.synopticReports ?? [];
+  if (reports.length === 0) return 0;
+
+  // Use the first synoptic report as representative
+  const report = reports[0];
+  const answers = report.answers ?? {};
+
+  let score = 0;
+
+  // 1. Template / organ system match (30 pts)
+  if (anchor._templateId && report.templateId === anchor._templateId) {
+    score += 30;
+  } else if (
+    anchor._templateId?.startsWith('breast') &&
+    report.templateId?.startsWith('breast')
+  ) {
+    score += 18; // partial — same organ, different template
+  }
+
+  // 2. Grade match (25 pts)
+  const rawGrade = answers['histologic_grade'] as string | undefined;
+  let caseGrade: number | null = null;
+  if (rawGrade) {
+    if (rawGrade.includes('1') || rawGrade === 'g1') caseGrade = 1;
+    else if (rawGrade.includes('2') || rawGrade === 'g2') caseGrade = 2;
+    else if (rawGrade.includes('3') || rawGrade === 'g3') caseGrade = 3;
+  }
+  if (anchor._grade && caseGrade !== null) {
+    if (caseGrade === anchor._grade) score += 25;
+    else if (Math.abs(caseGrade - anchor._grade) === 1) score += 12;
+  }
+
+  // 3. ER status (20 pts) — inferred from ancillary text or answers
+  const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+  const micro = (c.diagnostic?.microscopicDescription ?? '').toLowerCase();
+  const erPositive =
+    ancillary.includes('er: positive') ||
+    ancillary.includes('er+') ||
+    micro.includes('er+') ||
+    String(answers['receptor_status'] ?? '').includes('er_positive');
+  if (anchor._erPositive !== undefined) {
+    if (erPositive === anchor._erPositive) score += 20;
+    else score += 5; // partial — different profile, still informative
+  }
+
+  // 4. HER2 status (15 pts)
+  const her2Positive =
+    ancillary.includes('her2 3+') ||
+    ancillary.includes('her2: positive') ||
+    ancillary.includes('her2+') ||
+    ancillary.includes('ish: amplified');
+  if (anchor._her2Positive !== undefined) {
+    if (her2Positive === anchor._her2Positive) score += 15;
+    else score += 4;
+  }
+
+  // 5. Site / laterality overlap (10 pts)
+  const laterality = String(answers['specimen_laterality'] ?? '').toLowerCase();
+  const anchorSite = anchor.site.toLowerCase();
+  if (laterality && anchorSite.includes(laterality)) score += 10;
+  else if (laterality === 'left' || laterality === 'right') score += 4; // breast, different side
+
+  return Math.min(score, 100);
+}
+
+function buildMatchReason(c: Case, anchor: PatientHistoryCase): string {
+  const reasons: string[] = [];
+  const reports = c.synopticReports ?? [];
+  const answers = reports[0]?.answers ?? {};
+  const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+
+  if (reports[0]?.templateId === anchor._templateId) reasons.push('Same histologic type');
+  else if (reports[0]?.templateId?.startsWith('breast') && anchor._templateId?.startsWith('breast')) {
+    reasons.push('Same organ system');
+  }
+
+  const rawGrade = answers['histologic_grade'] as string | undefined;
+  if (rawGrade) {
+    const gradeNum = rawGrade.includes('1') ? 1 : rawGrade.includes('2') ? 2 : rawGrade.includes('3') ? 3 : null;
+    if (gradeNum === anchor._grade) reasons.push(`Matching Grade ${gradeNum}`);
+    else if (gradeNum !== null) reasons.push(`Adjacent grade (${gradeNum} vs ${anchor._grade})`);
+  }
+
+  const erPositive = ancillary.includes('er: positive') || ancillary.includes('er+');
+  if (erPositive && anchor._erPositive) reasons.push('ER+ profile');
+  else if (!erPositive && !anchor._erPositive) reasons.push('ER− profile');
+
+  const her2Positive = ancillary.includes('her2 3+') || ancillary.includes('ish: amplified');
+  if (her2Positive && anchor._her2Positive) reasons.push('HER2+ profile');
+  else if (!her2Positive && !anchor._her2Positive) reasons.push('HER2− profile');
+
+  return reasons.slice(0, 3).join(' · ') || 'Morphologic similarity';
+}
+
+function buildTags(c: Case, matchPct: number): string[] {
+  const tags: string[] = [];
+  const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+  const answers = c.synopticReports?.[0]?.answers ?? {};
+
+  const rawGrade = answers['histologic_grade'] as string | undefined;
+  if (rawGrade?.includes('1') || rawGrade === 'g1') tags.push('Grade I');
+  else if (rawGrade?.includes('2') || rawGrade === 'g2') tags.push('Grade II');
+  else if (rawGrade?.includes('3') || rawGrade === 'g3') tags.push('Grade III');
+
+  if (ancillary.includes('er: positive') || ancillary.includes('er+')) tags.push('ER+');
+  else if (ancillary.includes('er:') || ancillary.includes('er ')) tags.push('ER−');
+  if (ancillary.includes('her2 3+') || ancillary.includes('ish: amplified')) tags.push('HER2+');
+  else if (ancillary.includes('her2')) tags.push('HER2−');
+
+  tags.push(`${matchPct}% match`);
+  return tags;
+}
+
+/**
+ * findSimilarCases — the AI matching entry point.
+ *
+ * In production: calls callAi() with the patient's prior pathology as context
+ * and the case corpus as the search space, returns structured matches.
+ *
+ * In mock/dev: scores MOCK_CASES deterministically against the patient's
+ * most recent malignant history entry, excludes the patient's own cases,
+ * and returns the top results above a minimum threshold.
+ */
+export async function findSimilarCases(
+  mrn: string,
+  topN = 5,
+  minScore = 40,
+): Promise<AiMatchedCase[]> {
+  await delay(600); // simulate AI latency
+
+  const history = MOCK_PRIOR_PATHOLOGY[mrn];
+  if (!history || history.length === 0) return [];
+
+  // Use the most recent malignant case as the anchor for matching
+  const anchor =
+    history.find(h => h._templateId === 'breast_invasive' && (h._grade ?? 0) >= 2) ??
+    history[0];
+
+  const results: AiMatchedCase[] = [];
+
+  for (const c of CASES) {
+    // Never match the patient's own cases
+    if (c.patient.mrn === mrn) continue;
+    // Only match finalized or in-progress cases (not blank drafts)
+    if (!c.diagnostic?.microscopicDescription || c.diagnostic.microscopicDescription === 'Pending.') continue;
+
+    const score = scoreCaseAgainstHistory(c, anchor);
+    if (score < minScore) continue;
+
+    // Add a small deterministic jitter so scores don't cluster identically
+    const jitter = (parseInt(c.id.replace(/\D/g, '').slice(-2), 10) % 5) - 2;
+    const matchPct = Math.min(99, Math.max(minScore, score + jitter));
+
+    const patientInitials =
+      `${c.patient.firstName[0]}${c.patient.lastName[0]}`;
+
+    const primaryReport = c.synopticReports?.[0];
+    const answers = primaryReport?.answers ?? {};
+
+    results.push({
+      caseId: c.id,
+      accession: c.accession.fullAccession,
+      patientInitials,
+      date: new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      diagnosis: primaryReport?.templateName?.replace('CAP ', '').replace(' — Resection', '').replace(' — Needle Biopsy', '') ?? 'Unknown',
+      site: String(answers['tumor_site'] ?? answers['specimen_laterality'] ?? 'Breast'),
+      procedure: String(answers['procedure'] ?? 'Surgical specimen').replace(/_/g, ' '),
+      receptors: (() => {
+        const a = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+        const er  = a.includes('er: positive') || a.includes('er+') ? 'ER+' : 'ER−';
+        const pr  = a.includes('pr: positive') || a.includes('pr+') ? 'PR+' : 'PR−';
+        const her2 = (a.includes('her2 3+') || a.includes('ish: amplified')) ? 'HER2+' : 'HER2−';
+        return `${er}/${pr}, ${her2}`;
+      })(),
+      ki67: (() => {
+        const match = (c.diagnostic?.ancillaryStudies ?? '').match(/ki-?67[:\s]+(\d+%)/i);
+        return match ? match[1] : 'N/A';
+      })(),
+      matchPct,
+      matchReason: buildMatchReason(c, anchor),
+      physician: PATHOLOGIST_NAMES[c.order?.assignedTo ?? ''] ?? c.order?.assignedTo ?? 'Unknown',
+      margins: String(answers['margin_status_invasive'] ?? answers['margin_status_dcis'] ?? 'See report').replace(/_/g, ' '),
+      nodes: String(answers['regional_ln_status'] ?? 'See report').replace(/_/g, ' '),
+      gross: c.diagnostic?.grossDescription ?? '',
+      microscopic: c.diagnostic?.microscopicDescription ?? '',
+      ancillaryStudies: c.diagnostic?.ancillaryStudies ?? '',
+      tags: buildTags(c, matchPct),
+    });
+  }
+
+  // Sort descending by matchPct, return topN
+  return results
+    .sort((a, b) => b.matchPct - a.matchPct)
+    .slice(0, topN);
+}
+
+// ─── Pathologist ID → Name map ────────────────────────────────────────────────
+// Matches the assignedTo IDs used in MOCK_CASES orders.
 export const mockCaseService: ICaseService = {
   async getCase(id: string): Promise<Case | undefined> {
     await delay();

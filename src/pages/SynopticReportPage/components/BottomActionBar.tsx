@@ -3,6 +3,7 @@ import type { Case } from '@/types/case/Case';
 
 interface BottomActionBarProps {
   caseData: Case | null;
+  isDirty?: boolean;
   onSaveDraft: () => void;
   onSaveAndNext: () => void;
   onFinalize: () => void;
@@ -64,6 +65,7 @@ const Divider = () => (
 
 const BottomActionBar: React.FC<BottomActionBarProps> = ({
   caseData,
+  isDirty = false,
   onSaveDraft,
   onSaveAndNext,
   onFinalize,
@@ -140,10 +142,20 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
         {!isFinalized && (
           <>
-            <ActionButton onClick={onSaveDraft} variant="outline" color="#0891B2">
+            <ActionButton
+              onClick={onSaveDraft}
+              variant="outline"
+              color={isDirty ? '#0891B2' : '#334155'}
+              title={isDirty ? 'Save draft' : 'No unsaved changes'}
+            >
               💾 Save Draft
             </ActionButton>
-            <ActionButton onClick={onSaveAndNext} variant="outline" color="#0891B2">
+            <ActionButton
+              onClick={isDirty ? onSaveAndNext : () => navigateToCase?.('next')}
+              variant="outline"
+              color={isDirty ? '#0891B2' : '#334155'}
+              title={isDirty ? 'Save and go to next case' : 'No unsaved changes'}
+            >
               💾 Save &amp; Next
             </ActionButton>
             

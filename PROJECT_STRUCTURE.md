@@ -75,8 +75,8 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` and login with:
-- **Pathologist**: ***REMOVED***@pathscribe.ai / ***REMOVED***
-- **Admin**: ***REMOVED***@pathscribe.ai / ***REMOVED***
+- **Pathologist**: demo@pathscribe.ai / demo
+- **Admin**: admin@pathscribe.ai / admin
 
 ## Missing Assets
 
@@ -152,7 +152,7 @@ The entire app uses a consistent cyan/teal color palette:
 1. All components use TypeScript for type safety
 2. Inline styles used throughout (no CSS modules)
 3. No external UI library (pure React)
-4. Mock authentication for ***REMOVED*** purposes
+4. Mock authentication for demo purposes
 5. Responsive design principles applied
 6. Professional medical software aesthetic
 

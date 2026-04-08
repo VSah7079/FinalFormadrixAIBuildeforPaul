@@ -28,24 +28,36 @@ export default defineConfig(({ mode }) => {
       host: true,
       allowedHosts: true,
       proxy: {
+
+        // ── Anthropic (Claude) ───────────────────────────────────────────────
         '/api/ai/anthropic': {
-          target: 'https://api.anthropic.com',
+          target:       'https://api.anthropic.com',
           changeOrigin: true,
-          secure: true,
-          rewrite: (path: string) => path.replace(/^\/api\/ai\/anthropic/, ''),
+          secure:       true,
+          rewrite:      (path: string) => path.replace(/^\/api\/ai\/anthropic/, ''),
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
               proxyReq.setHeader('x-api-key', env.VITE_AI_API_KEY ?? '');
               proxyReq.setHeader('anthropic-version', '2023-06-01');
               proxyReq.removeHeader('origin');
+              // Temporary diagnostics — remove once working
+              console.log('[Proxy → Anthropic] key prefix:', env.VITE_AI_API_KEY?.slice(0, 16) + '...');
+            });
+            proxy.on('proxyRes', (proxyRes) => {
+              console.log('[Proxy ← Anthropic] status:', proxyRes.statusCode);
+            });
+            proxy.on('error', (err) => {
+              console.error('[Proxy ✗ Anthropic] error:', err.message);
             });
           },
         },
+
+        // ── OpenAI ──────────────────────────────────────────────────────────
         '/api/ai/openai': {
-          target: 'https://api.openai.com',
+          target:       'https://api.openai.com',
           changeOrigin: true,
-          secure: true,
-          rewrite: (path: string) => path.replace(/^\/api\/ai\/openai/, ''),
+          secure:       true,
+          rewrite:      (path: string) => path.replace(/^\/api\/ai\/openai/, ''),
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq) => {
               proxyReq.setHeader('Authorization', 'Bearer ' + (env.VITE_AI_API_KEY ?? ''));
@@ -53,12 +65,13 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+
       },
     },
 
     build: {
-      outDir: 'dist',
-      sourcemap: true,
+      outDir:                'dist',
+      sourcemap:             true,
       chunkSizeWarningLimit: 800,
       rollupOptions: {
         output: {

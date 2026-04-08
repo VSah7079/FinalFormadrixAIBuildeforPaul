@@ -46,7 +46,7 @@
  */
 export type Jurisdiction = 'US' | 'CA' | 'GB_EW' | 'GB_SCT' | 'IE';
 
-/** Human-readable label for each jurisdiction. Used in the ***REMOVED*** UI. */
+/** Human-readable label for each jurisdiction. Used in the admin UI. */
 export const JURISDICTION_LABELS: Record<Jurisdiction, string> = {
   US:     'United States',
   CA:     'Canada',
@@ -87,7 +87,7 @@ export const requiresManualLicense = (j: Jurisdiction): boolean => j === 'IE';
 
 /**
  * Deployment mode for a single terminology system.
- *   mock      — in-memory seed data (development / ***REMOVED***, no Firestore required)
+ *   mock      — in-memory seed data (development / demo, no Firestore required)
  *   hosted    — Firestore hosted reference, seeded at deployment (v1 production)
  *   live_api  — proxied external API via Cloud Function (v2, future)
  */

@@ -445,7 +445,7 @@ const FlagManagerModal: React.FC<Props> = ({
                 )}
               </div>
             </div>
-            <button onClick={handleCancel} className="ps-research-close" aria-label="Close">×</button>
+            <button onClick={handleCancel} className="ps-close-btn" aria-label="Close">✕</button>
           </div>
 
           {/* ── BODY ── */}

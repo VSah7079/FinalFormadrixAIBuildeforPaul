@@ -1,5 +1,6 @@
 // src/pages/SynopticReportPage/components/Sidebar.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ConfirmModal from '@/components/UI/ConfirmModal';
 import type { Case } from '@/types/case/Case';
 
 interface SidebarProps {
@@ -15,6 +16,7 @@ interface SidebarProps {
   specimenComments?: Record<string, string>;
   activeReportInstanceId?: string;
   onSelectReport?: (instanceId: string, specimenId: string) => void;
+  onDeleteReport?: (instanceId: string) => void;
 }
 
 type DotStatus = 'complete' | 'partial' | 'empty';
@@ -39,11 +41,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   specimenComments = {},
   activeReportInstanceId,
   onSelectReport,
+  onDeleteReport,
 }) => {
   const specimens = caseData?.specimens ?? [];
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(specimens.length > 0 ? [specimens[0].id] : [])
-  );
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteName, setConfirmDeleteName] = useState<string>('');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Expand all specimens once caseData loads
+  useEffect(() => {
+    if (specimens.length > 0) {
+      setExpandedIds(new Set(specimens.map(s => s.id)));
+    }
+  }, [caseData?.id]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
@@ -120,7 +130,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Specimen row */}
             <div
-              onClick={() => { toggleExpand(specimen.id); onSelectSpecimen?.(specimen.id); }}
+              onClick={() => {
+                if (allRows.length === 0) {
+                  onSelectSpecimen?.(specimen.id);
+                  onAddSynoptic?.();
+                } else {
+                  toggleExpand(specimen.id);
+                  onSelectSpecimen?.(specimen.id);
+                }
+              }}
               title={`${specimen.label}: ${specimen.description}`}
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
@@ -132,12 +150,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
             >
-              {/* Expand arrow LEFT */}
+              {/* Expand arrow — only when specimen has reports */}
               <span style={{
                 fontSize: '8px', color: '#94a3b8', flexShrink: 0,
                 display: 'inline-block', transition: 'transform 0.15s',
                 transform: isExpanded ? 'rotate(90deg)' : 'none',
                 width: '10px', textAlign: 'center',
+                visibility: allRows.length > 0 ? 'visible' : 'hidden',
               }}>▶</span>
 
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -208,6 +227,25 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                       </div>
                       <StatusDot status={instDot} />
+                      {/* Delete button — only show on non-legacy instances */}
+                      {inst.instanceId !== '__legacy__' && onDeleteReport && (
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(inst.instanceId);
+                            setConfirmDeleteName(inst.templateName);
+                          }}
+                          title="Remove this synoptic report"
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: '#64748b', fontSize: '13px', padding: '2px 4px',
+                            borderRadius: '4px', lineHeight: 1, flexShrink: 0,
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'none'; }}
+                        >🗑</button>
+                      )}
                     </div>
                   );
                 })}
@@ -232,6 +270,19 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Add Synoptic Report
       </button>
+      <ConfirmModal
+        show={!!confirmDeleteId}
+        title="Remove Synoptic Report"
+        message={`Remove "${confirmDeleteName}"? This cannot be undone until you save the case.`}
+        confirmLabel="Remove"
+        cancelLabel="Keep"
+        danger
+        onConfirm={() => {
+          if (confirmDeleteId) onDeleteReport?.(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 };

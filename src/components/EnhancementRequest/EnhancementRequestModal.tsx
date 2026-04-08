@@ -362,7 +362,7 @@ export const EnhancementRequestModal: React.FC<Props> = ({ onClose, mode = 'enha
               {/* QA routing notice */}
               {isQA && (
                 <div style={{ padding: '8px 12px', borderRadius: '6px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '11px', color: '#fbbf24', lineHeight: 1.5 }}>
-                  🐛 This feedback will be sent to the QA team and cc&#39;d to the system ***REMOVED***istrator.
+                  🐛 This feedback will be sent to the QA team and cc&#39;d to the system administrator.
                 </div>
               )}
 

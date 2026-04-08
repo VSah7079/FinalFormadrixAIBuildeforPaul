@@ -105,7 +105,7 @@ export function buildHtml(event: SynopticAuditEvent, baseUrl: string): string {
       <!-- Footer -->
       <tr><td style="background:#0f172a;padding:14px 32px;border-top:1px solid #1e293b;">
         <p style="font-size:11px;color:#334155;margin:0;line-height:1.6;">
-          Sent to ***REMOVED***s and clinical leads in pathscribe. &nbsp;·&nbsp;
+          Sent to admins and clinical leads in pathscribe. &nbsp;·&nbsp;
           <a href="${baseUrl}/configuration?tab=system" style="color:#475569;">Manage notification preferences</a>
         </p>
       </td></tr>
@@ -133,7 +133,7 @@ export function buildText(event: SynopticAuditEvent, baseUrl: string): string {
     `${cta.label} ${cta.url}`,
     '',
     '---',
-    'Sent to ***REMOVED***s and clinical leads.',
+    'Sent to admins and clinical leads.',
     `Notification preferences: ${baseUrl}/configuration?tab=system`,
   ].filter((l): l is string => l !== null).join('\n');
 }

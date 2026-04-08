@@ -123,7 +123,7 @@ export function buildEnhancementHtml(payload: EnhancementRequestPayload): string
       <tr>
         <td style="background-color:#f8fafc;padding:14px 28px;border-top:1px solid #e2e8f0;border-radius:0 0 8px 8px;">
           <p style="margin:0;font-size:11px;color:#94a3b8;font-family:Arial,sans-serif;">
-            Sent via pathscribe AI &nbsp;·&nbsp; ${isQA ? 'QA team + ***REMOVED*** notified' : 'Product team notified'}
+            Sent via pathscribe AI &nbsp;·&nbsp; ${isQA ? 'QA team + admin notified' : 'Product team notified'}
           </p>
         </td>
       </tr>

@@ -9,7 +9,7 @@ export interface Patient {
   dateOfBirth?: string; // ISO date
   sex?: 'M' | 'F' | 'U';
 
-  // Optional ***REMOVED***graphic fields
+  // Optional demographic fields
   phone?: string;
   email?: string;
   address?: string;

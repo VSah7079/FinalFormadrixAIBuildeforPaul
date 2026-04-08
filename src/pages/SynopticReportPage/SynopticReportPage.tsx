@@ -12,19 +12,18 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { mockActionRegistryService } from '../../services/actionRegistry/mockActionRegistryService';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import DelegateModal      from '../Synoptic/Delegate';
+
 import NavBar             from '@/components/NavBar/NavBar';
 import HeaderBar          from './components/HeaderBar';
 import Sidebar            from './components/Sidebar';
 import LeftReportPanel    from './components/LeftReportPanel';
-import RightSynopticPanel from './components/RightSynopticPanel';
+import RightSynopticPanel, { type RightSynopticPanelHandle } from './components/RightSynopticPanel';
 import BottomActionBar    from './components/BottomActionBar';
 
 import AmendmentModal        from './modals/AmendmentModal';
 import { CaseCommentModal }   from '../Synoptic/Comments/CaseCommentModal';
-import CasePanel              from '../../components/CasePanel/CasePanel';
+import PatientHistoryModal    from '../../components/CasePanel/PatientHistoryModal';
 import FlagManagerModal       from '../../components/Config/System/FlagManagerModal';
 import { AddCodeModal }       from '../Synoptic/Codes/AddCodeModal';
 import { ReportCommentModal } from '../Synoptic/Comments/ReportCommentModal';
@@ -39,20 +38,22 @@ import { useSynopticToast }    from '../Synoptic/useSynopticToast';
 import { useSynopticFlags }    from '../Synoptic/useSynopticFlags';
 import { SaveToast }           from '../Synoptic/UI/SaveToast';
 
-import { mockCaseService, getSimilarCases, getPatientHistory } from '@/services/cases/mockCaseService';
+import { mockCaseService } from '@/services/cases/mockCaseService';
+import { useDirtyState } from '@/contexts/DirtyStateContext';
 import { useLogout } from '@/hooks/useLogout';
 import '@/pathscribe.css';
 
 import type { Case, SynopticReportInstance } from '@/types/case/Case';
-
-import { userService } from '@/services'; // Single source of truth
-import type { StaffUser } from '@/services';
+import type { MissingRequiredField, ReviewField } from './components/RightSynopticPanel';
+import { AiReviewModal }  from './modals/AiReviewModal';
+import { DelegateModal }  from '../Synoptic/Delegate/DelegateModal';
+import { mockActionRegistryService } from '@/services/actionRegistry/mockActionRegistryService';
 
 // ─── Shared overlay style (passed to all modals) ──────────────
 const overlayStyle: React.CSSProperties = {
   position: 'fixed', inset: 0,
   background: 'rgba(0,0,0,0.6)',
-  zIndex: 1000,
+  zIndex: 25000,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
@@ -72,10 +73,9 @@ const SynopticReportPage: React.FC = () => {
   const [caseData, setCaseData]     = useState<Case | null>(null);
   const [isLoaded, setIsLoaded]     = useState(false);
   const [activeTab, setActiveTab]       = useState('tumor');
-  const [hasUnsavedData]                = useState(false);
+  const { isDirty: hasUnsavedData, setDirty: setHasUnsavedData, pendingPath, confirmNavigate: confirmContextNavigate, cancelNavigate: cancelContextNavigate } = useDirtyState();
   const [activeSpecimenId, setActiveSpecimenId] = useState<string>('');
   const [showCaseCommentModal, setShowCaseCommentModal] = useState(false);
-  const [showDelegateModal, setShowDelegateModal] = useState(false);
   const [showSpecimenCommentModal, setShowSpecimenCommentModal] = useState(false);
   const [activeSpecimenCommentId, setActiveSpecimenCommentId] = useState<string>('');
   const [hasCaseComment, setHasCaseComment] = useState(false);
@@ -98,26 +98,12 @@ const SynopticReportPage: React.FC = () => {
   const [learnPairing, setLearnPairing] = useState(true);
   const [availableProtocols, setAvailableProtocols] = useState<{id:string;name:string}[]>([]);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [allStaff, setAllStaff] = useState<StaffUser[]>([]);
-
-  useEffect(() => {
-    const fetchStaff = async () => {
-      try {
-        const result = await userService.getAll();
-        if (result.ok) {
-          // Save the raw data to match the StaffUser[] type
-          setAllStaff(result.data);
-        }
-      } catch (err) {
-        console.error("Failed to load staff:", err);
-      }
-    };
-    fetchStaff();
-  }, []);
+  const [showDelegateModal, setShowDelegateModal]   = useState(false);
 
   useEffect(() => {
     if (!caseId) return;
-        // ── Worklist for Previous / Next ──────────────────────────
+
+    // ── Worklist for Previous / Next ──────────────────────────
     // WorklistTable passes the ordered ID list via router state so the order
     // always matches what the user saw.  Fall back to a service fetch only
     // when the page is opened directly by URL (no router state present).
@@ -132,6 +118,7 @@ const SynopticReportPage: React.FC = () => {
       }).catch(() => {});
     }
 
+    setHasUnsavedData(false);
     mockCaseService.getCase(caseId).then((c) => {
       setCaseData(c ?? null);
       // Auto-select first specimen
@@ -176,7 +163,7 @@ const SynopticReportPage: React.FC = () => {
   const { toastMsg, toastVisible, showToast } = useSynopticToast();
 
   const {
-    flagCaseData, setFlagCaseData,
+    flagCaseData, setFlagCaseData: _setFlagCaseData,
     flagDefinitions,
     showFlagManager, setShowFlagManager,
     openFlagManager,
@@ -192,6 +179,19 @@ const SynopticReportPage: React.FC = () => {
     }
     navigate(path, state ? { state } : undefined);
   }, [hasUnsavedData, navigate]);
+
+  // ── Browser unload guard — warns on tab close / browser back ──
+  React.useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedData) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedData]);
+
+
 
   // ── Case navigation ────────────────────────────────────────
   const navigateToCase = useCallback((direction: 'next' | 'prev') => {
@@ -211,11 +211,48 @@ const SynopticReportPage: React.FC = () => {
     showToast('Case signed out successfully');
   }, [setCaseSigned, setShowSignOutModal, showToast]);
 
+  // ── Synoptic panel ref — used to sweep verification at finalize ───────────
+  const synopticPanelRef = React.useRef<RightSynopticPanelHandle>(null);
+  const [missingFields,          setMissingFields]          = React.useState<MissingRequiredField[]>([]);
+  const [showMissingWarning,     setShowMissingWarning]     = React.useState(false);
+  const [reviewFields,           setReviewFields]           = React.useState<ReviewField[]>([]);
+  const [showAiReview,           setShowAiReview]           = React.useState(false);
+  const [finalizeAndNextPending, setFinalizeAndNextPending] = React.useState(false);
+  const [deferredAmendmentContext, setDeferredAmendmentContext] = React.useState<{ title: string; prefill: string } | null>(null);
+
   // ── Finalize confirm ───────────────────────────────────────
   const handleFinalizeConfirm = useCallback(() => {
+    // Sweep unverified AI suggestions → auto-confirmed before persisting
+    if (synopticPanelRef.current) {
+      const { verificationSummary } = synopticPanelRef.current.sweepAndGetFinalState();
+      console.info('[PathScribe] Finalization sweep:', verificationSummary);
+    }
     setShowFinalizeModal(false);
-    showToast('Report finalized');
-  }, [setShowFinalizeModal, showToast]);
+
+    // Deferred synoptic on already-finalized case → trigger amendment flow
+    const activeReport = caseData?.synopticReports?.find(
+      r => r.instanceId === activeReportInstanceId
+    ) as any;
+    if (caseData?.status === 'finalized' && activeReport?.status === 'deferred') {
+      const completedFields = Object.entries(activeReport.answers ?? {})
+        .filter(([, v]) => v && (Array.isArray(v) ? (v as string[]).length > 0 : (v as string).trim()))
+        .map(([k]) => k)
+        .join(', ');
+      const pendingNote = activeReport.deferredPending ? ` (${activeReport.deferredPending})` : '';
+      setDeferredAmendmentContext({
+        title: activeReport.templateName ?? 'Deferred Synoptic',
+        prefill: `Amendment — completion of deferred synoptic${pendingNote}: ${activeReport.templateName ?? ''}.
+
+Ancillary results now available. Completed fields: ${completedFields || 'see synoptic report'}.
+
+Original report issued pending ancillary studies. This amendment incorporates the completed findings.`,
+      });
+      setAmendmentMode('amendment');
+      setShowAmendmentModal(true);
+    } else {
+      showToast('Report finalized');
+    }
+  }, [setShowFinalizeModal, showToast, caseData, activeReportInstanceId, setAmendmentMode, setShowAmendmentModal]);
 
   // ── Amendment submit ───────────────────────────────────────
   const handleAmendmentSubmit = useCallback(() => {
@@ -263,6 +300,7 @@ const SynopticReportPage: React.FC = () => {
         {/* HeaderBar */}
         <HeaderBar
           caseData={caseData}
+          onNavigate={guard}
           onSignOut={() => setShowSignOutModal(true)}
           aiConfidence={92}
         />
@@ -325,6 +363,22 @@ const SynopticReportPage: React.FC = () => {
               setActiveReportInstanceId(instanceId);
               setActiveSpecimenId(specimenId);
             }}
+            onDeleteReport={(instanceId) => {
+              if (!caseData) return;
+              const remaining = (caseData.synopticReports ?? []).filter(r => r.instanceId !== instanceId);
+              const updated: Case = {
+                ...caseData,
+                synopticReports: remaining,
+                updatedAt: new Date().toISOString(),
+              };
+              setCaseData(updated);
+              setHasUnsavedData(true);
+              // If deleted the active report, switch to first remaining
+              if (activeReportInstanceId === instanceId) {
+                setActiveReportInstanceId(remaining[0]?.instanceId ?? '');
+                setActiveSpecimenId(remaining[0]?.specimenId ?? '');
+              }
+            }}
           />
 
           {/* Left panel */}
@@ -354,11 +408,13 @@ const SynopticReportPage: React.FC = () => {
           <div style={{ flex: 1, minWidth: 0, background: 'rgba(15,23,42,0.95)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               <RightSynopticPanel
+                ref={synopticPanelRef}
                 caseData={caseData}
                 activeTab={activeTab}
                 activeReportInstanceId={activeReportInstanceId}
                 onReportInstanceChange={setActiveReportInstanceId}
-                onCaseUpdate={setCaseData}
+                onCaseUpdate={(updated) => { setCaseData(updated); setHasUnsavedData(true); }}
+                isDirty={hasUnsavedData}
                 scrollToField={alertFieldId}
                 onScrollComplete={() => setAlertFieldId(null)}
                 onHighlight={setHighlightText}
@@ -492,7 +548,7 @@ const SynopticReportPage: React.FC = () => {
                     activeTab={activeTab}
                     activeReportInstanceId={activeReportInstanceId}
                     onReportInstanceChange={setActiveReportInstanceId}
-                    onCaseUpdate={setCaseData}
+                    onCaseUpdate={(updated) => { setCaseData(updated); setHasUnsavedData(true); }}
                     scrollToField={alertFieldId}
                     onScrollComplete={() => setAlertFieldId(null)}
                     onHighlight={setHighlightText}
@@ -506,22 +562,49 @@ const SynopticReportPage: React.FC = () => {
         {/* Bottom action bar */}
         <BottomActionBar
           caseData={caseData}
-          onSaveDraft={() => showToast('Draft saved')}
-          onSaveAndNext={() => { showToast('Draft saved'); navigateToCase('next'); }}
-          onFinalize={() => setShowFinalizeModal(true)}
-          onFinalizeAndNext={() => setShowFinalizeModal(true)}
+          isDirty={hasUnsavedData}
+          onSaveDraft={() => { setHasUnsavedData(false); showToast('Draft saved'); }}
+          onSaveAndNext={() => { setHasUnsavedData(false); showToast('Draft saved'); navigateToCase('next'); }}
+          onFinalize={() => {
+            if (!synopticPanelRef.current) { setShowFinalizeModal(true); return; }
+            const missing = synopticPanelRef.current.validateRequired();
+            if (missing.length > 0) { setMissingFields(missing); setShowMissingWarning(true); return; }
+            const uncertain = synopticPanelRef.current.getUncertainRequiredFields();
+            if (uncertain.length > 0) { setReviewFields(uncertain); setFinalizeAndNextPending(false); setShowAiReview(true); return; }
+            // Check for any deferred synoptics — warn but allow sign-out
+            const deferredReports = (caseData?.synopticReports ?? []).filter((r: any) => r.status === 'deferred');
+            if (deferredReports.length > 0) {
+              const names = deferredReports.map((r: any) => r.templateName).join(', ');
+              if (!window.confirm(`${deferredReports.length} synoptic report(s) are marked deferred and will not be included in this sign-out:
+
+${names}
+
+These will require an amendment when ancillary results are available.
+
+Proceed with sign-out?`)) return;
+            }
+            setShowFinalizeModal(true);
+          }}
+          onFinalizeAndNext={() => {
+            if (!synopticPanelRef.current) { setShowFinalizeModal(true); return; }
+            const missing = synopticPanelRef.current.validateRequired();
+            if (missing.length > 0) { setMissingFields(missing); setShowMissingWarning(true); return; }
+            const uncertain = synopticPanelRef.current.getUncertainRequiredFields();
+            if (uncertain.length > 0) { setReviewFields(uncertain); setFinalizeAndNextPending(true); setShowAiReview(true); return; }
+            setShowFinalizeModal(true);
+          }}
           onSignOut={() => setShowSignOutModal(true)}
           onAddendumAmendment={() => { setAmendmentMode('addendum'); setShowAmendmentModal(true); }}
-          onDelegate={() => setShowDelegateModal(true)}
           onHistory={() => setIsSimilarCasesOpen(true)}
           onFlags={() => openFlagManager(caseData)}
+          onDelegate={() => setShowDelegateModal(true)}
           onCodes={() => setShowCodesModal(true)}
           onNextCase={() => { if (hasUnsavedData) { setPendingNavigation('next'); } else { navigateToCase('next'); } }}
           onPreviousCase={() => { if (hasUnsavedData) { setPendingNavigation('prev'); } else { navigateToCase('prev'); } }}
         />
       </div>
 
-{/* ── Modals ─────────────────────────────────────────── */}
+      {/* ── Modals ─────────────────────────────────────────── */}
 
       <CaseSignOutModal
         show={showSignOutModal}
@@ -535,6 +618,69 @@ const SynopticReportPage: React.FC = () => {
         onPasswordChange={setSignOutPassword}
         onConfirm={handleSignOutConfirm}
       />
+
+      {/* AI Review Mode — triage uncertain fields before finalize */}
+      {showAiReview && (
+        <AiReviewModal
+          fields={reviewFields}
+          finalizeAndNext={finalizeAndNextPending}
+          onConfirm={(fieldId: string) => synopticPanelRef.current?.setFieldVerification(fieldId, 'verified')}
+          onOverride={(fieldId: string) => synopticPanelRef.current?.setFieldVerification(fieldId, 'disputed')}
+          onSkip={(_fieldId: string) => { /* stays unverified — auto-confirmed at sweep */ }}
+          onComplete={(summary) => {
+            console.info('[PathScribe] AI review summary:', summary);
+            setShowAiReview(false);
+            setShowFinalizeModal(true);
+          }}
+          onCancel={() => setShowAiReview(false)}
+        />
+      )}
+
+      {/* Missing Required Fields Warning */}
+      {showMissingWarning && (
+        <div
+          onClick={() => setShowMissingWarning(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 10001, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: 520, background: '#0f172a', borderRadius: 16, border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 25px 60px rgba(0,0,0,0.6)', overflow: 'hidden' }}
+          >
+            <div style={{ padding: '18px 24px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 22 }}>⚠️</span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Cannot Finalise</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Required Fields Incomplete</div>
+              </div>
+            </div>
+            <div style={{ padding: '20px 24px' }}>
+              <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
+                The following required fields must be completed before this report can be finalised:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 280, overflowY: 'auto' }}>
+                {missingFields.map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8 }}>
+                    <span style={{ fontSize: 14, color: '#f87171', flexShrink: 0 }}>✗</span>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fca5a5' }}>{f.fieldLabel}</div>
+                      <div style={{ fontSize: 11, color: '#64748b' }}>{f.sectionTitle}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: '#64748b' }}>{missingFields.length} field{missingFields.length !== 1 ? 's' : ''} need attention</span>
+              <button
+                onClick={() => setShowMissingWarning(false)}
+                style={{ padding: '9px 20px', borderRadius: 8, background: '#0891B2', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Return and Fix
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <FinalizeSynopticModal
         show={showFinalizeModal}
@@ -556,8 +702,10 @@ const SynopticReportPage: React.FC = () => {
         activeSynopticTitle={caseData?.accession?.fullAccession ?? 'Case'}
         onModeChange={setAmendmentMode}
         onTextChange={setAmendmentText}
-        onClose={() => setShowAmendmentModal(false)}
+        onClose={() => { setShowAmendmentModal(false); setDeferredAmendmentContext(null); }}
         onSubmit={handleAmendmentSubmit}
+        triggeredBySynopticTitle={deferredAmendmentContext?.title}
+        prefillText={deferredAmendmentContext?.prefill}
       />
 
       <LogoutWarningModal
@@ -567,14 +715,7 @@ const SynopticReportPage: React.FC = () => {
         onConfirm={() => { setShowLogoutModal(false); handleLogout(); }}
       />
 
-      {showDelegateModal && (
-  <DelegateModal
-    isOpen={showDelegateModal}
-    registry={mockActionRegistryService}
-    onClose={() => setShowDelegateModal(false)}
-  />
-)}
-{/* Add Synoptic Modal */}
+      {/* Add Synoptic Modal */}
       {showAddSynopticModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setShowAddSynopticModal(false)}>
@@ -582,6 +723,7 @@ const SynopticReportPage: React.FC = () => {
             onClick={e => e.stopPropagation()}>
             <div style={{ color: '#0891B2', fontSize: '24px', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>Add Synoptic Report</div>
 
+            {/* Specimen selector */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>Select Specimen(s)</div>
               {(caseData?.specimens ?? []).map(spec => (
@@ -597,6 +739,7 @@ const SynopticReportPage: React.FC = () => {
               ))}
             </div>
 
+            {/* Protocol search */}
             <div style={{ marginBottom: '24px', position: 'relative' }}>
               <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>Select Protocol</div>
               <input type="text"
@@ -620,148 +763,252 @@ const SynopticReportPage: React.FC = () => {
                     ))}
                 </div>
               )}
+              {selectedProtocol && (
+                <div style={{ marginTop: '8px', padding: '10px 12px', background: 'rgba(8,145,178,0.15)', border: '1px solid #0891B2', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#0891B2', fontSize: '13px', fontWeight: 600 }}>✓ {availableProtocols.find(p => p.id === selectedProtocol)?.name}</span>
+                  <button onClick={() => { setSelectedProtocol(''); setProtocolSearch(''); }} style={{ background: 'none', border: 'none', color: '#0891B2', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                </div>
+              )}
             </div>
 
-            {/* AI Learning Toggle - Added this section */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={learnPairing} 
-                  onChange={(e) => setLearnPairing(e.target.checked)} 
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>
-                  🤖 AI: Learn this specimen/protocol pairing
-                </span>
-              </label>
-            </div>
+            {/* Learn pairing */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', marginBottom: '24px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={learnPairing} onChange={e => setLearnPairing(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+              <div>
+                <div style={{ color: '#10B981', fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>🤖 Learn this pairing</div>
+                <div style={{ color: '#6ee7b7', fontSize: '11px' }}>AI will suggest this protocol for similar specimens in future cases</div>
+              </div>
+            </label>
 
+            {/* Actions */}
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => { setShowAddSynopticModal(false); setSelectedSpecimenIds([]); setSelectedProtocol(''); }}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => { setShowAddSynopticModal(false); setSelectedSpecimenIds([]); setSelectedProtocol(''); setProtocolSearch(''); }}
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>
                 Cancel
               </button>
               <button
                 disabled={!selectedSpecimenIds.length || !selectedProtocol}
                 onClick={async () => {
                   if (!caseData || !selectedProtocol || !selectedSpecimenIds.length) return;
-
-                  if (learnPairing) {
-                    console.log(`AI Training: Associating protocol ${selectedProtocol} with these specimens.`);
-                  }
-
                   const now = new Date().toISOString();
+                  const templateName = availableProtocols.find(p => p.id === selectedProtocol)?.name ?? selectedProtocol;
+
+                  // If the case has a legacy synopticTemplateId but no synopticReports array yet,
+                  // migrate the legacy entry into the array first so we don't lose it.
+                  const existingReports: SynopticReportInstance[] = caseData.synopticReports
+                    ? [...caseData.synopticReports]
+                    : caseData.synopticTemplateId
+                      ? [{
+                          instanceId: `legacy_${caseData.synopticTemplateId}`,
+                          specimenId: caseData.specimens?.[0]?.id ?? '',
+                          templateId: caseData.synopticTemplateId,
+                          templateName: availableProtocols.find(p => p.id === caseData.synopticTemplateId)?.name
+                            ?? caseData.synopticTemplateId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                          answers: caseData.synopticAnswers ?? {},
+                          status: 'draft' as const,
+                          createdAt: now,
+                          updatedAt: now,
+                        }]
+                      : [];
+
+                  // Create one new report instance per selected specimen
                   const newInstances: SynopticReportInstance[] = selectedSpecimenIds.map(specId => ({
                     instanceId: `${specId}_${selectedProtocol}_${Date.now()}`,
                     specimenId: specId,
                     templateId: selectedProtocol,
-                    templateName: availableProtocols.find(p => p.id === selectedProtocol)?.name ?? '',
+                    templateName,
                     answers: {},
-                    status: 'draft',
+                    status: 'draft' as const,
                     createdAt: now,
                     updatedAt: now,
                   }));
 
-                  const updated: Case = { 
-                    ...caseData, 
-                    synopticReports: [...(caseData.synopticReports ?? []), ...newInstances] 
+                  const updated: Case = {
+                    ...caseData,
+                    synopticReports: [...existingReports, ...newInstances],
+                    // Clear legacy fields once migrated to array
+                    synopticTemplateId: undefined,
+                    synopticAnswers: undefined,
                   };
-                  
+                  // Adding a synoptic report is dirty — not auto-saved
+                  // User must explicitly Save Draft or Finalize
                   setCaseData(updated);
-                  if (newInstances.length > 0) {
-                    setActiveReportInstanceId(newInstances[0].instanceId);
-                  }
+                  setHasUnsavedData(true);
+
+                  // Activate the first new instance
+                  setActiveReportInstanceId(newInstances[0].instanceId);
+                  setActiveSpecimenId(selectedSpecimenIds[0]);
+
                   setShowAddSynopticModal(false);
+                  setSelectedSpecimenIds([]);
+                  setSelectedProtocol('');
+                  setProtocolSearch('');
                 }}
-                style={{ 
-                  flex: 1, 
-                  padding: '12px', 
-                  borderRadius: '10px', 
-                  background: (!selectedSpecimenIds.length || !selectedProtocol) ? '#334155' : '#0891B2', 
-                  color: '#fff', 
-                  fontWeight: 600, 
-                  cursor: (!selectedSpecimenIds.length || !selectedProtocol) ? 'not-allowed' : 'pointer',
-                  border: 'none'
-                }}
-              >
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: (!selectedSpecimenIds.length || !selectedProtocol) ? 'rgba(8,145,178,0.2)' : '#0891B2', border: 'none', color: (!selectedSpecimenIds.length || !selectedProtocol) ? '#64748b' : '#fff', fontWeight: 600, fontSize: '15px', cursor: (!selectedSpecimenIds.length || !selectedProtocol) ? 'not-allowed' : 'pointer' }}>
                 Add Report
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Case Comment Modal */}
       {showCaseCommentModal && (
         <CaseCommentModal
-          accession={caseData?.accession?.fullAccession ?? ''}
+          accession={caseData?.accession?.fullAccession ?? caseData?.accession?.accessionNumber ?? ''}
           caseComments={{ attending: caseCommentAttending }}
           onChangeAttending={(html) => {
             setCaseCommentAttending(html);
             setHasCaseComment(!!html && html !== '<p></p>');
+            if (caseData?.id) localStorage.setItem(`ps_case_comment_${caseData.id}`, html);
           }}
           onClose={() => setShowCaseCommentModal(false)}
         />
       )}
 
+      {/* Specimen / Report Comment Modal */}
       {showSpecimenCommentModal && activeSpecimenCommentId && (
-<ReportCommentModal
-  specimenId={activeSpecimenCommentId}
-  // Added these two missing props
-  specimenName={caseData?.specimens?.find(s => s.id === activeSpecimenCommentId)?.description || 'Specimen'}
-  isFinalized={caseData?.status === 'finalized'} 
-  content={specimenComments[activeSpecimenCommentId] ?? ''}
-  onChange={(html) => setSpecimenComments(prev => ({ ...prev, [activeSpecimenCommentId]: html }))}
-  onClose={() => setShowSpecimenCommentModal(false)}
-/>
+        <ReportCommentModal
+          specimenName={
+            caseData?.specimens?.find(s => s.id === activeSpecimenCommentId)
+              ? `Specimen ${caseData.specimens.find(s => s.id === activeSpecimenCommentId)!.label} › ${caseData.specimens.find(s => s.id === activeSpecimenCommentId)!.description}`
+              : 'Specimen'
+          }
+          specimenId={activeSpecimenCommentId}
+          content={specimenComments[activeSpecimenCommentId] ?? ''}
+          isFinalized={false}
+          onChange={(html) => {
+            setSpecimenComments(prev => ({ ...prev, [activeSpecimenCommentId]: html }));
+          }}
+          onClose={() => setShowSpecimenCommentModal(false)}
+        />
       )}
 
-      {isSimilarCasesOpen && (
-        <CasePanel
-  isOpen={isSimilarCasesOpen}
-  onClose={() => setIsSimilarCasesOpen(false)}
-  patientName={caseData?.patient ? `${caseData.patient.lastName}, ${caseData.patient.firstName}` : 'Unknown'}
-  mrn={caseData?.patient?.mrn ?? ''}
-  patientHistory={getPatientHistory(caseId ?? '')}
-  similarCases={getSimilarCases(caseId ?? '')}
-  // Added this missing required prop
-  onRefineSearch={() => navigate('/search')}
-/>
+      {/* History — Similar Cases Panel */}
+      {isSimilarCasesOpen && caseData && (
+        <PatientHistoryModal
+          patientName={`${caseData.patient.lastName}, ${caseData.patient.firstName}`}
+          mrn={caseData.patient.mrn ?? ''}
+          onClose={() => setIsSimilarCasesOpen(false)}
+        />
       )}
 
+      {/* Codes Modal */}
       {showCodesModal && caseData && (
         <AddCodeModal
           existingCodes={(caseData as any).codes ?? []}
-          allSpecimens={(caseData.specimens ?? []).map((sp, i) => ({ index: i, id: i + 1, name: sp.label }))}
+          allSpecimens={(caseData.specimens ?? []).map((sp, i) => ({
+            index: i,
+            id: i + 1,
+            name: `${sp.label}: ${sp.description ?? ''}`,
+          }))}
           activeSpecimenIndex={0}
-          caseText={{ gross: '', microscopic: '', ancillary: '' }}
-          synopticAnswers={{}}
-          templateName=""
+          caseText={{
+            gross:       caseData.diagnostic?.grossDescription ?? '',
+            microscopic: caseData.diagnostic?.microscopicDescription ?? '',
+            ancillary:   caseData.diagnostic?.ancillaryStudies ?? '',
+          }}
+          synopticAnswers={
+            (activeReportInstanceId
+              ? caseData.synopticReports?.find(r => r.instanceId === activeReportInstanceId)?.answers
+              : caseData.synopticReports?.[0]?.answers
+            ) ?? caseData.synopticAnswers ?? {}
+          }
+          templateName={
+            (activeReportInstanceId
+              ? caseData.synopticReports?.find(r => r.instanceId === activeReportInstanceId)?.templateName
+              : caseData.synopticReports?.[0]?.templateName
+            ) ?? ''
+          }
+          narrativeText={
+            // Pass narrative if Orchestrator mode generated one (stored on the report instance)
+            (caseData.synopticReports?.find(r =>
+              r.instanceId === activeReportInstanceId
+            ) as any)?.narrativeContent ?? undefined
+          }
           onAddToSpecimens={(codes, _specimenIndices) => {
+            const newIcd    = codes.filter(c => c.system === 'ICD').map(c => c.code);
+            const newSnomed = codes.filter(c => c.system === 'SNOMED').map(c => c.code);
+            setCaseData(prev => prev ? {
+              ...prev,
+              coding: {
+                icd10:  [...((prev as any).coding?.icd10  ?? []), ...newIcd],
+                snomed: [...((prev as any).coding?.snomed ?? []), ...newSnomed],
+              },
+            } : prev);
             setShowCodesModal(false);
-            showToast('Codes added');
           }}
           onClose={() => setShowCodesModal(false)}
         />
       )}
 
+      {/* Flag Manager Modal */}
       {showFlagManager && flagCaseData && (
         <FlagManagerModal
-          caseData={flagCaseData as any}
+          key={`flag-modal-${flagCaseData.id}`}
+          caseData={{
+            ...flagCaseData,
+            accession: (flagCaseData.accession as any)?.fullAccession ?? (flagCaseData.accession as any)?.accessionNumber ?? flagCaseData.accession ?? '',
+            flags: (flagCaseData as any).flags ?? [],
+          } as any}
           flagDefinitions={flagDefinitions}
           onApplyFlags={onApplyFlags}
           onRemoveFlag={onRemoveFlag}
-          onClose={() => setShowFlagManager(false)}
+          onClose={() => {
+            if (flagCaseData && caseData) {
+              setCaseData(prev => prev ? {
+                ...prev,
+                caseFlags: (flagCaseData as any).flags ?? [],
+                specimens: prev.specimens?.map(sp => {
+                  const updated = flagCaseData.specimens?.find((s: any) => s.id === sp.id);
+                  return updated ? { ...sp, specimenFlags: (updated as any).flags ?? [] } : sp;
+                }),
+              } : prev);
+            }
+            setShowFlagManager(false);
+          }}
+        />
+      )}
+
+      {/* Delegate Modal */}
+      {showDelegateModal && (
+        <DelegateModal
+          isOpen={showDelegateModal}
+          onClose={() => setShowDelegateModal(false)}
+          registry={mockActionRegistryService}
+          caseId={caseId}
+          currentUserId="PATH-001"
+          onDelegated={() => {
+            setShowDelegateModal(false);
+            showToast('Case delegated successfully');
+          }}
+          synopticInstances={(caseData?.synopticReports ?? []).map(r => ({
+            instanceId: r.instanceId,
+            specimenDescription: caseData?.specimens?.find(s => s.id === r.specimenId)?.description ?? r.specimenId,
+            templateName: r.templateName,
+          }))}
         />
       )}
 
       <UnsavedWarningModal
-        show={!!pendingNavigation}
+        show={!!pendingNavigation || !!pendingPath}
         overlayStyle={overlayStyle}
-        onCancel={() => setPendingNavigation(null)}
+        onCancel={() => {
+          setPendingNavigation(null);
+          cancelContextNavigate();
+        }}
         onConfirm={() => {
+          setHasUnsavedData(false);
+          // Handle context-level navigation (AppShell nav, breadcrumbs)
+          if (pendingPath) {
+            confirmContextNavigate();
+          }
+          // Handle local navigation (next/prev case)
           const dest = pendingNavigation;
           setPendingNavigation(null);
-          if (dest) navigate(dest);
+          if (dest === 'next') navigateToCase('next');
+          else if (dest === 'prev') navigateToCase('prev');
+          else if (dest) navigate(dest);
         }}
       />
     </div>

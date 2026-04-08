@@ -2,7 +2,7 @@
  * mockCodeService.ts — src/services/codes/mockCodeService.ts
  * ─────────────────────────────────────────────────────────────────────────────
  * In-memory implementation of ICodeService using curated seed data.
- * Used in development and ***REMOVED*** environments — no Firestore dependency.
+ * Used in development and demo environments — no Firestore dependency.
  *
  * Seed data covers a pathology-relevant subset of each system:
  *   SNOMED CT  — 24 concepts (oncology, morphology, pre-malignant)

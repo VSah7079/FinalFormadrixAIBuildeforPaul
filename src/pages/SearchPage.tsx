@@ -1126,11 +1126,6 @@ const SearchPage: React.FC = () => {
 
         {/* â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div style={{ background:'rgba(0,0,0,0.4)', backdropFilter:'blur(12px)', padding:'8px 40px', borderBottom:'1px solid rgba(255,255,255,0.08)', flexShrink:0 }}>
-          <div style={{ fontSize:12, color:'#64748b', marginBottom:4, display:'flex', alignItems:'center', gap:8, fontWeight:500 }}>
-            <span onClick={()=>navigate('/')} style={{ cursor:'pointer' }} onMouseEnter={e=>(e.currentTarget.style.color='#0891B2')} onMouseLeave={e=>(e.currentTarget.style.color='#64748b')}>Home</span>
-            <span style={{ color:'#334155' }}>â€º</span>
-            <span style={{ color:'#0891B2', fontWeight:600 }}>Case Search</span>
-          </div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:18, fontWeight:700, color:'#f1f5f9', marginBottom:1 }}>Case Search</div>
@@ -1225,10 +1220,10 @@ const SearchPage: React.FC = () => {
 
                 {/* Patient Demographics */}
                 <div
-                  onMouseEnter={()=>setActiveSection('***REMOVED***graphics')}
-                  onMouseLeave={()=>setActiveSection(s=>s==='***REMOVED***graphics'?'':s)}
+                  onMouseEnter={()=>setActiveSection('demographics')}
+                  onMouseLeave={()=>setActiveSection(s=>s==='demographics'?'':s)}
                 >
-                  <div style={{ marginBottom:6 }}><SectionLabel title="Patient Demographics" active={activeSection==='***REMOVED***graphics'} /></div>
+                  <div style={{ marginBottom:6 }}><SectionLabel title="Patient Demographics" active={activeSection==='demographics'} /></div>
 
                   {/* Gender */}
                   <div style={{ marginBottom:8 }}>

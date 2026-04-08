@@ -23,12 +23,12 @@ The app will be available at `http://localhost:5173`
 ### Demo Credentials
 
 **Pathologist Account:**
-- Email: `***REMOVED***@pathscribe.ai`
-- Password: `***REMOVED***`
+- Email: `demo@pathscribe.ai`
+- Password: `demo`
 
 **Admin Account:**
-- Email: `***REMOVED***@pathscribe.ai`
-- Password: `***REMOVED***`
+- Email: `admin@pathscribe.ai`
+- Password: `admin`
 
 ## 📁 Project Structure
 
@@ -73,7 +73,7 @@ pathscribe-ai/
 - Key metrics overview
 - Recent cases list
 - Quick action buttons
-- Role-based navigation (***REMOVED*** badge for ***REMOVED***s)
+- Role-based navigation (admin badge for admins)
 
 ### 3. Worklist (`/worklist`)
 - Sortable/filterable case table
@@ -82,7 +82,7 @@ pathscribe-ai/
 - Priority badges (STAT, Urgent, Routine)
 
 ### 4. Maintenance/Admin Dashboard (`/maintenance`)
-- **Admin only** - redirects non-***REMOVED***s
+- **Admin only** - redirects non-admins
 - Model performance metrics
 - Field-level accuracy tracking
 - System alerts and warnings
@@ -113,8 +113,8 @@ The app uses a context-based auth system:
 - Persistent theme preference in localStorage
 
 ### Authentication
-- Mock authentication for ***REMOVED***
-- Role-based access (pathologist vs ***REMOVED***)
+- Mock authentication for demo
+- Role-based access (pathologist vs admin)
 - Protected routes with redirect
 
 ### Responsive Design
@@ -191,7 +191,7 @@ The build output will be in the `dist/` directory.
 - Or use emoji fallbacks (currently implemented)
 
 **Issue: Login not working**
-- Check you're using the ***REMOVED*** credentials
+- Check you're using the demo credentials
 - Clear localStorage and refresh
 
 **Issue: Navigation not working**

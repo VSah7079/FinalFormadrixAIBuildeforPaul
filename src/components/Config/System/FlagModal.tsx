@@ -74,9 +74,12 @@ export default function FlagManagerModal({
 }: FlagManagerModalProps) {
   const specimens = caseData.specimens as SpecimenWithFlags[];
 
-  const [selectedTarget, setSelectedTarget] = useState<string>("case");
-  const [search, setSearch] = useState("");
+  const [selectedTarget,  setSelectedTarget]  = useState<string>("case");
+  const [search,          setSearch]          = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [dragFlag,        setDragFlag]        = useState<{ flagId: string; fromTarget: string } | null>(null);
+  const [dragOverTarget,  setDragOverTarget]  = useState<string | null>(null);
+  const [contextMenu,     setContextMenu]     = useState<{ flagId: string; fromTarget: string; x: number; y: number } | null>(null);
 
   // pendingApplied: targetId → Set of applied flagDefinitionIds
   const [pendingApplied, setPendingApplied] = useState<Record<string, Set<string>>>(() => {
@@ -131,6 +134,22 @@ export default function FlagManagerModal({
         });
       }
     }
+  };
+
+  // Move a flag from one target to another (removes from source, adds to dest)
+  const moveFlag = (flagId: string, fromTarget: string, toTarget: string) => {
+    if (fromTarget === toTarget) return;
+    setPendingApplied(prev => {
+      const next = { ...prev };
+      const from = new Set(next[fromTarget] ?? []);
+      const to   = new Set(next[toTarget]   ?? []);
+      from.delete(flagId);
+      to.add(flagId);
+      next[fromTarget] = from;
+      next[toTarget]   = to;
+      return next;
+    });
+    setContextMenu(null);
   };
 
   const totalApplied = Object.values(pendingApplied).reduce((n, s) => n + s.size, 0);
@@ -260,8 +279,25 @@ export default function FlagManagerModal({
               Apply to
             </div>
 
-            {/* Case */}
-            <div style={targetRow("case")} onClick={() => setSelectedTarget("case")}>
+            {/* Case — drop target */}
+            <div
+              style={{
+                ...targetRow("case"),
+                border: dragFlag && dragOverTarget === "case" && dragFlag.fromTarget !== "case"
+                  ? `1px dashed ${C.accent}` : "1px solid transparent",
+                background: dragFlag && dragOverTarget === "case" && dragFlag.fromTarget !== "case"
+                  ? C.accentDim : selectedTarget === "case" ? "rgba(56,189,248,0.05)" : "transparent",
+                borderRadius: 6, transition: "all 0.12s",
+              }}
+              onClick={() => setSelectedTarget("case")}
+              onDragOver={e => { e.preventDefault(); setDragOverTarget("case"); }}
+              onDragLeave={() => setDragOverTarget(null)}
+              onDrop={e => {
+                e.preventDefault();
+                if (dragFlag && dragFlag.fromTarget !== "case") moveFlag(dragFlag.flagId, dragFlag.fromTarget, "case");
+                setDragOverTarget(null); setDragFlag(null);
+              }}
+            >
               <div style={targetName("case")}>
                 <IconDoc />
                 Case {caseData.accession}
@@ -276,12 +312,7 @@ export default function FlagManagerModal({
                   </span>
                 )}
               </div>
-              <div style={{
-                fontSize: 11,
-                color: hasApplied("case") ? C.amber : C.textMuted,
-                paddingLeft: 20,
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
+              <div style={{ fontSize: 11, color: hasApplied("case") ? C.amber : C.textMuted, paddingLeft: 20, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {appliedLabel("case")}
               </div>
             </div>
@@ -297,9 +328,27 @@ export default function FlagManagerModal({
               </div>
             </div>
 
-            {/* Individual specimens */}
+            {/* Individual specimens — drop targets */}
             {specimens.map((sp) => (
-              <div key={sp.id} style={targetRow(sp.id)} onClick={() => setSelectedTarget(sp.id)}>
+              <div
+                key={sp.id}
+                style={{
+                  ...targetRow(sp.id),
+                  border: dragFlag && dragOverTarget === sp.id && dragFlag.fromTarget !== sp.id
+                    ? `1px dashed ${C.accent}` : "1px solid transparent",
+                  background: dragFlag && dragOverTarget === sp.id && dragFlag.fromTarget !== sp.id
+                    ? C.accentDim : selectedTarget === sp.id ? "rgba(56,189,248,0.05)" : "transparent",
+                  borderRadius: 6, transition: "all 0.12s",
+                }}
+                onClick={() => setSelectedTarget(sp.id)}
+                onDragOver={e => { e.preventDefault(); setDragOverTarget(sp.id); }}
+                onDragLeave={() => setDragOverTarget(null)}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (dragFlag && dragFlag.fromTarget !== sp.id) moveFlag(dragFlag.flagId, dragFlag.fromTarget, sp.id);
+                  setDragOverTarget(null); setDragFlag(null);
+                }}
+              >
                 <div style={targetName(sp.id)}>
                   <IconDot />
                   {sp.label}
@@ -314,12 +363,7 @@ export default function FlagManagerModal({
                     </span>
                   )}
                 </div>
-                <div style={{
-                  fontSize: 11,
-                  color: hasApplied(sp.id) ? C.amber : C.textMuted,
-                  paddingLeft: 20,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
+                <div style={{ fontSize: 11, color: hasApplied(sp.id) ? C.amber : C.textMuted, paddingLeft: 20, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {appliedLabel(sp.id)}
                 </div>
               </div>
@@ -396,6 +440,17 @@ export default function FlagManagerModal({
                 return (
                   <div
                     key={flag.id}
+                    draggable={applied}
+                    onDragStart={e => {
+                      if (!applied) { e.preventDefault(); return; }
+                      setDragFlag({ flagId: flag.id, fromTarget: selectedTarget });
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={() => { setDragFlag(null); setDragOverTarget(null); }}
+                    onContextMenu={e => {
+                      e.preventDefault();
+                      if (applied) setContextMenu({ flagId: flag.id, fromTarget: selectedTarget, x: e.clientX, y: e.clientY });
+                    }}
                     style={{
                       display: "grid", gridTemplateColumns: "76px 1fr 96px",
                       gap: 12, padding: "10px 12px",
@@ -404,6 +459,7 @@ export default function FlagManagerModal({
                       background: applied ? C.accentFocus : C.card,
                       alignItems: "center",
                       transition: "background 0.1s, border-color 0.1s",
+                      cursor: applied ? "grab" : "pointer",
                     }}
                     onMouseEnter={(e) => {
                       const el = e.currentTarget as HTMLElement;
@@ -476,6 +532,60 @@ export default function FlagManagerModal({
             </div>
           </div>
         </div>
+
+        {/* ── Context Menu ───────────────────────────────────── */}
+        {contextMenu && (
+          <div onClick={() => setContextMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 99999 }}>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                position: "fixed",
+                left: Math.min(contextMenu.x, window.innerWidth - 230),
+                top:  Math.min(contextMenu.y, window.innerHeight - 200),
+                width: 220,
+                background: C.panel,
+                border: `1px solid ${C.border}`,
+                borderRadius: 8,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                overflow: "hidden",
+                zIndex: 100000,
+              }}
+            >
+              <div style={{ padding: "8px 12px 6px", fontSize: 10, fontWeight: 700, color: C.labelCaps, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                Move to
+              </div>
+              {/* Case level */}
+              {contextMenu.fromTarget !== "case" && (
+                <button
+                  onClick={() => moveFlag(contextMenu.flagId, contextMenu.fromTarget, "case")}
+                  style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: C.textPrimary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                  onMouseEnter={e => (e.currentTarget.style.background = C.accentDim)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                >
+                  <IconDoc /> Case Level
+                </button>
+              )}
+              {/* Specimens */}
+              {specimens
+                .filter(sp => sp.id !== contextMenu.fromTarget)
+                .map(sp => (
+                  <button
+                    key={sp.id}
+                    onClick={() => moveFlag(contextMenu.flagId, contextMenu.fromTarget, sp.id)}
+                    style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: C.textPrimary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = C.accentDim)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                  >
+                    <IconDot />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ color: C.accent, fontWeight: 600 }}>{sp.label}:</span> {(sp as any).description ?? sp.label}
+                    </span>
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+        )}
 
         {/* ── Footer ─────────────────────────────────────────── */}
         <div style={{

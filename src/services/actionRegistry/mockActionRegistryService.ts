@@ -63,6 +63,10 @@ const CUSTOM_EVENT_ACTIONS = new Set([
   'GOTO_CODES', 'SELECT_SPECIMEN', 'OPEN_HISTORY', 'CLOSE_HISTORY', 'VOICE_CANCEL',
   // Codes panel
   'VOICE_ADD_CODE',
+  // AI Review Mode (triage before finalize)
+  'AI_REVIEW_CONFIRM', 'AI_REVIEW_OVERRIDE', 'AI_REVIEW_SKIP', 'AI_REVIEW_NEXT', 'AI_REVIEW_CANCEL',
+  // Pool Case actions
+  'POOL_ACCEPT_CASE', 'POOL_PASS_CASE',
   // Search page
   'SEARCH_EXECUTE', 'SEARCH_CLEAR', 'SEARCH_LOAD_SAVED',
   // Flag manager
@@ -148,6 +152,76 @@ const MOCK_ACTIONS: SystemAction[] = [
     voiceTriggers: ['confirm delegation', 'send case', 'complete transfer'],
     learnedTriggers: [], 
     requiredRole: 'Pathologist', 
+    isActive: true,
+  },
+
+  // ── AI REVIEW MODE — Triage before finalize ──────────────────────────────
+  {
+    id: 'AI_REVIEW_CONFIRM',
+    label: 'Confirm AI Finding',
+    category: 'SYNOPTIC',
+    shortcut: 'Space',
+    internalKey: 'F13+PS160',
+    voiceTriggers: ['confirm', 'accept', 'agree', 'correct', 'confirm finding', 'accept finding'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'AI_REVIEW_OVERRIDE',
+    label: 'Override AI Finding',
+    category: 'SYNOPTIC',
+    shortcut: 'O',
+    internalKey: 'F13+PS161',
+    voiceTriggers: ['override', 'incorrect', 'wrong', 'override finding', 'ai is wrong', 'change this'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'AI_REVIEW_SKIP',
+    label: 'Skip AI Finding',
+    category: 'SYNOPTIC',
+    shortcut: 'S',
+    internalKey: 'F13+PS162',
+    voiceTriggers: ['skip', 'skip this', 'next field', 'move on', 'skip finding'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'AI_REVIEW_CANCEL',
+    label: 'Cancel AI Review',
+    category: 'SYNOPTIC',
+    shortcut: 'Escape',
+    internalKey: 'F13+PS163',
+    voiceTriggers: ['cancel review', 'exit review', 'stop review', 'go back'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+
+  // ── POOL CASES ────────────────────────────────────────────────────────────
+  {
+    id: 'POOL_ACCEPT_CASE',
+    label: 'Accept Pool Case',
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+A',
+    internalKey: 'F13+PS165',
+    voiceTriggers: ['accept case', 'take this case', 'assign to me', 'accept'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'POOL_PASS_CASE',
+    label: 'Pass Pool Case',
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+P',
+    internalKey: 'F13+PS166',
+    voiceTriggers: ['pass case', 'skip case', 'return to pool', 'pass'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
     isActive: true,
   },
 
@@ -515,32 +589,34 @@ const MOCK_ACTIONS: SystemAction[] = [
   // ── Synoptic field navigation ──────────────────────────────────────────────
   {
     id: 'NEXT_UNANSWERED', label: 'Next Unanswered Field', category: VOICE_CONTEXT.REPORTING,
-    shortcut: '', internalKey: ACTION_MAP['diagnosis.enterAddendum']?.internalKey ?? 'F17+PS005',
-    voiceTriggers: ['next unanswered', 'go to next unanswered', 'next empty field', 'next field'],
+    shortcut: 'Alt+U', internalKey: 'F17+PS005',
+    voiceTriggers: ['next unanswered', 'go to next unanswered', 'next empty field', 'next field', 'next blank'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'NEXT_REQUIRED', label: 'Next Required Field', category: VOICE_CONTEXT.REPORTING,
-    shortcut: '', internalKey: ACTION_MAP['diagnosis.enterAddendum']?.internalKey ?? 'F17+PS006',
-    voiceTriggers: ['next required', 'go to next required', 'next required field'],
+    shortcut: 'Alt+R', internalKey: 'F17+PS006',
+    voiceTriggers: ['next required', 'go to next required', 'next required field', 'show required'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'CONFIRM_FIELD', label: 'Confirm Field', category: VOICE_CONTEXT.REPORTING,
-    shortcut: '', internalKey: ACTION_MAP['diagnosis.enterAddendum']?.internalKey ?? 'F17+PS007',
-    voiceTriggers: ['confirm', 'confirm field', 'accept', 'accept field', 'approve'],
+    shortcut: 'Alt+C', internalKey: 'F17+PS007',
+    // Kept distinct from AI_REVIEW_CONFIRM — this fires in REPORTING context (normal work),
+    // AI_REVIEW_CONFIRM fires in SYNOPTIC context (triage modal only)
+    voiceTriggers: ['confirm field', 'accept field', 'approve field', 'confirm answer', 'accept answer'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'EDIT_FIELD', label: 'Edit Field', category: VOICE_CONTEXT.REPORTING,
-    shortcut: '', internalKey: ACTION_MAP['diagnosis.enterAddendum']?.internalKey ?? 'F17+PS008',
-    voiceTriggers: ['edit', 'edit field', 'override', 'change field', 'correct field'],
+    shortcut: 'Alt+E', internalKey: 'F17+PS008',
+    voiceTriggers: ['edit field', 'change field', 'correct field', 'modify field', 'override field'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
     id: 'SKIP_FIELD', label: 'Skip Field', category: VOICE_CONTEXT.REPORTING,
-    shortcut: '', internalKey: ACTION_MAP['diagnosis.enterAddendum']?.internalKey ?? 'F17+PS009',
-    voiceTriggers: ['skip', 'skip field', 'skip this', 'skip this field'],
+    shortcut: 'Alt+S', internalKey: 'F17+PS009',
+    voiceTriggers: ['skip field', 'skip this field', 'move on', 'leave blank'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {

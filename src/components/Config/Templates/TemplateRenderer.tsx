@@ -12,7 +12,7 @@
  *   draft → in_review → approved → published
  *   needs_changes can be applied from in_review or approved (rejection)
  *   needs_changes → in_review (re-submission)
- *   Reset always available as ***REMOVED*** escape hatch
+ *   Reset always available as admin escape hatch
  *
  *   Allowed transitions map:
  *     draft          → in_review

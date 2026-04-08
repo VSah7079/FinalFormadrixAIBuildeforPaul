@@ -5,7 +5,7 @@
  * so the user/role lookup logic lives in one place.
  *
  * Usage:
- *   const to = await resolveByRoles(['***REMOVED***', 'clinical_lead']);
+ *   const to = await resolveByRoles(['admin', 'clinical_lead']);
  *   const to = await resolveByTemplateOwner(templateId);
  * ─────────────────────────────────────────────────────────────────────────────
  */

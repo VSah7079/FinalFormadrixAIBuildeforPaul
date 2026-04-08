@@ -27,7 +27,7 @@ The Synoptic Template Editor â€” a full lifecycle management system for pat
 - **Review queue** (`ReviewQueueSection.tsx`) â€” grouped by category, status badges, click-to-navigate
 - **localStorage persistence bridge** â€” all lifecycle transitions survive page reloads during mock phase (see Architecture below)
 - **Audit log** â€” every transition, field edit, and reset is logged to `ps_audit_log_v1` including reviewer notes
-- **Governing bodies config** (`GoverningBodiesSection.tsx`) â€” super-***REMOVED*** configuration
+- **Governing bodies config** (`GoverningBodiesSection.tsx`) â€” super-admin configuration
 
 ---
 
@@ -130,7 +130,7 @@ Section state lives in the URL, not in React state:
 
 ```
 POST   /api/notifications/email
-GET    /api/users?roles=***REMOVED***,clinical_lead
+GET    /api/users?roles=admin,clinical_lead
 GET    /api/templates/:id/owner
 POST   /api/templates                        (upsert draft)
 GET    /api/templates                        (list, optional ?status= filter)

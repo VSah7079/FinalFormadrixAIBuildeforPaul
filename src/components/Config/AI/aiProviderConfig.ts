@@ -5,7 +5,7 @@
 //
 // Priority order (highest wins):
 //   1. User-level override (localStorage, dev/testing only)
-//   2. Org-level setting   (fetched from your ***REMOVED*** API / Firestore)
+//   2. Org-level setting   (fetched from your admin API / Firestore)
 //   3. Environment variable defaults (set at deploy time)
 //
 // Keys NEVER live in the browser in production. The browser sends
@@ -129,7 +129,7 @@ function envDefaults(): AiProviderConfig {
   };
 }
 
-// ─── Org-level config (loaded from your ***REMOVED*** API / Firestore) ─
+// ─── Org-level config (loaded from your admin API / Firestore) ─
 // Shape of the document stored in your org settings collection.
 export interface OrgAiConfig {
   providerId: AiProviderId;
@@ -180,7 +180,7 @@ export function resolveAiConfig(): AiProviderConfig {
 
 /**
  * Saves a user-level override config.
- * Intended for dev/QA use — ***REMOVED***s should configure at org level.
+ * Intended for dev/QA use — admins should configure at org level.
  */
 export function setUserAiConfig(config: Partial<AiProviderConfig>): void {
   localStorage.setItem(USER_OVERRIDE_KEY, JSON.stringify(config));

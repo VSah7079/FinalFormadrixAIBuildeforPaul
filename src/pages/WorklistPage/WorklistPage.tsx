@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { mockCaseService } from '@/services/cases/mockCaseService';
+import { mockCaseService, getDelegations } from '@/services/cases/mockCaseService';
 import type { Case } from '@/types/case/Case';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLogout } from '@hooks/useLogout';
@@ -10,20 +10,31 @@ import LogoutWarningModal from './LogoutWarningModal';
 import CaseSearchBar from '../../components/Search/CaseSearchBar';
 import { mockActionRegistryService } from '../../services/actionRegistry/mockActionRegistryService';
 import { VOICE_CONTEXT } from '../../constants/systemActions';
+import { PoolClaimModal } from '../../components/Worklist/PoolClaimModal';
 
 const WorklistPage: React.FC = () => {
   const handleLogout = useLogout();
-  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician'>('all');
+  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing'>('all');
   const [realCases, setRealCases]             = useState<Case[]>([]);
+  const [delegatedToMeCount, setDelegatedToMeCount] = useState(0);
   const [physicianFilter, setPhysicianFilter] = useState<string>('');
-  const [physicianPrompt, setPhysicianPrompt] = useState<string | null>(null); // clarification prompt
+  const [physicianPrompt, setPhysicianPrompt] = useState<string | null>(null);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
-  
   const [showLogoutWarning, setShowLogoutWarning] = useState(false);
+  const CURRENT_USER_ID   = 'PATH-001';
+  const CURRENT_USER_NAME = 'Dr. Sarah Johnson';
+
+  // Pool claim modal state
+  const [claimModal, setClaimModal] = useState<{ caseId: string; summary: string; poolName: string } | null>(null);
 
   // Load real cases from mockCaseService on mount
   useEffect(() => {
     mockCaseService.listCasesForUser('current').then(setRealCases).catch(() => {});
+    // Load delegated-to-me count
+    getDelegations().then(all => {
+      const count = all.filter(d => d.toUserId === CURRENT_USER_ID && d.status === 'pending').length;
+      setDelegatedToMeCount(count);
+    }).catch(() => {});
   }, []);
 
   // Quick Links Data
@@ -902,20 +913,26 @@ const WorklistPage: React.FC = () => {
 
 
   const filteredCases = allCases.filter(c => {
-    if (activeFilter === 'all')       return true;
-    if (activeFilter === 'review')    return c.aiStatus === 'Draft Ready';
-    if (activeFilter === 'completed') return c.status === 'Completed';
-    if (activeFilter === 'urgent')    return c.priority === 'STAT' || c.isCritical === true;
-    if (activeFilter === 'physician') return (c.submittingPhysician ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
+    if (activeFilter === 'pool')       return (c as any).status === 'pool';
+    if (activeFilter === 'all')        return (c as any).status !== 'pool';
+    if (activeFilter === 'review')     return c.aiStatus === 'Draft Ready';
+    if (activeFilter === 'completed')  return c.status === 'Completed';
+    if (activeFilter === 'urgent')     return c.priority === 'STAT' || c.isCritical === true;
+    if (activeFilter === 'draft')      return c.status === 'draft';
+    if (activeFilter === 'finalizing') return c.status === 'finalizing';
+    if (activeFilter === 'physician')  return (c.submittingPhysician ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
     return true;
   });
 
   const stats = {
-    total:          realCases.length,
+    total:          realCases.filter(c => (c as any).status !== 'pool').length,
+    pool:           realCases.filter(c => (c as any).status === 'pool').length,
     inProgress:     realCases.filter(c => c.status === 'in-progress').length,
     needsReview:    realCases.filter(c => c.status === 'pending-review').length,
     urgent:         realCases.filter(c => c.order?.priority === 'STAT').length,
     amended:        realCases.filter(c => c.status === 'amended').length,
+    draft:          realCases.filter(c => c.status === 'draft').length,
+    finalizing:     realCases.filter(c => c.status === 'finalizing').length,
     completedToday: realCases.filter(c => {
       if (c.status !== 'finalized') return false;
       if (!c.updatedAt) return false;
@@ -1147,13 +1164,55 @@ const WorklistPage: React.FC = () => {
 
               {/* Tiles — right side, compact, act as filter buttons */}
               <div style={{ display: 'flex', gap: '6px', alignItems: 'stretch', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+
+                {/* ── TOTAL CASES — standalone summary tile, separated from filters ── */}
+                {(() => {
+                  const isActive = activeFilter === 'all';
+                  return (
+                    <button
+                      title={isActive ? 'Showing: All Cases — click to reset' : 'Show all cases'}
+                      onClick={() => { setActiveFilter(isActive ? 'all' : 'all'); setSelectedIndex(-1); setSelectedCaseId(null); }}
+                      style={{
+                        background:     isActive ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+                        border:         `1.5px solid ${isActive ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.14)'}`,
+                        boxShadow:      'none',
+                        borderRadius:   '8px',
+                        padding:        '6px 14px',
+                        backdropFilter: 'blur(10px)',
+                        minWidth:       '90px',
+                        cursor:         'pointer',
+                        transition:     'all 0.15s ease',
+                        textAlign:      'left' as const,
+                        outline:        'none',
+                        transform:      isActive ? 'translateY(-1px)' : 'none',
+                        marginRight:    '6px', // extra breathing room before divider
+                      }}
+                    >
+                      <div style={{ fontSize: '8px', fontWeight: 800, color: isActive ? '#e2e8f0' : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        {isActive && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#e2e8f0', display: 'inline-block', flexShrink: 0 }} />}
+                        ⬡ Total Cases
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: 800, color: '#e2e8f0', lineHeight: 1 }}>
+                        {stats.total}
+                      </div>
+                    </button>
+                  );
+                })()}
+
+                {/* ── Vertical divider ── */}
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.10)', alignSelf: 'stretch', margin: '0 4px', flexShrink: 0 }} />
+
+                {/* ── Filter tiles group ── */}
                 {([
-                  { key: 'all',        label: 'Total Cases',     count: stats.total,          color: '#e2e8f0', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.10)', activeBg: 'rgba(255,255,255,0.12)', activeBorder: 'rgba(255,255,255,0.5)',  glow: 'none' },
+                  { key: 'pool',       label: 'Pool Cases',      count: stats.pool,           color: '#6366f1', bg: 'rgba(99,102,241,0.05)',  border: 'rgba(99,102,241,0.18)',  activeBg: 'rgba(99,102,241,0.18)',  activeBorder: '#6366f1',               glow: '0 0 12px rgba(99,102,241,0.4)' },
+                  { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
                   { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
                   { key: 'inprogress', label: 'In Progress',     count: stats.inProgress,     color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
                   { key: 'review',     label: 'Needs Review',    count: stats.needsReview,    color: '#F59E0B', bg: 'rgba(245,158,11,0.05)',  border: 'rgba(245,158,11,0.18)',  activeBg: 'rgba(245,158,11,0.18)',  activeBorder: '#F59E0B',               glow: '0 0 12px rgba(245,158,11,0.4)' },
                   { key: 'amended',    label: 'Amended',         count: stats.amended,        color: '#8B5CF6', bg: 'rgba(139,92,246,0.05)',  border: 'rgba(139,92,246,0.18)',  activeBg: 'rgba(139,92,246,0.18)',  activeBorder: '#8B5CF6',               glow: '0 0 12px rgba(139,92,246,0.4)' },
                   { key: 'completed',  label: 'Completed Today', count: stats.completedToday, color: '#10B981', bg: 'rgba(16,185,129,0.05)',  border: 'rgba(16,185,129,0.18)',  activeBg: 'rgba(16,185,129,0.18)',  activeBorder: '#10B981',               glow: '0 0 12px rgba(16,185,129,0.4)' },
+                  { key: 'draft',      label: 'Draft',           count: stats.draft,          color: '#94a3b8', bg: 'rgba(148,163,184,0.05)', border: 'rgba(148,163,184,0.18)', activeBg: 'rgba(148,163,184,0.18)', activeBorder: '#94a3b8',               glow: '0 0 12px rgba(148,163,184,0.3)' },
+                  { key: 'finalizing', label: 'Finalizing',      count: stats.finalizing,     color: '#34d399', bg: 'rgba(52,211,153,0.05)',  border: 'rgba(52,211,153,0.18)',  activeBg: 'rgba(52,211,153,0.18)',  activeBorder: '#34d399',               glow: '0 0 12px rgba(52,211,153,0.4)' },
                 ] as const).map(tile => {
                   const isActive = activeFilter === tile.key;
                   return (
@@ -1234,6 +1293,20 @@ const WorklistPage: React.FC = () => {
         isOpen={showLogoutWarning}
         onClose={() => setShowLogoutWarning(false)}
         onLogout={handleLogout}
+      />
+      <PoolClaimModal
+        isOpen={!!claimModal}
+        caseId={claimModal?.caseId ?? null}
+        caseSummary={claimModal?.summary}
+        poolName={claimModal?.poolName}
+        currentUserId={CURRENT_USER_ID}
+        currentUserName={CURRENT_USER_NAME}
+        onAccepted={() => {
+          setClaimModal(null);
+          mockCaseService.listCasesForUser('current').then(setRealCases).catch(() => {});
+        }}
+        onPassed={() => setClaimModal(null)}
+        onClose={() => setClaimModal(null)}
       />
 
     </div>

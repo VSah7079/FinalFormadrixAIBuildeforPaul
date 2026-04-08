@@ -47,7 +47,7 @@ export const UserSelectorModal: React.FC<UserSelectorProps> = ({ onSelect, onClo
         <div style={{ padding: '20px', borderBottom: '1px solid #262626', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ margin: 0, color: '#FFF', fontSize: '18px' }}>Select Recipient</h3>
-            <p style={{ margin: '4px 0 0', color: '#8E8E93', fontSize: '12px' }}>Search staff, residents, or ***REMOVED***</p>
+            <p style={{ margin: '4px 0 0', color: '#8E8E93', fontSize: '12px' }}>Search staff, residents, or admin</p>
           </div>
           <button 
             onClick={onClose} 

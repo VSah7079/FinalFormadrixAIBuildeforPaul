@@ -68,6 +68,10 @@ interface AmendmentModalProps {
   onTextChange: (value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
+  /** If set, shows a deferred synoptic context banner and locks mode to amendment */
+  triggeredBySynopticTitle?: string;
+  /** Pre-fills the textarea — pathologist must review and actively submit */
+  prefillText?: string;
 }
 
 const AmendmentModal: React.FC<AmendmentModalProps> = ({
@@ -80,7 +84,16 @@ const AmendmentModal: React.FC<AmendmentModalProps> = ({
   onTextChange,
   onClose,
   onSubmit,
+  triggeredBySynopticTitle,
+  prefillText,
 }) => {
+  // Pre-fill text on first render if provided and textarea is empty
+  React.useEffect(() => {
+    if (show && prefillText && !amendmentText) {
+      onTextChange(prefillText);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show]);
   if (!show) return null;
 
   const isAmendment = amendmentMode === 'amendment';
@@ -99,7 +112,8 @@ const AmendmentModal: React.FC<AmendmentModalProps> = ({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Mode Switch */}
+        {/* Mode Switch — hidden when triggered by deferred synoptic (locked to amendment) */}
+        {!triggeredBySynopticTitle && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
           {(['amendment', 'addendum'] as const).map(mode => (
             <button
@@ -131,6 +145,29 @@ const AmendmentModal: React.FC<AmendmentModalProps> = ({
             </button>
           ))}
         </div>
+        )}
+
+        {/* Deferred synoptic context banner */}
+        {triggeredBySynopticTitle && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            padding: '10px 14px', marginBottom: 16,
+            background: 'rgba(8,145,178,0.06)',
+            border: '1px solid rgba(8,145,178,0.2)',
+            borderRadius: 8,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>🧪</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0891B2', marginBottom: 2 }}>
+                Deferred Synoptic Now Complete
+              </div>
+              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+                <strong>{triggeredBySynopticTitle}</strong> was deferred at sign-out pending ancillary results.
+                Review the pre-filled amendment text below, edit as needed, and actively submit to issue the amendment.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Title */}
         <h2

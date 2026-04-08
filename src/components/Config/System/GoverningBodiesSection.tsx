@@ -1,14 +1,14 @@
 /**
  * components/Config/System/GoverningBodiesSection.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Super-***REMOVED*** only section for configuring which governing bodies are active
+ * Super-admin only section for configuring which governing bodies are active
  * in pathscribe's Synoptic Library and nightly sync.
  *
  * Current scope (v1 stub):
  *   - Enable / disable each governing body
  *   - Enabled bodies appear in the Upload Protocol modal
  *   - Enabled bodies are included in the nightly sync
- *   - Super ***REMOVED*** role required to make changes
+ *   - Super admin role required to make changes
  *
  * Deferred (pending compliance/clinical informatics input):
  *   - License / subscription number tracking
@@ -251,7 +251,7 @@ const AddBodyModal: React.FC<{
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface GoverningBodiesSectionProps {
-  isSuperAdmin?: boolean;   // gate edits — read-only for regular ***REMOVED***s
+  isSuperAdmin?: boolean;   // gate edits — read-only for regular admins
 }
 
 const GoverningBodiesSection: React.FC<GoverningBodiesSectionProps> = ({
@@ -291,7 +291,7 @@ const GoverningBodiesSection: React.FC<GoverningBodiesSectionProps> = ({
           <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: 1.6 }}>
             Controls which governing bodies appear in the Synoptic Library upload modal
             and are included in the nightly protocol sync.
-            {!isSuperAdmin && <span style={{ color: '#f87171' }}> · Super ***REMOVED*** access required to make changes.</span>}
+            {!isSuperAdmin && <span style={{ color: '#f87171' }}> · Super admin access required to make changes.</span>}
           </p>
         </div>
 

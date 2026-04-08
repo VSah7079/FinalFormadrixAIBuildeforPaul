@@ -10,12 +10,12 @@
  *
  * Behaviour:
  *   - AVAILABLE_FONTS defines the full pool of fonts that can be approved.
- *     Add new fonts to that list to make them available to ***REMOVED***s.
+ *     Add new fonts to that list to make them available to admins.
  *   - Each font has a toggle. Enabled fonts appear in approvedFonts in
  *     SystemConfig and are shown in the editor toolbar font picker.
  *   - Disabled fonts are visible here but greyed out — easy to re-enable.
  *   - At least one font must remain enabled (toggle is blocked if it's the last).
- *   - Font names render in their own typeface so ***REMOVED***s can see what they're
+ *   - Font names render in their own typeface so admins can see what they're
  *     approving at a glance.
  *
  * Consumed by:
@@ -33,7 +33,7 @@ import '../../../pathscribe.css';
 import { useSystemConfig } from '../../../contexts/SystemConfigContext';
 
 // ─── Full available font pool ─────────────────────────────────────────────────
-// These are the fonts ***REMOVED***s can choose to approve or disable.
+// These are the fonts admins can choose to approve or disable.
 // Add new entries here to expand the pool — no other changes needed.
 
 interface FontEntry {

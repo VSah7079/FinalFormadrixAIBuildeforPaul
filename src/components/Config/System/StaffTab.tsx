@@ -258,7 +258,7 @@ const StaffTab: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', marginBottom: '4px' }}>Staff</h2>
-          <p style={{ fontSize: '14px', color: '#9AA0A6' }}>Manage pathologists, residents, and ***REMOVED***istrators.</p>
+          <p style={{ fontSize: '14px', color: '#9AA0A6' }}>Manage pathologists, residents, and administrators.</p>
         </div>
         <button
           style={{ padding: '8px 16px', background: '#8AB4F8', color: '#0d1117', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}

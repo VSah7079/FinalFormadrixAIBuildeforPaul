@@ -299,7 +299,7 @@ const ReportPreviewModal: React.FC<{
               </div>
             </div>
 
-            {/* ── Patient ***REMOVED***graphics ── */}
+            {/* ── Patient demographics ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0', marginBottom: '28px', border: '1.5px solid #334155', borderRadius: '4px', overflow: 'hidden', fontFamily: 'Inter, sans-serif' }}>
               {[
                 { label: 'Patient',   value: caseData.patient   },

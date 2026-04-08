@@ -44,6 +44,12 @@ export interface MedicalCode {
   code: string;
   display: string;
   source: CodeSource;
+  /**
+   * Which specimen this code applies to.
+   * null = case-level (applies to the whole case, not a specific specimen)
+   * string = the specimen ID from Case.specimens[n].id
+   */
+  specimenId?: string | null;
   /** Populated by AI only: 0-100 confidence score for this code assignment */
   confidence?: number;
   /** Populated by AI only: the report phrase that led to this code, e.g. 'Micro: "Lymphovascular invasion is present"' */

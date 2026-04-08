@@ -268,7 +268,7 @@ export const VoiceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  // If ***REMOVED*** disables voice mid-session, stop immediately
+  // If admin disables voice mid-session, stop immediately
   useEffect(() => {
     if (!voiceEnabled) {
       killMic();

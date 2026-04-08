@@ -26,6 +26,8 @@ import { messageService } from '../../services';
 import type { MessageThread } from '../../services';
 import { useMessaging } from '../../contexts/MessagingContext';
 import NavBar from '../NavBar/NavBar';
+import { useBreadcrumb } from '../../contexts/BreadcrumbContext';
+import { useDirtyState } from '../../contexts/DirtyStateContext';
 import '../../pathscribe.css';
 
 const formatMessageDate = (date: Date | string | number) => {
@@ -58,19 +60,30 @@ const formatMessageDate = (date: Date | string | number) => {
 
 const AppShell: React.FC = () => {
   const navigate = useNavigate();
+
   const { user } = useAuth();
   const userInitials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'DR';
   const handleLogout = useLogout();
   const location = useLocation();
-  const breadcrumbMap: Record<string, { label: string; parent?: string; parentPath?: string }> = {
-    '/':              { label: 'Home' },
-    '/worklist':      { label: 'Worklist', parent: 'Home', parentPath: '/' },
-    '/search':        { label: 'Search', parent: 'Home', parentPath: '/' },
-    '/audit':         { label: 'Audit Log', parent: 'Home', parentPath: '/' },
-    '/configuration': { label: 'Configuration', parent: 'Home', parentPath: '/' },
-    '/contribution':  { label: 'Contributions', parent: 'Home', parentPath: '/' },
+  const { crumbs, pushCrumb } = useBreadcrumb();
+  const { requestNavigate, pendingPath, confirmNavigate, cancelNavigate } = useDirtyState();
+
+  const guardedNavigate = React.useCallback((path: string) => {
+    requestNavigate(path, (p) => navigate(p));
+  }, [navigate, requestNavigate]);
+  const PAGE_LABELS: Record<string, string> = {
+    '/':              'Home',
+    '/worklist':      'Worklist',
+    '/search':        'Case Search',
+    '/audit':         'Audit Log',
+    '/configuration': 'Configuration',
+    '/contribution':  'Contributions',
   };
-  const crumb = breadcrumbMap[location.pathname];
+  React.useEffect(() => {
+    const label = PAGE_LABELS[location.pathname];
+    if (label) pushCrumb(label, location.pathname);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const {
     messages, setMessages,
@@ -246,13 +259,13 @@ const AppShell: React.FC = () => {
   // Placed after all handlers and derived values so every closure is in scope.
   useEffect(() => {
     // ── Page navigation ──────────────────────────────────────────────────────
-    const openHome               = () => navigate('/');
+    const openHome               = () => guardedNavigate('/');
     const openMessages           = () => setPortalOpen(true);
-    const openWorklist           = () => navigate('/worklist');
-    const openConfig             = () => navigate('/configuration');
-    const openSearch             = () => navigate('/search');
-    const openAudit              = () => navigate('/audit');
-    const openContribution       = () => navigate('/contribution');
+    const openWorklist           = () => guardedNavigate('/worklist');
+    const openConfig             = () => guardedNavigate('/configuration');
+    const openSearch             = () => guardedNavigate('/search');
+    const openAudit              = () => guardedNavigate('/audit');
+    const openContribution       = () => guardedNavigate('/contribution');
     const goBack                 = () => navigate(-1);
     const goForward              = () => navigate(1);
     const nextCase               = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_NEXT_CASE'));
@@ -418,25 +431,39 @@ const AppShell: React.FC = () => {
       
      {/* ── NAVBAR ── */}
       <NavBar
-        onLogoClick={() => navigate('/')}
+        onLogoClick={() => guardedNavigate('/')}
         onLogout={handleLogout}
         onProfileClick={() => setAboutOpen(true)}
       />
 
 
-      {/* Breadcrumb bar */}
-      {crumb && crumb.parent && (
+      {/* Breadcrumb bar — dynamic */}
+      {crumbs.length > 1 && (
         <div style={{ flexShrink: 0, padding: '5px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            onClick={() => navigate(crumb.parentPath!)}
-            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', padding: 0, fontWeight: 500 }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}
-            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
-          >
-            {crumb.parent}
-          </button>
-          <span style={{ color: '#334155', fontSize: '11px' }}>{'›'}</span>
-          <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>{crumb.label}</span>
+          {crumbs.map((crumb, i) => {
+            const isLast = i === crumbs.length - 1;
+            const isModal = crumb.path.includes('#');
+            return (
+              <React.Fragment key={crumb.path + i}>
+                {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>{'›'}</span>}
+                {isModal ? (
+                  <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 400 }}>{crumb.label}</span>
+                ) : isLast ? (
+                  <span style={{ color: '#0891B2', fontSize: '12px', fontWeight: 600 }}>{crumb.label}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => guardedNavigate(crumb.path)}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', padding: 0, fontWeight: 500 }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#64748b'}
+                  >
+                    {crumb.label}
+                  </button>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
       {/* Outlet — flex:1 so it fills remaining height exactly */}
@@ -447,7 +474,7 @@ const AppShell: React.FC = () => {
       {/* ── MESSAGES DRAWER ── */}
       {portalOpen && (
         <>
-          <div onClick={handleCloseDrawer} style={{ position: 'fixed', top: '70px', right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1999 }} />
+          <div onClick={handleCloseDrawer} style={{ position: 'fixed', top: '70px', right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', zIndex: 19999 }} />
 
           {/* ── Unified messaging surface ── */}
           <div className="ps-msg-drawer" style={{ width: '850px' }}>
@@ -773,6 +800,7 @@ const AppShell: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

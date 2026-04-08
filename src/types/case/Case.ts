@@ -91,9 +91,30 @@ export interface SynopticReportInstance {
   /** AI-suggested values per field — keyed by fieldId */
   aiSuggestions?: Record<string, AiFieldSuggestion>;
   /** Draft | finalized */
-  status: 'draft' | 'finalized';
+  status: 'draft' | 'finalized' | 'pending-countersign' | 'deferred';
+  /** If deferred, what is pending (e.g. 'IHC', 'Molecular panel', 'FISH') */
+  deferredPending?: string;
   /** Per-report comment (html) */
   comment?: string;
+
+  // ── Synoptic-level assignment (parent-child sign-off) ──────────────────
+  /** Pathologist assigned to finalise this specific synoptic (may differ from case owner) */
+  assignedTo?: string;
+  /** Display name of assigned pathologist — cached for UI */
+  assignedToName?: string;
+  /** User ID of who assigned it */
+  assignedBy?: string;
+  /** When this synoptic was assigned */
+  assignedAt?: string;
+  /** Whether case owner must countersign after assignee finalises */
+  requiresCountersign?: boolean;
+  /** Who countersigned */
+  countersignedBy?: string;
+  /** When countersigned */
+  countersignedAt?: string;
+  /** Note from the assigning pathologist */
+  assignmentNote?: string;
+
   /** Timestamps */
   createdAt: string;
   updatedAt: string;

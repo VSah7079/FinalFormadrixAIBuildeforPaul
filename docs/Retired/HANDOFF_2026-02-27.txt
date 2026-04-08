@@ -33,7 +33,7 @@ to the registry at that time. Future registry entries should include:
 Old version was read-only with static "Approved" badges. Rebuilt with:
   - Full font pool: 14 fonts across Serif, Sans-Serif, Monospace categories
   - Enable/disable toggle per font (custom Toggle component)
-  - Fonts rendered in their own typeface so ***REMOVED***s can preview them
+  - Fonts rendered in their own typeface so admins can preview them
   - "X of Y enabled" counter with warning when only 1 font remains
   - Guard preventing last font from being disabled
   - Search bar to filter fonts
@@ -105,7 +105,7 @@ LINEAR LIFECYCLE (enforced):
   draft → in_review → approved → published
   needs_changes available from in_review or approved → returns to in_review
   published is terminal (no further transitions)
-  reset always available (***REMOVED*** escape hatch)
+  reset always available (admin escape hatch)
 
 TRANSITION GATING:
   Buttons enabled/disabled based on current state.
@@ -134,7 +134,7 @@ PUBLISHED TERMINAL STATE:
 File: src/components/Config/Templates/TemplateRenderer.tsx
 
 ── 7. End User Guide — Protocol Review Workflow ─────────────────────────────
-Professional .docx generated for lab ***REMOVED***istrators and senior pathologists.
+Professional .docx generated for lab administrators and senior pathologists.
 10 sections: Overview, Getting There, Lifecycle (with state table + flow
 diagram), Reviewing a Protocol, Transition Reference (one section per button),
 Navigating Away, Active Protocols, All Protocols, Audit & Compliance, Common

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockMessageService, Message } from '../../services/messages/IMessageService';
+import { mockStaffDirectoryService } from '../../services/staffDirectory/mockStaffDirectoryService';
+import type { StaffMember } from '../../services/staffDirectory/IStaffDirectoryService';
 import { ID } from '../../services/types';
 
 interface ComposeModalProps {
@@ -9,32 +11,32 @@ interface ComposeModalProps {
   currentUser: { id: string; name: string };
 }
 
-const RECIPIENTS = [
-  { id: 'u2', name: 'Lab Manager' },
-  { id: 'u3', name: 'System Admin' },
-  { id: 'u4', name: 'Dr. Sarah Chen' },
-  { id: 'u5', name: 'Dr. Aristhone' },
-];
 
 export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onSuccess, currentUser }) => {
-  const [recipientId, setRecipientId] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [recipients,   setRecipients]  = useState<StaffMember[]>([]);
+  const [recipientId,  setRecipientId] = useState('');
+  const [subject,      setSubject]     = useState('');
+  const [body,         setBody]        = useState('');
+  const [isUrgent,     setIsUrgent]    = useState(false);
+  const [isSending,    setIsSending]   = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      mockStaffDirectoryService.listIndividuals().then(setRecipients);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSend = async () => {
-    const target = RECIPIENTS.find(r => r.id === recipientId);
+    const target = recipients.find(r => r.id === recipientId);
     if (!target || !subject || !body) return;
 
     setIsSending(true);
-    // Note: We do NOT pass isRead or isDeleted here per the IMessageService Omit type
     const result = await mockMessageService.send({
-      senderId: currentUser.id as ID,
-      senderName: currentUser.name,
-      recipientId: target.id as ID,
+      senderId:      currentUser.id as ID,
+      senderName:    currentUser.name,
+      recipientId:   target.id as ID,
       recipientName: target.name,
       subject,
       body,
@@ -42,7 +44,6 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
       isUrgent,
     });
 
-    setIsSending(true);
     if (result.ok) {
       onSuccess(result.data);
       setSubject('');
@@ -81,7 +82,9 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
               style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: 'white', padding: '8px', borderRadius: '4px' }}
             >
               <option value="">Select Recipient...</option>
-              {RECIPIENTS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              {recipients.map(r => (
+                <option key={r.id} value={r.id}>{r.name} — {r.role}</option>
+              ))}
             </select>
           </div>
 

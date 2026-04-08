@@ -2,7 +2,7 @@
  * components/Config/System/EnhancementRequestConfig.tsx
  * ─────────────────────────────────────────────────────────────────────────────
  * Admin-only configuration panel for the Enhancement Request feature.
- * Gated by user.role === '***REMOVED***' — render inside the System tab.
+ * Gated by user.role === 'admin' — render inside the System tab.
  *
  * Drop-in path: src/components/Config/System/EnhancementRequestConfig.tsx
  * ─────────────────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export const EnhancementRequestConfig: React.FC = () => {
   const { user } = useAuth();
 
   // Admin gate
-  if (user?.role !== '***REMOVED***') return null;
+  if (user?.role !== 'admin') return null;
 
   const [config,     setConfig]     = useState<Config>(loadEnhancementConfig);
   const [apiKey,     setApiKey]     = useState('');  // never persisted to localStorage
@@ -180,7 +180,7 @@ export const EnhancementRequestConfig: React.FC = () => {
               <input
                 value={emailInput}
                 onChange={e => { setEmailInput(e.target.value); setSaved(false); }}
-                placeholder="***REMOVED***@hospital.org, pathology@hospital.org"
+                placeholder="admin@hospital.org, pathology@hospital.org"
                 style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = T.accent}
                 onBlur={e  => e.currentTarget.style.borderColor = T.border}

@@ -48,7 +48,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import * as ***REMOVED***   from 'firebase-***REMOVED***';
+import * as admin   from 'firebase-admin';
 import * as fs      from 'fs';
 import * as path    from 'path';
 import { fileURLToPath } from 'url';
@@ -80,7 +80,7 @@ interface TerminologyMeta {
   jurisdiction:  string;
   version:       string;
   codeCount:     number;
-  seededAt:      ***REMOVED***.firestore.Timestamp;
+  seededAt:      admin.firestore.Timestamp;
   seededBy:      string;
   nextUpdateDue: string;
   notes?:        string;
@@ -186,11 +186,11 @@ if (!fs.existsSync(serviceAccountPath)) {
   process.exit(1);
 }
 
-***REMOVED***.initializeApp({
-  credential: ***REMOVED***.credential.cert(serviceAccountPath),
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccountPath),
 });
 
-const db = ***REMOVED***.firestore();
+const db = admin.firestore();
 
 // ─── List versions ────────────────────────────────────────────────────────────
 
@@ -273,7 +273,7 @@ async function seedSystem(
     jurisdiction: ['ICD-11', 'ICD-O'].includes(system) ? 'ALL' : jurisdiction,
     version,
     codeCount:     codes.length,
-    seededAt:      ***REMOVED***.firestore.Timestamp.now(),
+    seededAt:      admin.firestore.Timestamp.now(),
     seededBy:      `scripts/seedTerminology.ts — ${env}`,
     nextUpdateDue: NEXT_UPDATE[colKey] ?? 'TBC',
     ...(notes ? { notes } : {}),

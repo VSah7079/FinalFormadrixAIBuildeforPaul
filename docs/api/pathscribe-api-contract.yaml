@@ -155,7 +155,7 @@ paths:
       description: |
         Sets status to `archived`. Hard deletes are not permitted on published
         protocols. Drafts that have never been published may be hard-deleted
-        by passing `?permanent=true` (***REMOVED*** only).
+        by passing `?permanent=true` (admin only).
       parameters:
         - name: permanent
           in: query
@@ -183,7 +183,7 @@ paths:
         - `draft` → `in_review` (author submits for review)
         - `in_review` → `active` (reviewer approves)
         - `in_review` → `draft` (reviewer requests changes)
-        - `active` → `archived` (***REMOVED*** deprecates)
+        - `active` → `archived` (admin deprecates)
 
         All transitions are validated server-side and appended to the audit log.
       requestBody:
@@ -526,7 +526,7 @@ components:
       description: |
         JWT issued by the PathScribe identity provider.
         Claims must include: `sub` (userId), `name`, `email`,
-        `role` (one of: `author | reviewer | ***REMOVED***`), `npi` (optional),
+        `role` (one of: `author | reviewer | admin`), `npi` (optional),
         `specialty` (optional).
 
 security:
@@ -884,7 +884,7 @@ security:
           format: email
         role:
           type: string
-          enum: [author, reviewer, ***REMOVED***]
+          enum: [author, reviewer, admin]
         npi:
           type: string
           description: National Provider Identifier (10-digit)
@@ -912,7 +912,7 @@ security:
           type: string
         role:
           type: string
-          enum: [author, reviewer, ***REMOVED***]
+          enum: [author, reviewer, admin]
         npi:
           type: string
 

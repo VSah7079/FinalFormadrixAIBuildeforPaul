@@ -50,7 +50,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 interface AiProviderSettingsProps {
-  /** true = org ***REMOVED*** view (saves org config), false = dev override view */
+  /** true = org admin view (saves org config), false = dev override view */
   isAdmin?: boolean;
   onSaved?: () => void;
 }
@@ -106,7 +106,7 @@ const AiProviderSettings: React.FC<AiProviderSettingsProps> = ({
     setTestResult('testing');
     setTestError('');
     try {
-      // Dynamic import to avoid pulling the service into ***REMOVED*** bundles unnecessarily
+      // Dynamic import to avoid pulling the service into admin bundles unnecessarily
       const { callAi } = await import('@/services/aiIntegration/aiProviderService');
       const { text } = await callAi({
         system: 'You are a test assistant.',

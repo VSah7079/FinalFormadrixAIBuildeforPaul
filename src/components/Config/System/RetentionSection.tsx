@@ -80,8 +80,8 @@ const RetentionSection: React.FC = () => (
       background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
       fontSize: '12px', color: '#a78bfa', lineHeight: '1.5',
     }}>
-      🔒 Retention periods are currently set by your system ***REMOVED***istrator.
-      Contact your pathscribe ***REMOVED***istrator to request changes.
+      🔒 Retention periods are currently set by your system administrator.
+      Contact your pathscribe administrator to request changes.
     </div>
   </div>
 );

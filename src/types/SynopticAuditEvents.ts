@@ -19,8 +19,8 @@ export type SynopticAuditAction =
   | 'sync.auto_completed'
   | 'sync.auto_failed'
   | 'sync.manual_upload'
-  | 'sync.new_template_found'   // ← triggers ***REMOVED*** email
-  | 'sync.template_updated'     // ← triggers ***REMOVED*** email
+  | 'sync.new_template_found'   // ← triggers admin email
+  | 'sync.template_updated'     // ← triggers admin email
 
   // Lifecycle transitions — mirrors TemplateRenderer.tsx TRANSITION_ACTIONS
   | 'template.submitted_for_review'  // draft → in_review     ← email
@@ -80,7 +80,7 @@ export interface SynopticAuditEvent {
   optionId?:     string;
 }
 
-// ─── Actions that trigger ***REMOVED*** email ─────────────────────────────────────────
+// ─── Actions that trigger admin email ─────────────────────────────────────────
 
 export const NOTIFY_ON_ACTIONS: SynopticAuditAction[] = [
   'sync.new_template_found',

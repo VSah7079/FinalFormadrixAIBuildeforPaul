@@ -81,6 +81,18 @@ export type ActionId =
   // ── AI Assistance ─────────────────────────────────────────────────────────
   | 'ai.diagnosisSuggest' | 'ai.grossAssist' | 'ai.macroSuggest'
   | 'ai.viewConfidence' | 'ai.override'
+  | 'ai.reviewTriage' | 'ai.codeSuggest' | 'ai.narrativeGenerate'
+  // ── Delegation ────────────────────────────────────────────────────────────
+  | 'delegation.open' | 'delegation.reassign' | 'delegation.pool'
+  | 'delegation.secondOpinion' | 'delegation.casualReview'
+  | 'delegation.tumorBoard' | 'delegation.teaching'
+  | 'delegation.externalConsult' | 'delegation.assignSynoptic'
+  | 'delegation.countersign'
+  // ── Pool ──────────────────────────────────────────────────────────────────
+  | 'pool.viewCases' | 'pool.acceptCase' | 'pool.passCase'
+  // ── Synoptic ──────────────────────────────────────────────────────────────
+  | 'synoptic.jumpNextUnanswered' | 'synoptic.jumpNextRequired'
+  | 'synoptic.markDeferred' | 'synoptic.confirmField' | 'synoptic.overrideField'
   // ── Client & Physician ────────────────────────────────────────────────────
   | 'client.view' | 'client.edit'
   | 'physician.view' | 'physician.edit' | 'physician.verify'
@@ -95,8 +107,8 @@ export type ActionId =
   | 'billing.viewCodes' | 'billing.editCodes' | 'billing.submitClaim'
   | 'billing.viewHistory' | 'billing.exportBatch'
   // ── Admin ─────────────────────────────────────────────────────────────────
-  | '***REMOVED***.dashboard' | '***REMOVED***.reports' | '***REMOVED***.export'
-  | '***REMOVED***.backups' | '***REMOVED***.eventLog' | '***REMOVED***.impersonate';
+  | 'admin.dashboard' | 'admin.reports' | 'admin.export'
+  | 'admin.backups' | 'admin.eventLog' | 'admin.impersonate';
 
 export interface SystemAction {
   id: ActionId;
@@ -355,15 +367,71 @@ export const ACTION_GROUPS: ActionGroup[] = [
     ],
   },
   {
-    id: '***REMOVED***',
+    id: 'admin',
     title: 'System / Admin',
     actions: [
-      { id: '***REMOVED***.dashboard',   label: 'View System Dashboard',  internalKey: 'F24+PS024' },
-      { id: '***REMOVED***.reports',     label: 'Run System Reports',     internalKey: 'F24+PS025' },
-      { id: '***REMOVED***.export',      label: 'Export Data',            internalKey: 'F24+PS026' },
-      { id: '***REMOVED***.backups',     label: 'Manage Backups',         internalKey: 'F24+PS027' },
-      { id: '***REMOVED***.eventLog',    label: 'View Error / Event Log', internalKey: 'F24+PS028' },
-      { id: '***REMOVED***.impersonate', label: 'Impersonate User',       internalKey: 'F24+PS029', description: 'Super ***REMOVED*** only' },
+      { id: 'admin.dashboard',   label: 'View System Dashboard',  internalKey: 'F24+PS024' },
+      { id: 'admin.reports',     label: 'Run System Reports',     internalKey: 'F24+PS025' },
+      { id: 'admin.export',      label: 'Export Data',            internalKey: 'F24+PS026' },
+      { id: 'admin.backups',     label: 'Manage Backups',         internalKey: 'F24+PS027' },
+      { id: 'admin.eventLog',    label: 'View Error / Event Log', internalKey: 'F24+PS028' },
+      { id: 'admin.impersonate', label: 'Impersonate User',       internalKey: 'F24+PS029', description: 'Super admin only' },
+    ],
+  },
+
+
+  // ── AI CoPilot ───────────────────────────────────────────────────────────
+  {
+    id: 'ai_copilot',
+    title: 'AI CoPilot',
+    actions: [
+      { id: 'ai.diagnosisSuggest',   label: 'AI Diagnosis Suggestions',      description: 'View and interact with AI-suggested synoptic field values', internalKey: 'F17+PS001', shortcutable: true },
+      { id: 'ai.grossAssist',        label: 'AI Gross Description Assist',   description: 'AI assistance when entering gross description', internalKey: 'F17+PS002' },
+      { id: 'ai.macroSuggest',       label: 'AI Macro Suggestions',          description: 'AI suggests relevant macros based on diagnosis context', internalKey: 'F17+PS003' },
+      { id: 'ai.viewConfidence',     label: 'View AI Confidence Scores',     description: 'See confidence percentages on AI field suggestions', internalKey: 'F17+PS004' },
+      { id: 'ai.override',           label: 'Override AI Suggestion',        description: 'Mark an AI suggestion as disputed and enter own value', internalKey: 'F17+PS005', shortcutable: true },
+      { id: 'ai.reviewTriage',       label: 'AI Review Triage Modal',        description: 'Step through uncertain AI findings before finalization using keyboard/voice', internalKey: 'F17+PS006', shortcutable: true },
+      { id: 'ai.codeSuggest',        label: 'AI Code Suggestions',           description: 'AI suggests ICD-10, SNOMED, ICD-O, and CPT codes from case text', internalKey: 'F17+PS007' },
+      { id: 'ai.narrativeGenerate',  label: 'AI Narrative Generation',       description: 'Orchestrator mode — AI drafts the narrative report from synoptic answers', internalKey: 'F17+PS008' },
+    ],
+  },
+  // ── Delegation ────────────────────────────────────────────────────────────
+  {
+    id: 'delegation',
+    title: 'Delegation & Handoff',
+    actions: [
+      { id: 'delegation.open',           label: 'Open Delegate Modal',           description: 'Open the case delegation workflow (Alt+D, voice: "delegate case")', internalKey: 'F18+PS001', shortcutable: true },
+      { id: 'delegation.reassign',       label: 'Case Reassignment',             description: 'Full transfer of case ownership to another pathologist', internalKey: 'F18+PS002' },
+      { id: 'delegation.pool',           label: 'Move Case to Pool',             description: 'Transfer case to a workgroup pool queue for any available pathologist', internalKey: 'F18+PS003' },
+      { id: 'delegation.secondOpinion',  label: 'Request Second Opinion',        description: 'Formal consultation — original pathologist retains ownership. CPT 88321-88325 may apply.', internalKey: 'F18+PS004' },
+      { id: 'delegation.casualReview',   label: 'Request Casual Review',         description: 'Informal peer review with no formal obligation for reviewer', internalKey: 'F18+PS005' },
+      { id: 'delegation.tumorBoard',     label: 'Submit to Tumor Board',         description: 'Submit case for multidisciplinary team discussion — not a sign-out', internalKey: 'F18+PS006' },
+      { id: 'delegation.teaching',       label: 'Assign as Teaching Case',       description: 'Assign to resident or fellow for educational review', internalKey: 'F18+PS007' },
+      { id: 'delegation.externalConsult',label: 'External Consultation',         description: 'Send to outside institution or specialist. CPT 88321-88325 may apply.', internalKey: 'F18+PS008' },
+      { id: 'delegation.assignSynoptic', label: 'Assign Synoptic to Pathologist',description: 'Assign a specific specimen synoptic to another pathologist — they finalise, attending countersigns', internalKey: 'F18+PS009' },
+      { id: 'delegation.countersign',    label: 'Countersign Synoptic',          description: 'Attending countersigns a synoptic finalised by an assigned resident/fellow', internalKey: 'F18+PS010' },
+    ],
+  },
+  // ── Pool Cases ────────────────────────────────────────────────────────────
+  {
+    id: 'pool',
+    title: 'Pool Cases',
+    actions: [
+      { id: 'pool.viewCases',   label: 'View Pool Cases',   description: 'Access the Pool Cases tile and filtered worklist view', internalKey: 'F18+PS011', shortcutable: true },
+      { id: 'pool.acceptCase',  label: 'Accept Pool Case',  description: 'Claim and accept a case from a workgroup pool (Alt+A, voice: "accept case")', internalKey: 'F18+PS012', shortcutable: true },
+      { id: 'pool.passCase',    label: 'Pass Pool Case',    description: 'Decline a pool case and return it to the queue (Alt+P, voice: "pass case")', internalKey: 'F18+PS013', shortcutable: true },
+    ],
+  },
+  // ── Synoptic Navigation ───────────────────────────────────────────────────
+  {
+    id: 'synoptic_nav',
+    title: 'Synoptic Navigation',
+    actions: [
+      { id: 'synoptic.jumpNextUnanswered', label: 'Jump to Next Unanswered Field', description: 'Scroll to, highlight, and focus the next blank field (Alt+U, voice: "next unanswered")', internalKey: 'F17+PS009', shortcutable: true },
+      { id: 'synoptic.jumpNextRequired',   label: 'Jump to Next Required Field',   description: 'Scroll to, highlight, and focus the next required blank field (Alt+R, voice: "next required")', internalKey: 'F17+PS010', shortcutable: true },
+      { id: 'synoptic.markDeferred',       label: 'Mark Synoptic as Deferred',     description: 'Mark synoptic as pending ancillary results — bypasses required field check at sign-out', internalKey: 'F17+PS011' },
+      { id: 'synoptic.confirmField',       label: 'Confirm Field',                 description: 'Explicitly confirm an AI suggestion (Alt+C, voice: "confirm field")', internalKey: 'F17+PS007', shortcutable: true },
+      { id: 'synoptic.overrideField',      label: 'Override Field',                description: 'Mark AI suggestion as disputed and enter own value (Alt+E, voice: "override field")', internalKey: 'F17+PS008', shortcutable: true },
     ],
   },
 ];
@@ -439,6 +507,19 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'physician.view': true, 'client.view': true,
     'qc.viewQueue': true, 'qc.claimReview': true, 'qc.submitReview': true,
     'qc.escalateDiscordance': true, 'qc.viewDashboard': true,
+    // AI CoPilot
+    'ai.reviewTriage': true, 'ai.codeSuggest': true, 'ai.narrativeGenerate': true,
+    // Delegation
+    'delegation.open': true, 'delegation.reassign': true, 'delegation.pool': true,
+    'delegation.secondOpinion': true, 'delegation.casualReview': true,
+    'delegation.tumorBoard': true, 'delegation.teaching': true,
+    'delegation.externalConsult': true, 'delegation.assignSynoptic': true,
+    'delegation.countersign': true,
+    // Pool
+    'pool.viewCases': true, 'pool.acceptCase': true, 'pool.passCase': true,
+    // Synoptic Navigation
+    'synoptic.jumpNextUnanswered': true, 'synoptic.jumpNextRequired': true,
+    'synoptic.markDeferred': true, 'synoptic.confirmField': true, 'synoptic.overrideField': true,
   },
   Resident: {
     'system.openMessages': true, 'system.openWorklist': true,
@@ -467,6 +548,16 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'messages.send': true, 'messages.close': true,
     'physician.view': true, 'client.view': true,
     'qc.viewQueue': true, 'qc.viewDashboard': true,
+    // AI CoPilot — residents can use AI but not narrative generation
+    'ai.reviewTriage': true, 'ai.codeSuggest': true,
+    // Delegation — residents can request review but not reassign or countersign
+    'delegation.open': true, 'delegation.secondOpinion': true,
+    'delegation.casualReview': true, 'delegation.tumorBoard': true,
+    // Pool
+    'pool.viewCases': true, 'pool.acceptCase': true, 'pool.passCase': true,
+    // Synoptic Navigation
+    'synoptic.jumpNextUnanswered': true, 'synoptic.jumpNextRequired': true,
+    'synoptic.markDeferred': true, 'synoptic.confirmField': true, 'synoptic.overrideField': true,
   },
   Admin: {
     'system.openMessages': true, 'system.openWorklist': true,
@@ -487,8 +578,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'messages.delete': true, 'messages.markRead': true, 'messages.compose': true,
     'messages.send': true, 'messages.close': true,
     'qc.configure': true, 'qc.viewDashboard': true, 'qc.exportReport': true,
-    '***REMOVED***.dashboard': true, '***REMOVED***.reports': true, '***REMOVED***.export': true,
-    '***REMOVED***.backups': true, '***REMOVED***.eventLog': true,
+    'admin.dashboard': true, 'admin.reports': true, 'admin.export': true,
+    'admin.backups': true, 'admin.eventLog': true,
   },
   Physician: {},
 };

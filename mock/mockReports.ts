@@ -606,7 +606,7 @@ const reports: FullReport[] = [
 
 ,
 
-  // â”€â”€ Male ***REMOVED*** case â€” male breast carcinoma (clinically valid, ~1% of all breast cases) â”€â”€
+  // â”€â”€ Male demo case â€” male breast carcinoma (clinically valid, ~1% of all breast cases) â”€â”€
   full('S25-12346','Harrison, Marcus','Male','MRN-204471','1961-08-14','2026-03-10T08:00:00Z',
     'Left Breast Wide Local Excision',
     'Left breast wide local excision with sentinel lymph node biopsy, received fresh and oriented with sutures.',
@@ -638,7 +638,7 @@ const reportMap = new Map<string, Report>(
   reports.map(r => [r.accession, r])
 );
 reportMap.set('S23-9981', minimalReport);
-// Male ***REMOVED*** alias â€” accessible as both S25-12346 and the worklist entry
+// Male demo alias â€” accessible as both S25-12346 and the worklist entry
 // reportMap already contains S25-12346 from the main reports array
 
 export function getMockReport(accession: string): Report | null {

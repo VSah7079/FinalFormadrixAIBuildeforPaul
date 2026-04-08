@@ -6,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "pathologist" | "***REMOVED***";
+  role: "pathologist" | "admin";
   initials: string;
   voiceProfile: VoiceProfileId; // Required to ensure the VoiceProvider always has a value
 }
@@ -44,21 +44,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let authenticatedUser: User | null = null;
 
         // Mock Login Data with Voice Profiles
-        if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
+        if (email === "demo@pathscribe.ai" && password === "demo") {
           authenticatedUser = {
             id: "u1",
             name: "Dr. Sarah Johnson",
-            email: "***REMOVED***@pathscribe.ai",
+            email: "demo@pathscribe.ai",
             role: "pathologist",
             initials: "SJ",
             voiceProfile: "EN-US",
           };
-        } else if (email === "***REMOVED***@pathscribe.ai" && password === "***REMOVED***") {
+        } else if (email === "admin@pathscribe.ai" && password === "admin") {
           authenticatedUser = {
             id: "u3",
             name: "System Admin",
-            email: "***REMOVED***@pathscribe.ai",
-            role: "***REMOVED***",
+            email: "admin@pathscribe.ai",
+            role: "admin",
             initials: "SA",
             voiceProfile: "EN-US",
           };

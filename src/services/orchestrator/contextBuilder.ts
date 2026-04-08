@@ -5,8 +5,8 @@ export function buildOrchestratorContext(
   templateConfig: any
 ): OrchestratorContext {
   return {
-    ***REMOVED***Header: {
-      patientDemographics: caseData.patient.***REMOVED***graphics,
+    adminHeader: {
+      patientDemographics: caseData.patient.demographics,
       accessionNumber: caseData.accession,
       orderingPhysicians: caseData.orderingPhysicians,
       clinicalHistory: caseData.clinicalHistory,

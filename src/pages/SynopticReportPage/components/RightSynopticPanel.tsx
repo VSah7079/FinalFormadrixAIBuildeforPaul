@@ -1,7 +1,8 @@
 // src/pages/SynopticReportPage/components/RightSynopticPanel.tsx
 // Schema-driven synoptic field renderer — dark navy theme.
 
-import React from 'react';
+import React, { useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Case } from '@/types/case/Case';
 import type {
   EditorTemplate,
@@ -77,7 +78,10 @@ const FieldRow: React.FC<{
   onLabelClick?: () => void;
   isActive?: boolean;
   aiAttempted?: boolean;
-}> = ({ field, value, onChange, aiSuggestion, onVerify, onLabelClick, isActive = false, aiAttempted = false }) => {
+  isPulsing?: boolean;
+  fieldRef?: (el: HTMLDivElement | null) => void;
+  onFieldFocus?: (fieldId: string) => void;
+}> = ({ field, value, onChange, aiSuggestion, onVerify, onLabelClick, isActive = false, aiAttempted = false, isPulsing = false, fieldRef, onFieldFocus }) => {
   const strVal = (value ?? '') as string;
   const arrVal = Array.isArray(value) ? value as string[] : [];
   const ai = aiSuggestion;
@@ -106,30 +110,36 @@ const FieldRow: React.FC<{
 
   const handleActivate = () => {
     onLabelClick?.();
+    onFieldFocus?.(field.id);
   };
 
   return (
     <div
+      ref={fieldRef}
       style={{
         marginBottom: 18,
-        borderLeft: isActive && ai ? '3px solid rgba(8,145,178,0.6)'
-                  : isManualEntry      ? '3px solid rgba(168,85,247,0.5)'
+        borderLeft: isPulsing              ? '3px solid #f59e0b'
+                  : isActive && ai         ? '3px solid rgba(8,145,178,0.6)'
+                  : isManualEntry          ? '3px solid rgba(168,85,247,0.5)'
                   : aiAttempted && !ai && !hasValue ? '3px solid rgba(100,116,139,0.3)'
                   : '3px solid transparent',
-        paddingLeft: (ai || aiAttempted) ? 10 : 0,
-        transition: 'border-color 0.2s',
-        borderRadius: 2,
+        paddingLeft: (ai || aiAttempted || isPulsing) ? 10 : 0,
+        background: isPulsing ? 'rgba(245,158,11,0.06)' : 'transparent',
+        borderRadius: isPulsing ? 6 : 2,
+        outline: isPulsing ? '1px solid rgba(245,158,11,0.25)' : 'none',
+        outlineOffset: '3px',
+        transition: 'border-color 0.2s, background 0.4s ease, outline 0.4s ease',
       }}
-      onFocus={handleActivate}
+      onFocus={() => { handleActivate(); onFieldFocus?.(field.id); }}
     >
       {/* Field header row — click anywhere to activate highlight */}
       <div
         onClick={handleActivate}
-        style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', cursor: ai ? 'pointer' : 'default' }}
+        style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', cursor: 'pointer' }}
       >
         <span
-          style={{ color: isActive && ai ? '#e2e8f0' : '#94a3b8', transition: 'color 0.15s' }}
-          title={ai ? 'Click to highlight source in report' : undefined}
+          style={{ color: isActive ? '#e2e8f0' : '#94a3b8', transition: 'color 0.15s' }}
+          title={ai ? 'Click to highlight source in report' : 'Click to focus field'}
         >{field.label}</span>
         {field.required && <span style={{ color: '#f87171', fontSize: 10 }}>*</span>}
 
@@ -287,12 +297,69 @@ const TemplatePicker: React.FC<{ templates: TemplateOption[]; onSelect: (id: str
 );
 
 // ─── Main component ───────────────────────────────────────────
+// Handle exposed via ref for parent (SynopticReportPage) to call at finalize time
+export interface ReviewField {
+  fieldId:      string;
+  fieldLabel:   string;
+  sectionTitle: string;
+  aiValue:      string | string[];
+  confidence:   number;
+  source:       string;
+  verification: 'unverified' | 'verified' | 'disputed';
+}
+
+export interface MissingRequiredField {
+  sectionId: string;
+  sectionTitle: string;
+  fieldId: string;
+  fieldLabel: string;
+}
+
+export interface RightSynopticPanelHandle {
+  /**
+   * Validates required fields — call BEFORE sweepAndGetFinalState.
+   * Returns list of missing required fields, empty array if all complete.
+   */
+  validateRequired(): MissingRequiredField[];
+
+  /**
+   * Returns required fields that are AI-suggested, unverified, and below
+   * the confidence threshold — these need triage before finalization.
+   */
+  getUncertainRequiredFields(threshold?: number): ReviewField[];
+
+  /**
+   * Programmatically confirm or dispute a field from outside the panel.
+   * Used by AiReviewModal to update verification state.
+   */
+  setFieldVerification(fieldId: string, v: 'verified' | 'disputed'): void;
+
+  /**
+   * Sweeps all unverified AI suggestions to 'verified' and returns the
+   * final answers + suggestions state for persisting before finalization.
+   * Fields the pathologist changed are already marked 'overridden'.
+   * Fields without AI suggestions that were filled are already 'missed'.
+   */
+  sweepAndGetFinalState(): {
+    answers: Record<string, string | string[]>;
+    aiSuggestions: Record<string, AiSuggestion>;
+    verificationSummary: {
+      autoConfirmed: number;
+      explicitConfirmed: number;
+      overridden: number;
+      missed: number;
+      notFound: number;
+    };
+  };
+}
+
 interface RightSynopticPanelProps {
   caseData: Case | null;
   activeTab: string;
   activeReportInstanceId?: string;
   onReportInstanceChange?: (id: string) => void;
   onCaseUpdate?: (updated: Case) => void;
+  isDirty?: boolean;
   scrollToField?: string | null;
   onScrollComplete?: () => void;
   onHighlight?: (source: string | null) => void;
@@ -301,18 +368,34 @@ interface RightSynopticPanelProps {
 // Module-level template cache — survives re-renders, cleared only on page reload
 const TEMPLATE_CACHE = new Map<string, any>();
 
-const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initialCaseData, activeReportInstanceId, onCaseUpdate, scrollToField, onScrollComplete, onHighlight }) => {
+const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPanelProps>(({ caseData: initialCaseData, activeReportInstanceId, onCaseUpdate, isDirty, scrollToField, onScrollComplete, onHighlight }, ref) => {
   const orchestratorMode = React.useMemo(() => getOrchestratorMode(), []);
 
   const caseData = initialCaseData;
   const [templateDetail, setTemplateDetail] = React.useState<TemplateDetail | null>(null);
   const [answers, setAnswers]             = React.useState<Record<string, string | string[]>>({});
+  const loadedAnswersRef = React.useRef<string>('');
+
+  // Propagate answer changes to parent for dirty detection.
+  // Skip if answers match what was loaded (not a user edit).
+  React.useEffect(() => {
+    if (!caseData || !activeReportInstanceId) return;
+    const current = JSON.stringify(answers);
+    if (current === loadedAnswersRef.current) return; // same as loaded — skip
+    const updatedReports = (caseData.synopticReports ?? []).map(r =>
+      r.instanceId === activeReportInstanceId
+        ? { ...r, answers, updatedAt: new Date().toISOString() }
+        : r
+    );
+    onCaseUpdate?.({ ...caseData, synopticReports: updatedReports, updatedAt: new Date().toISOString() });
+  }, [answers]);
   const [availableTemplates, setAvailableTemplates] = React.useState<TemplateOption[]>([]);
   const [loading, setLoading]             = React.useState(true);
   const [error, setError]                 = React.useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = React.useState('');
   const [aiSuggestions, setAiSuggestions] = React.useState<Record<string, AiSuggestion>>({});
   const [activeFieldId, setActiveFieldId] = React.useState<string | null>(null);
+  const [pulsingFieldId, setPulsingFieldId] = React.useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = React.useState(0); // 0 = show all until loaded
 
   // Orchestrator
@@ -321,7 +404,63 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
   const [generateError, setGenerateError]       = React.useState<string | null>(null);
   const [lastGeneratedAt, setLastGeneratedAt]   = React.useState<Date | null>(null);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fieldRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+
+  // ── Jump to field helper — scrolls, activates, and pulses the field ────────
+  const jumpToField = React.useCallback((fieldId: string, sectionId: string) => {
+    setActiveSectionId(sectionId);
+    setActiveFieldId(fieldId);
+    setPulsingFieldId(fieldId);
+    lastJumpedFieldId.current = fieldId;
+    setTimeout(() => {
+      const el = fieldRefs.current[fieldId];
+      if (el) {
+        // Scroll to the input itself so the answer field is centred, not the label
+        const input = el.querySelector<HTMLElement>('input, select, textarea, [role="combobox"]');
+        const scrollTarget = input ?? el;
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (input) input.focus();
+      }
+      setTimeout(() => setPulsingFieldId(null), 2000);
+    }, 80);
+  }, []);
+
+  // ── Voice: next unanswered / next required ────────────────────────────────
+  React.useEffect(() => {
+    const handleNextUnanswered = () => {
+      if (!templateDetail) return;
+      const sections = templateDetail.template.sections.filter((s: any) => isVisible(s.visibleWhen, answers));
+      const all: { fieldId: string; sectionId: string }[] = [];
+      for (const sec of sections)
+        for (const f of sec.fields)
+          if (isVisible(f.visibleWhen, answers) && !answers[f.id])
+            all.push({ fieldId: f.id, sectionId: sec.id });
+      if (!all.length) return;
+      const cur = all.findIndex(x => x.fieldId === lastJumpedFieldId.current);
+      const next = all[cur >= 0 && cur < all.length - 1 ? cur + 1 : 0];
+      jumpToField(next.fieldId, next.sectionId);
+    };
+    const handleNextRequired = () => {
+      if (!templateDetail) return;
+      const sections = templateDetail.template.sections.filter((s: any) => isVisible(s.visibleWhen, answers));
+      const all: { fieldId: string; sectionId: string }[] = [];
+      for (const sec of sections)
+        for (const f of sec.fields)
+          if (f.required && isVisible(f.visibleWhen, answers) && !answers[f.id])
+            all.push({ fieldId: f.id, sectionId: sec.id });
+      if (!all.length) return;
+      const cur = all.findIndex(x => x.fieldId === lastJumpedFieldId.current);
+      const next = all[cur >= 0 && cur < all.length - 1 ? cur + 1 : 0];
+      jumpToField(next.fieldId, next.sectionId);
+    };
+    window.addEventListener('PATHSCRIBE_NEXT_UNANSWERED', handleNextUnanswered);
+    window.addEventListener('PATHSCRIBE_NEXT_REQUIRED',   handleNextRequired);
+    return () => {
+      window.removeEventListener('PATHSCRIBE_NEXT_UNANSWERED', handleNextUnanswered);
+      window.removeEventListener('PATHSCRIBE_NEXT_REQUIRED',   handleNextRequired);
+    };
+  }, [templateDetail, answers, jumpToField]);
+  const fieldRefs        = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const lastJumpedFieldId    = React.useRef<string | null>(null);
 
   // Load confidence threshold from AI behavior config
   React.useEffect(() => {
@@ -329,6 +468,133 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
       if (res.ok) setConfidenceThreshold(res.data.confidenceThreshold ?? 0);
     });
   }, []);
+
+  // ── Expose sweep method to parent via ref ────────────────────────────────────
+  useImperativeHandle(ref, () => ({
+    getUncertainRequiredFields(threshold?: number): ReviewField[] {
+      const effectiveThreshold = threshold ?? confidenceThreshold ?? 75;
+      if (!templateDetail) return [];
+      const results: ReviewField[] = [];
+      templateDetail.template.sections.forEach((sec: any) => {
+        if (!isVisible(sec.visibleWhen, answers)) return;
+        sec.fields.forEach((f: any) => {
+          if (!f.required) return;
+          if (!isVisible(f.visibleWhen, answers)) return;
+          const sug = aiSuggestions[f.id];
+          if (!sug) return;
+          if (sug.verification !== 'unverified') return;
+          if (sug.confidence >= effectiveThreshold) return; // high confidence — auto-confirm at finalize
+          results.push({
+            fieldId:      f.id,
+            fieldLabel:   f.label,
+            sectionTitle: sec.title,
+            aiValue:      sug.value as string | string[],
+            confidence:   sug.confidence,
+            source:       sug.source ?? '',
+            verification: sug.verification,
+          });
+        });
+      });
+      // Sort by confidence ascending — lowest confidence first
+      return results.sort((a, b) => a.confidence - b.confidence);
+    },
+
+    setFieldVerification(fieldId: string, v: 'verified' | 'disputed') {
+      setAiSuggestions(prev => {
+        const sug = prev[fieldId];
+        if (!sug) return prev;
+        const next = { ...prev, [fieldId]: { ...sug, verification: v } };
+        if (caseData && activeReportInstanceId) {
+          saveReportSuggestions(caseData.id, activeReportInstanceId, next);
+        }
+        return next;
+      });
+    },
+
+    validateRequired(): MissingRequiredField[] {
+      if (!templateDetail) return [];
+      const inst = caseData?.synopticReports?.find(r => r.instanceId === activeReportInstanceId) as any;
+
+      // If assigned to someone else, block finalization
+      if (inst?.assignedTo && inst.assignedTo !== 'PATH-001') { // TODO: replace with auth context
+        return [{
+          sectionId: '__assignment__',
+          sectionTitle: 'Assignment',
+          fieldId: '__assigned__',
+          fieldLabel: `This synoptic is assigned to ${inst.assignedToName ?? inst.assignedTo} — they must finalise it`,
+        }];
+      }
+
+      // If marked deferred, allow sign-out without required field validation
+      if (inst?.status === 'deferred') return [];
+      const missing: MissingRequiredField[] = [];
+      templateDetail.template.sections.forEach((sec: any) => {
+        if (!isVisible(sec.visibleWhen, answers)) return;
+        sec.fields.forEach((f: any) => {
+          if (!f.required) return;
+          if (!isVisible(f.visibleWhen, answers)) return;
+          const val = answers[f.id];
+          const isEmpty = !val || (Array.isArray(val) ? val.length === 0 : val.toString().trim() === '');
+          if (isEmpty) {
+            missing.push({
+              sectionId:    sec.id,
+              sectionTitle: sec.title,
+              fieldId:      f.id,
+              fieldLabel:   f.label,
+            });
+          }
+        });
+      });
+      return missing;
+    },
+
+    sweepAndGetFinalState() {
+      // Auto-confirm all unverified suggestions — finalization IS confirmation
+      const finalSuggestions = { ...aiSuggestions };
+      let autoConfirmed = 0;
+      let explicitConfirmed = 0;
+      let overridden = 0;
+      let missed = 0;
+      let notFound = 0;
+
+      Object.entries(finalSuggestions).forEach(([fieldId, sug]) => {
+        if (sug.verification === 'unverified') {
+          finalSuggestions[fieldId] = { ...sug, verification: 'verified' };
+          autoConfirmed++;
+        } else if (sug.verification === 'verified') {
+          explicitConfirmed++;
+        } else if (sug.verification === 'disputed') {
+          overridden++;
+        }
+      });
+
+      // Count fields filled without AI suggestion (missed)
+      if (templateDetail) {
+        templateDetail.template.sections.forEach((sec: any) => {
+          sec.fields.forEach((f: any) => {
+            if (!finalSuggestions[f.id]) {
+              const hasValue = Array.isArray(answers[f.id])
+                ? (answers[f.id] as string[]).length > 0
+                : !!(answers[f.id]);
+              if (hasValue) missed++;
+              else notFound++;
+            }
+          });
+        });
+      }
+
+      // Persist the swept state
+      if (caseData && activeReportInstanceId) {
+        saveReportSuggestions(caseData.id, activeReportInstanceId, finalSuggestions);
+      }
+
+      return {
+        answers,
+        aiSuggestions: finalSuggestions,
+        verificationSummary: { autoConfirmed, explicitConfirmed, overridden, missed, notFound },
+      };
+    },
+  }), [aiSuggestions, answers, templateDetail, caseData, activeReportInstanceId]);
 
   // Scroll logic
   React.useEffect(() => {
@@ -420,6 +686,8 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
                 prefilled[fieldId] = Array.isArray(sug.value) ? sug.value : sug.value;
               }
             });
+            // Snapshot the AI-prefilled state as baseline — only if case is clean
+            if (!isDirty) loadedAnswersRef.current = JSON.stringify(prefilled);
             return prefilled;
           });
           setTemplateDetail(detail);
@@ -428,6 +696,7 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
           if (cancelled) return;
           setAiSuggestions({});
           setAnswers(() => answersToLoad);
+          if (!isDirty) loadedAnswersRef.current = JSON.stringify(answersToLoad); // snapshot only when clean
           setTemplateDetail(null);
         }
       } catch (e: any) {
@@ -694,6 +963,8 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
             }
             onVerify={handleVerify}
             isActive={activeFieldId === f.id}
+            isPulsing={pulsingFieldId === f.id}
+            fieldRef={el => { fieldRefs.current[f.id] = el; }}
             aiAttempted={
               // Show "AI: not found" if:
               // 1. AI ran for this report (other suggestions exist), AND
@@ -708,6 +979,7 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
               const source = aiSuggestions[f.id]?.source ?? null;
               onHighlight?.(source);
             }}
+            onFieldFocus={(fid) => { lastJumpedFieldId.current = fid; }}
           />
         ))
       }
@@ -721,12 +993,58 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
           <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
             📝 {template.name}
           </h3>
+          {/* Synoptic assignment badge */}
+          {(() => {
+            const inst = caseData?.synopticReports?.find(r => r.instanceId === activeReportInstanceId) as any;
+            if (!inst?.assignedTo) return null;
+            const isAssignee = inst.assignedTo === 'PATH-001'; // TODO: replace with auth context
+            return (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                background: isAssignee ? 'rgba(6,182,212,0.15)' : 'rgba(100,116,139,0.15)',
+                color: isAssignee ? '#22d3ee' : '#94a3b8',
+                border: `1px solid ${isAssignee ? 'rgba(6,182,212,0.3)' : 'rgba(100,116,139,0.3)'}`,
+              }}>
+                {isAssignee ? '✎ Assigned to you' : `👤 ${inst.assignedToName ?? inst.assignedTo}`}
+                {inst.requiresCountersign && !isAssignee ? ' · countersign required' : ''}
+              </span>
+            );
+          })()}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {orchestratorMode && (
               <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: 'rgba(8,145,178,0.15)', color: '#38bdf8', border: '1px solid rgba(8,145,178,0.3)' }}>
                 ⚡ Orchestrator
               </span>
             )}
+            {/* Deferred status badge / toggle */}
+            {(() => {
+              const inst = caseData?.synopticReports?.find(r => r.instanceId === activeReportInstanceId) as any;
+              const isDeferred = inst?.status === 'deferred';
+              return (
+                <button
+                  title={isDeferred ? 'Marked as deferred — click to unmark' : 'Mark this synoptic as deferred (ancillary results pending)'}
+                  onClick={() => {
+                    if (!caseData || !activeReportInstanceId) return;
+                    const idx = (caseData.synopticReports ?? []).findIndex(r => r.instanceId === activeReportInstanceId);
+                    if (idx < 0) return;
+                    const updated = { ...caseData };
+                    const reports = [...(updated.synopticReports ?? [])];
+                    reports[idx] = { ...reports[idx], status: isDeferred ? 'draft' : 'deferred' } as any;
+                    updated.synopticReports = reports;
+                    onCaseUpdate?.(updated as any);
+                  }}
+                  style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20,
+                    background: isDeferred ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.08)',
+                    border: `1px solid ${isDeferred ? 'rgba(245,158,11,0.4)' : 'rgba(100,116,139,0.2)'}`,
+                    color: isDeferred ? '#fbbf24' : '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isDeferred ? '⏳ Deferred' : '⏳ Mark Deferred'}
+                </button>
+              );
+            })()}
             <span style={progressBadgeStyle}>
               <span>{reqAnswered}/{reqTotal} req · {answered}/{total} total</span>
               <span style={{ display: 'inline-block', width: 48, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden', verticalAlign: 'middle' }}>
@@ -740,20 +1058,45 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
           <span style={{ fontSize: 11, color: '#0369a1', fontWeight: 600 }}>Jump to:</span>
           <button
             onClick={() => {
+              // Collect all unanswered fields across all visible sections in order
+              const allUnanswered: { fieldId: string; sectionId: string }[] = [];
               for (const sec of visibleSections) {
-                const hasUnanswered = sec.fields.some(f => isVisible(f.visibleWhen, answers) && !answers[f.id]);
-                if (hasUnanswered) { setActiveSectionId(sec.id); break; }
+                for (const f of sec.fields) {
+                  if (isVisible(f.visibleWhen, answers) && !answers[f.id]) {
+                    allUnanswered.push({ fieldId: f.id, sectionId: sec.id });
+                  }
+                }
               }
+              if (allUnanswered.length === 0) return;
+              const currentIdx = allUnanswered.findIndex(x => x.fieldId === lastJumpedFieldId.current);
+              // Go to next after current; wrap to start if at end or not found
+              const nextIdx = currentIdx >= 0 && currentIdx < allUnanswered.length - 1
+                ? currentIdx + 1
+                : 0;
+              const next = allUnanswered[nextIdx];
+              jumpToField(next.fieldId, next.sectionId);
             }}
             style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: '1.5px solid #0891B2', background: 'transparent', color: '#38bdf8', cursor: 'pointer' }}>
             → Next Unanswered {total - answered > 0 ? `(${total - answered})` : '✓'}
           </button>
           <button
             onClick={() => {
+              // Collect all unanswered required fields in order
+              const allRequired: { fieldId: string; sectionId: string }[] = [];
               for (const sec of visibleSections) {
-                const hasReq = sec.fields.some(f => f.required && isVisible(f.visibleWhen, answers) && !answers[f.id]);
-                if (hasReq) { setActiveSectionId(sec.id); break; }
+                for (const f of sec.fields) {
+                  if (f.required && isVisible(f.visibleWhen, answers) && !answers[f.id]) {
+                    allRequired.push({ fieldId: f.id, sectionId: sec.id });
+                  }
+                }
               }
+              if (allRequired.length === 0) return;
+              const currentIdx = allRequired.findIndex(x => x.fieldId === lastJumpedFieldId.current);
+              const nextIdx = currentIdx >= 0 && currentIdx < allRequired.length - 1
+                ? currentIdx + 1
+                : 0;
+              const next = allRequired[nextIdx];
+              jumpToField(next.fieldId, next.sectionId);
             }}
             style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
               border: `1.5px solid ${reqAnswered < reqTotal ? '#dc2626' : '#10b981'}`,
@@ -815,6 +1158,8 @@ const RightSynopticPanel: React.FC<RightSynopticPanelProps> = ({ caseData: initi
       )}
     </div>
   );
-};
+});
+
+RightSynopticPanel.displayName = 'RightSynopticPanel';
 
 export default RightSynopticPanel;

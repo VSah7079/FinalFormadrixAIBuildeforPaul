@@ -34,7 +34,7 @@ const AboutModal: React.FC<AboutModalProps> = ({
           PathScribe AI is a prototype interface for AI‑assisted synoptic
           reporting and pathology workflow orchestration.  
           <br />
-          This environment is intended for design, validation, and ***REMOVED***nstration
+          This environment is intended for design, validation, and demonstration
           only.
         </p>
 

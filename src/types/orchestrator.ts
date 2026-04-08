@@ -1,5 +1,5 @@
 export interface OrchestratorContext {
-  ***REMOVED***Header: {
+  adminHeader: {
     patientDemographics: any[];
     accessionNumber: string;
     orderingPhysicians: any[];

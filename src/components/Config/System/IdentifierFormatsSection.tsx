@@ -4,7 +4,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Configuration UI for institution-specific identifier formats.
  *
- * Allows ***REMOVED***s to set the regex patterns used by the Search page's smart
+ * Allows admins to set the regex patterns used by the Search page's smart
  * identifier box to auto-detect accession numbers, MRNs, and patient names.
  *
  * Usage — add to components/Config/System/index.tsx:

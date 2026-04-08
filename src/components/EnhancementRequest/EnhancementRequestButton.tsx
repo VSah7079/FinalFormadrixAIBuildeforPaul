@@ -9,7 +9,7 @@
  *
  * mode="qa"
  *   🐛 bug — submits QA / testing feedback
- *   Routes to QA team email (QA_EMAIL in config), cc's ***REMOVED***
+ *   Routes to QA team email (QA_EMAIL in config), cc's admin
  *   Categories restricted to QA-relevant set
  *   Only rendered in non-production environments unless showInProd=true
  *

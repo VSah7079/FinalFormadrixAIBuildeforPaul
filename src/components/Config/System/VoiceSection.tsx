@@ -1,5 +1,5 @@
 // src/components/Config/System/VoiceSection.tsx
-// PathScribe ***REMOVED*** toggle — enables or disables voice for a client deployment.
+// PathScribe admin toggle — enables or disables voice for a client deployment.
 // One switch only. If the deployment has a Gemini key, users get AI + Local.
 // If not, they get Local only. That's handled automatically — no config needed.
 

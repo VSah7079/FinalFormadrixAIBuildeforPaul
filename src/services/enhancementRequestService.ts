@@ -31,7 +31,7 @@ export interface EnhancementRequestConfig {
   mode:              RoutingMode;
   emailRecipients:   string[];       // enhancement request recipients
   qaEmailRecipients: string[];       // QA feedback recipients (VITE_QA_EMAIL)
-  qaAdminCc:         string[];       // ***REMOVED*** cc for QA submissions (VITE_QA_ADMIN_CC)
+  qaAdminCc:         string[];       // admin cc for QA submissions (VITE_QA_ADMIN_CC)
   qaEnabled:         boolean;        // show QA feedback button in nav
   emailConfirmation: boolean;
   portalUrl:         string;
@@ -80,7 +80,7 @@ export function loadEnhancementConfig(): EnhancementRequestConfig {
     emailRecipients:   import.meta.env.VITE_ENHANCEMENT_EMAIL
                          ? [import.meta.env.VITE_ENHANCEMENT_EMAIL as string]
                          : [],
-    // QA / testing feedback — QA team + ***REMOVED*** cc
+    // QA / testing feedback — QA team + admin cc
     qaEmailRecipients: import.meta.env.VITE_QA_EMAIL
                          ? [import.meta.env.VITE_QA_EMAIL as string]
                          : [],

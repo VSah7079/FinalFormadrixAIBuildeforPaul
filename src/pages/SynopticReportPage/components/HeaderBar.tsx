@@ -3,12 +3,12 @@
 // Styles extracted directly from original SynopticReportPage monolith.
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Case } from '@/types/case/Case';
 
 interface HeaderBarProps {
   caseData: Case | null;
   onSignOut: () => void;
+  onNavigate: (path: string) => void;
   aiConfidence?: number; // 0–100
 }
 
@@ -47,9 +47,9 @@ const progressSteps = [
 const HeaderBar: React.FC<HeaderBarProps> = ({
   caseData,
   onSignOut,
+  onNavigate,
   aiConfidence,
 }) => {
-  const navigate = useNavigate();
 
   const accession  = caseData?.accession?.fullAccession ?? caseData?.accession?.accessionNumber ?? '—';
   const patient    = caseData?.patient ? `${caseData.patient.lastName}, ${caseData.patient.firstName}` : '—';
@@ -74,14 +74,14 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       {/* Breadcrumb */}
       <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
         <span
-          onClick={() => navigate('/')}
+          onClick={() => onNavigate('/')}
           style={{ cursor: 'pointer' }}
           onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
           onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
         >Home</span>
         <span style={{ color: '#cbd5e1' }}>›</span>
         <span
-          onClick={() => navigate('/worklist')}
+          onClick={() => onNavigate('/worklist')}
           style={{ cursor: 'pointer' }}
           onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
           onMouseLeave={e => e.currentTarget.style.color = '#64748b'}

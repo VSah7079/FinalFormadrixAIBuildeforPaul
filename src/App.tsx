@@ -12,6 +12,10 @@ import { SpecimenProvider } from "./contexts/useSpecimens";
 import { SubspecialtyProvider } from "./contexts/useSubspecialties";
 import { SpecimenDictionaryProvider } from "./components/Config/System/useSpecimenDictionary";
 
+// Breadcrumb
+import { BreadcrumbProvider } from './contexts/BreadcrumbContext';
+import { DirtyStateProvider } from './contexts/DirtyStateProvider';
+
 // Voice Integration
 import { VoiceProvider } from "./contexts/VoiceProvider";
 
@@ -88,6 +92,8 @@ const App: React.FC = () => (
           <SpecimenProvider>
             <SubspecialtyProvider>
               <SpecimenDictionaryProvider>
+                <DirtyStateProvider>
+                <BreadcrumbProvider>
                 <VoiceProvider>
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
@@ -150,6 +156,8 @@ const App: React.FC = () => (
                     </Routes>
                   </Suspense>
                 </VoiceProvider>
+                </BreadcrumbProvider>
+                </DirtyStateProvider>
               </SpecimenDictionaryProvider>
             </SubspecialtyProvider>
           </SpecimenProvider>

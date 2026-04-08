@@ -4,7 +4,7 @@
 // Left panel: applied codes per case/specimen with strikethrough/undo.
 // Right panel: system tabs + hierarchy filters + live search.
 
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { callAi } from '@/services/aiIntegration/aiProviderService';
 import '../../../pathscribe.css';
 import type { MedicalCode } from '../synopticTypes';
@@ -12,7 +12,7 @@ import { searchCodes, type CodeResult, type SnomedFilter } from './codeSearchSer
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface SpecimenOption { index: number; id: number; name: string; }
+interface SpecimenOption { index: number; id: number; specimenId?: string | null; name: string; }
 
 export interface AiCodeSuggestion {
   code: string;
@@ -26,7 +26,7 @@ export interface AiCodeSuggestion {
 export interface AddCodeModalProps {
   existingCodes: MedicalCode[];
   allSpecimens: SpecimenOption[];
-  activeSpecimenIndex: number;
+  activeSpecimenIndex?: number;  // reserved for future per-specimen default targeting
   onAddToSpecimens: (codes: Omit<MedicalCode, 'id' | 'source'>[], specimenIndices: number[]) => void;
   onClose: () => void;
   /** Optional — if provided, enables AI code suggestions */
@@ -57,7 +57,7 @@ const SYSTEMS: { id: CodeSystem; label: string; accent: string }[] = [
   { id: 'ICD11',  label: 'ICD-11',   accent: '#0369a1' },
   { id: 'LOINC',  label: 'LOINC',    accent: '#0f766e' },
   { id: 'ICDO',   label: 'ICD-O',    accent: '#b45309' },
-  { id: 'CPT',    label: 'CPT',      accent: '#b45309' },
+  { id: 'CPT',    label: 'CPT',      accent: '#7c3aed' },
 ];
 
 const SNOMED_FILTERS: { id: SnomedFilter; label: string; hint: string }[] = [
@@ -114,7 +114,7 @@ const IcoUndo = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const AddCodeModal: React.FC<AddCodeModalProps> = ({
-  existingCodes, allSpecimens, activeSpecimenIndex, onAddToSpecimens, onClose,
+  existingCodes, allSpecimens, onAddToSpecimens, onClose,
   caseText, synopticAnswers, templateName, synopticDerivedCodes, narrativeText,
 }) => {
   const [system,       setSystem]       = useState<CodeSystem>('SNOMED');
@@ -125,10 +125,19 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
   const [focused,      setFocused]      = useState(-1);
   const [target,       setTarget]       = useState<number | null>(null);
   const [applied,      setApplied]      = useState<PendingCode[]>(() =>
-    existingCodes.map(c => ({
-      code: c.code, display: c.display, system: c.system,
-      specimenIndex: null, pendingDelete: false,
-    }))
+    existingCodes.map(c => {
+      // Resolve specimenId back to specimenIndex so left panel groups correctly
+      const specOption = (c as any).specimenId
+        ? allSpecimens.find(s => s.specimenId === (c as any).specimenId)
+        : null;
+      return {
+        code:          c.code,
+        display:       c.display,
+        system:        c.system,
+        specimenIndex: specOption ? specOption.index : null,
+        pendingDelete: false,
+      };
+    })
   );
   const [isDirty, setIsDirty] = useState(false);
   const [aiSuggestions,    setAiSuggestions]    = useState<AiCodeSuggestion[]>([]);
@@ -138,8 +147,11 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
   const [aiPanelCollapsed, setAiPanelCollapsed] = useState(false);
 
 
-  const [saving,  setSaving]  = useState(false);
-  const inputRef   = useRef<HTMLInputElement>(null);
+  const [saving,       setSaving]       = useState(false);
+  const [dragCode,     setDragCode]     = useState<PendingCode | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<number | null | 'none'>('none'); // null=case, number=spec, 'none'=not dragging
+  const [contextMenu,  setContextMenu]  = useState<{ entry: PendingCode; x: number; y: number } | null>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const sysInfo = SYSTEMS.find(s => s.id === system) ?? SYSTEMS[0];
@@ -203,6 +215,18 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
       c.code === code && c.specimenIndex === specimenIndex ? { ...c, pendingDelete: false } : c
     ));
     setIsDirty(true);
+  }, []);
+
+  // Move a code from one specimen/case to another
+  const moveCode = useCallback((entry: PendingCode, toSpecimenIndex: number | null) => {
+    if (entry.specimenIndex === toSpecimenIndex) return; // already there
+    setApplied(prev => prev.map(c =>
+      c.code === entry.code && c.specimenIndex === entry.specimenIndex
+        ? { ...c, specimenIndex: toSpecimenIndex, pendingDelete: false }
+        : c
+    ));
+    setIsDirty(true);
+    setContextMenu(null);
   }, []);
 
   // ── Save ──────────────────────────────────────────────────────────────────
@@ -298,8 +322,8 @@ Rules:
     if (synopticDerivedCodes?.length) {
       setAiSuggestions(synopticDerivedCodes);
       setAiRan(true);
-    } else if (caseText) {
-      // Auto-run AI (uses narrative if available, falls back to gross/micro/ancillary)
+    } else if (caseText && !aiRan) {
+      // Auto-run AI once on open — aiRan guard prevents re-running on re-render
       generateAiCodes();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,16 +331,42 @@ Rules:
 
   const handleSave = useCallback(() => {
     setSaving(true);
-    const toAdd = applied.filter(c =>
-      !c.pendingDelete && !existingCodes.some(e => e.code === c.code && e.system === c.system)
-    );
-    if (toAdd.length > 0) {
+    // Include codes that are new OR have been moved to a different specimen
+    const toAdd = applied.filter(c => {
+      if (c.pendingDelete) return false;
+      const original = existingCodes.find(e => e.code === c.code && e.system === c.system);
+      if (!original) return true; // new code
+      // Check if specimenId changed — if so, it's a move and needs saving
+      const originalSpecId = (original as any).specimenId ?? null;
+      const newSpecOption  = c.specimenIndex !== null
+        ? allSpecimens.find(s => s.index === c.specimenIndex)
+        : null;
+      const newSpecId = newSpecOption ? (newSpecOption as any).specimenId ?? String(newSpecOption.id) : null;
+      return originalSpecId !== newSpecId; // moved
+    });
+    // Build complete resolved code list — source of truth for the parent
+    const allActiveCodes = applied
+      .filter(c => !c.pendingDelete)
+      .map(c => {
+        const sp = c.specimenIndex !== null
+          ? allSpecimens.find(s => s.index === c.specimenIndex)
+          : null;
+        return {
+          code:       c.code,
+          display:    c.display,
+          system:     c.system as MedicalCode['system'],
+          specimenId: sp ? ((sp as any).specimenId ?? String(sp.id)) : null,
+        };
+      });
+
+    const hasDeletions = applied.some(c => c.pendingDelete);
+    if (toAdd.length > 0 || hasDeletions) {
       const specimenIndices = [...new Set(toAdd.map(c => c.specimenIndex ?? 0))];
-      onAddToSpecimens(toAdd, specimenIndices);
+      onAddToSpecimens(allActiveCodes, specimenIndices);
     } else {
       onClose();
     }
-  }, [applied, existingCodes, onAddToSpecimens, onClose]);
+    }, [applied, existingCodes, onAddToSpecimens, onClose]);
 
   // ── Keyboard ──────────────────────────────────────────────────────────────
 
@@ -332,25 +382,155 @@ Rules:
   const toAddCount    = applied.filter(c => !c.pendingDelete && !existingCodes.some(e => e.code === c.code)).length;
   const toRemoveCount = applied.filter(c => c.pendingDelete).length;
 
-  // ── CodeChip ──────────────────────────────────────────────────────────────
+  // ── CodeChip — draggable + right-click context menu ──────────────────────
 
-  const CodeChip: React.FC<{ entry: PendingCode }> = ({ entry }) => (
-    <div className={`fm-flag-chip${entry.pendingDelete ? ' deleted' : ''}`}>
-      <span className={`fm-flag-chip-name${entry.pendingDelete ? ' strikethrough' : ''}`}>
-        <span style={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.65, marginRight: 4 }}>{entry.code}</span>
-        {entry.display}
-      </span>
-      {entry.pendingDelete ? (
-        <button className="fm-chip-undo-btn" onClick={() => undoRemove(entry.code, entry.specimenIndex)} title="Undo removal">
-          <IcoUndo />
-        </button>
-      ) : (
-        <button className="fm-chip-remove-btn" onClick={() => removeCode(entry.code, entry.specimenIndex)} title="Remove code">
-          <IcoTrash />
-        </button>
-      )}
-    </div>
+  // Grabber icon SVG
+  const IcoGrab = () => (
+    <svg width="10" height="14" viewBox="0 0 10 14" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
+      <circle cx="3" cy="2.5" r="1.2" fill="currentColor"/>
+      <circle cx="7" cy="2.5" r="1.2" fill="currentColor"/>
+      <circle cx="3" cy="7"   r="1.2" fill="currentColor"/>
+      <circle cx="7" cy="7"   r="1.2" fill="currentColor"/>
+      <circle cx="3" cy="11.5" r="1.2" fill="currentColor"/>
+      <circle cx="7" cy="11.5" r="1.2" fill="currentColor"/>
+    </svg>
   );
+
+  const CodeChip: React.FC<{ entry: PendingCode }> = ({ entry }) => {
+    const [hovered, setHovered] = React.useState(false);
+    return (
+      <div
+        className={`fm-flag-chip${entry.pendingDelete ? ' deleted' : ''}`}
+        draggable={!entry.pendingDelete}
+        onDragStart={e => {
+          setDragCode(entry);
+          e.dataTransfer.effectAllowed = 'move';
+        }}
+        onDragEnd={() => { setDragCode(null); setDragOverTarget('none'); }}
+        onContextMenu={e => {
+          e.preventDefault();
+          if (!entry.pendingDelete) setContextMenu({ entry, x: e.clientX, y: e.clientY });
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          cursor:     entry.pendingDelete ? 'default' : 'grab',
+          background: hovered && !entry.pendingDelete ? 'rgba(56,189,248,0.08)' : undefined,
+          borderColor: hovered && !entry.pendingDelete ? 'rgba(56,189,248,0.3)' : undefined,
+          transition: 'background 0.12s, border-color 0.12s',
+        }}
+      >
+        {/* Grabber — only shown when not deleted */}
+        {!entry.pendingDelete && (
+          <span style={{ display: 'flex', alignItems: 'center', marginRight: 2, color: '#94a3b8' }}>
+            <IcoGrab />
+          </span>
+        )}
+        <span className={`fm-flag-chip-name${entry.pendingDelete ? ' strikethrough' : ''}`}>
+          <span style={{ fontSize: 10, fontFamily: 'monospace', opacity: 0.65, marginRight: 4 }}>{entry.code}</span>
+          {entry.display}
+        </span>
+        {entry.pendingDelete ? (
+          <button className="fm-chip-undo-btn" onClick={() => undoRemove(entry.code, entry.specimenIndex)} title="Undo removal">
+            <IcoUndo />
+          </button>
+        ) : (
+          <button className="fm-chip-remove-btn" onClick={() => removeCode(entry.code, entry.specimenIndex)} title="Remove code">
+            <IcoTrash />
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // ── Drop target wrapper ───────────────────────────────────────────────────
+
+  const DropZone: React.FC<{ specimenIndex: number | null; children: React.ReactNode }> = ({ specimenIndex, children }) => {
+    const isOver = dragCode !== null && dragOverTarget === specimenIndex;
+    const isSame = dragCode?.specimenIndex === specimenIndex;
+    return (
+      <div
+        onDragOver={e => { e.preventDefault(); if (!isSame) setDragOverTarget(specimenIndex); }}
+        onDragLeave={() => setDragOverTarget('none')}
+        onDrop={e => {
+          e.preventDefault();
+          if (dragCode && !isSame) moveCode(dragCode, specimenIndex);
+          setDragOverTarget('none');
+        }}
+        style={{
+          borderRadius: 8,
+          border: isOver && !isSame ? '1.5px dashed #38bdf8' : '1.5px solid transparent',
+          background: isOver && !isSame ? 'rgba(8,145,178,0.08)' : 'transparent',
+          transition: 'all 0.12s',
+          padding: '2px 0',
+          marginBottom: 4,
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+
+  // ── Context menu ──────────────────────────────────────────────────────────
+
+  const ContextMenu = contextMenu ? (
+    <div
+      onClick={() => setContextMenu(null)}
+      style={{ position: 'fixed', inset: 0, zIndex: 99999 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          left: Math.min(contextMenu.x, window.innerWidth - 220),
+          top:  Math.min(contextMenu.y, window.innerHeight - 200),
+          width: 210,
+          background: '#1e293b',
+          border: '1px solid #334155',
+          borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          overflow: 'hidden',
+          zIndex: 100000,
+        }}
+      >
+        <div style={{ padding: '8px 12px 6px', fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          Move to
+        </div>
+
+        {/* Case Level */}
+        {contextMenu.entry.specimenIndex !== null && (
+          <button
+            onClick={() => moveCode(contextMenu.entry, null)}
+            style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(8,145,178,0.15)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <IcoCase />
+            Case Level
+          </button>
+        )}
+
+        {/* Specimens */}
+        {allSpecimens
+          .filter(sp => sp.index !== contextMenu.entry.specimenIndex)
+          .map(sp => (
+            <button
+              key={sp.index}
+              onClick={() => moveCode(contextMenu.entry, sp.index)}
+              style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(8,145,178,0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <IcoSpec />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ color: '#38bdf8', fontWeight: 600 }}>Sp {sp.id}:</span> {sp.name}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  ) : null;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -372,30 +552,37 @@ Rules:
               )}
             </div>
           </div>
-          <button className="ps-research-close" aria-label="Close" onClick={onClose}>×</button>
+          <button className="ps-close-btn" aria-label="Close" onClick={onClose}>✕</button>
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
           {/* ── LEFT PANEL ── */}
           <div className="fm-left-panel" style={{ minWidth: 260, maxWidth: 300, borderRight: '1px solid rgba(255,255,255,0.08)', overflowY: 'auto', padding: '16px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Applied Codes</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Applied Codes</div>
+            {dragCode && (
+              <div style={{ fontSize: 10, color: '#38bdf8', marginBottom: 8, fontStyle: 'italic' }}>
+                Drop on a target to move · Right-click for menu
+              </div>
+            )}
 
             {/* Case level */}
-            <button
-              className={`fm-target-row${target === null ? ' active' : ''}`}
-              onClick={() => setTarget(null)}
-            >
-              <IcoCase />
-              <span style={{ flex: 1 }}>Case Level</span>
-              {activeCaseApplied.length > 0 && (
-                <span className="fm-count-badge">{activeCaseApplied.length}</span>
+            <DropZone specimenIndex={null}>
+              <button
+                className={`fm-target-row${target === null ? ' active' : ''}`}
+                onClick={() => setTarget(null)}
+              >
+                <IcoCase />
+                <span style={{ flex: 1 }}>Case Level</span>
+                {activeCaseApplied.length > 0 && (
+                  <span className="fm-count-badge">{activeCaseApplied.length}</span>
+                )}
+              </button>
+              {caseApplied.map(entry => <CodeChip key={`case-${entry.code}`} entry={entry} />)}
+              {caseApplied.length === 0 && (
+                <div className="fm-no-flags-note">No case-level codes</div>
               )}
-            </button>
-            {caseApplied.map(entry => <CodeChip key={`case-${entry.code}`} entry={entry} />)}
-            {caseApplied.length === 0 && (
-              <div className="fm-no-flags-note">No case-level codes</div>
-            )}
+            </DropZone>
 
             <div className="fm-divider" />
 
@@ -404,7 +591,7 @@ Rules:
               const spApplied   = specimenApplied(sp.index);
               const activeCount = activeSpecimenApplied(sp.index).length;
               return (
-                <div key={sp.index} style={{ marginBottom: 2 }}>
+                <DropZone key={sp.index} specimenIndex={sp.index}>
                   <button
                     className={`fm-target-row${target === sp.index ? ' active' : ''}`}
                     onClick={() => setTarget(sp.index)}
@@ -419,9 +606,9 @@ Rules:
                   </button>
                   {spApplied.map(entry => <CodeChip key={`sp${sp.index}-${entry.code}`} entry={entry} />)}
                   {spApplied.length === 0 && (
-                    <div className="fm-no-flags-note">No codes applied</div>
+                    <div className="fm-no-flags-note">No codes applied — drag here or click row to add</div>
                   )}
-                </div>
+                </DropZone>
               );
             })}
           </div>
@@ -465,11 +652,17 @@ Rules:
                 >
                   <span>✦</span>
                   <span style={{ flex: 1 }}>AI Suggested Codes — review and apply</span>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>{aiSuggestions.filter((s, i, a) => a.findIndex(x => x.code === s.code) === i).length} codes</span>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>
+                    {aiSuggestions
+                      .filter((s, i, a) => a.findIndex(x => x.code === s.code) === i)
+                      .filter(s => !existingCodes.some(ec => ec.code === s.code && ec.system === s.system))
+                      .length} suggestions
+                  </span>
                   <span style={{ fontSize: 14, transition: 'transform 0.2s', transform: aiPanelCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▾</span>
                 </div>
                 {!aiPanelCollapsed && aiSuggestions
                   .filter((sug, idx, arr) => arr.findIndex(s => s.code === sug.code) === idx)
+                  .filter(sug => !existingCodes.some(ec => ec.code === sug.code && ec.system === sug.system))
                   .map((sug) => {
                   const isActive = applied.some(c => c.code === sug.code && !c.pendingDelete);
                   return (
@@ -624,6 +817,9 @@ Rules:
           </div>
         </div>
 
+        {/* ── CONTEXT MENU ── */}
+        {ContextMenu}
+
         {/* ── FOOTER ── */}
         <div className="fm-footer">
           <span className={`fm-footer-status${isDirty ? ' dirty' : ''}`}>
@@ -649,5 +845,4 @@ Rules:
   );
 };
 
-export type { AddCodeModalProps };
 export default AddCodeModal;

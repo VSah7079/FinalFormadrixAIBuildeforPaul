@@ -18,15 +18,15 @@ import { resolveByRoles, resolveTemplateOwner, mergeRecipients } from './recipie
 import { buildSubject, buildHtml, buildText } from './emailTemplates/synopticEmailTemplates';
 
 async function resolveRecipients(event: SynopticAuditEvent): Promise<string[]> {
-  const ***REMOVED***s = await resolveByRoles(['***REMOVED***', 'clinical_lead']);
+  const admins = await resolveByRoles(['admin', 'clinical_lead']);
 
   // For needs_changes, also notify the template owner so they know to act
   if (event.action === 'template.needs_changes') {
     const owner = await resolveTemplateOwner(event.templateId);
-    return mergeRecipients(***REMOVED***s, owner);
+    return mergeRecipients(admins, owner);
   }
 
-  return ***REMOVED***s;
+  return admins;
 }
 
 export async function sendSynopticNotification(event: SynopticAuditEvent): Promise<void> {

@@ -19,7 +19,7 @@ export interface CaseFlag {
   /** Hex or semantic color (UI only) */
   color: string;
 
-  /** Optional description for ***REMOVED***s or UI tooltips */
+  /** Optional description for admins or UI tooltips */
   description?: string;
 
   /** LIS or external system code (e.g. "FS", "CRIT", "QA") */

@@ -6,7 +6,7 @@ export const narrativeTemplateConfig = {
 
   sections: [
     {
-      id: "***REMOVED***_header",
+      id: "admin_header",
       title: "Administrative & Clinical Header",
       enabled: true,
       order: 1,
