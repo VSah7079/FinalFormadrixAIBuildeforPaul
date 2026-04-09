@@ -1,10 +1,13 @@
+# ============================================================
 # rotate-credentials.ps1
-# Run from project root: .\scripts\rotate-credentials.ps1
-# Generates cryptographically random passwords and writes to .env
-# Open .env in VS Code after running to retrieve passwords.
+# Rotates ONLY the auth credentials in .env
+# All other existing .env values are preserved.
+#
+# Usage (from project root):
+#   .\scripts\rotate-credentials.ps1
+# ============================================================
 
-$EnvFile  = ".env"
-$AuthFile = "src\contexts\AuthContext.tsx"
+$EnvFile = ".env"
 
 function New-SecurePassword {
     $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%^&*-_=+"
@@ -15,17 +18,45 @@ function New-SecurePassword {
     return -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
 }
 
-$env1 = New-SecurePassword
-$env2 = New-SecurePassword
+$demoPass  = New-SecurePassword
+$adminPass = New-SecurePassword
 
-@"
-VITE_DEMO_EMAIL=demo@pathscribe.ai
-VITE_DEMO_PASS=$env1
-VITE_ADMIN_EMAIL=admin@pathscribe.ai
-VITE_ADMIN_PASS=$env2
-"@ | Set-Content $EnvFile -NoNewline
+if (Test-Path $EnvFile) {
+    $lines = Get-Content $EnvFile
+} else {
+    $lines = @()
+}
+
+$keys = @{
+    'VITE_DEMO_EMAIL'  = 'demo@pathscribe.ai'
+    'VITE_DEMO_PASS'   = $demoPass
+    'VITE_ADMIN_EMAIL' = 'admin@pathscribe.ai'
+    'VITE_ADMIN_PASS'  = $adminPass
+}
+
+foreach ($key in $keys.Keys) {
+    $value   = $keys[$key]
+    $pattern = "^$key="
+    $newLine = "$key=$value"
+    if ($lines | Where-Object { $_ -match $pattern }) {
+        $lines = $lines | ForEach-Object { if ($_ -match $pattern) { $newLine } else { $_ } }
+    } else {
+        $lines += $newLine
+    }
+}
+
+$lines | Set-Content $EnvFile
+
+if (Test-Path ".gitignore") {
+    $ignore = Get-Content ".gitignore" -Raw
+    if ($ignore -notmatch "(^|\n)\.env(\r?\n|$)") {
+        Add-Content ".gitignore" "`n.env"
+        Write-Host ".env added to .gitignore" -ForegroundColor Green
+    }
+}
 
 Write-Host ""
-Write-Host "Done. Open .env in VS Code to retrieve passwords." -ForegroundColor Green
+Write-Host "Credentials rotated. All other .env values preserved." -ForegroundColor Green
+Write-Host "Open .env in VS Code to retrieve new passwords." -ForegroundColor Cyan
 Write-Host "Never share passwords in chat or email." -ForegroundColor Yellow
 Write-Host ""

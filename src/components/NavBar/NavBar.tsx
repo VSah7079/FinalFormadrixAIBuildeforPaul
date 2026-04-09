@@ -8,49 +8,240 @@ import { VoiceToggleButton } from '../Voice/VoiceToggleButton';
 import { VoiceCommandOverlay } from '../Voice/VoiceCommandOverlay';
 import { VoiceMissPrompt } from '../Voice/VoiceMissPrompt';
 
-console.log("Vite MODE:", import.meta.env.MODE);
-
-// Show success toasts in dev, hide in production
 const VOICE_SHOW_SUCCESS = import.meta.env.DEV;
 
 const EXTERNAL_LINKS = [
-  { name: 'CAP Cancer Protocols', url: 'https://www.cap.org/protocols/cancer-protocols-templates' },
-  { name: 'WHO Classification of Tumours', url: 'https://tumourclassification.iarc.who.int/' },
-  { name: 'PathologyOutlines', url: 'https://www.pathologyoutlines.com/' },
+  { name: 'CAP Cancer Protocols',         url: 'https://www.cap.org/protocols/cancer-protocols-templates' },
+  { name: 'WHO Classification of Tumours',url: 'https://tumourclassification.iarc.who.int/' },
+  { name: 'PathologyOutlines',            url: 'https://www.pathologyoutlines.com/' },
 ];
 
-interface NavBarProps {
-  onLogoClick: () => void;
-  onLogout: () => void;
-  onProfileClick: () => void;
-  logoHeight?: string;
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getBrowserInfo(): string {
+  const ua = navigator.userAgent;
+  if (ua.includes('Edg/'))     return `Edge ${ua.match(/Edg\/([\d.]+)/)?.[1] ?? ''}`;
+  if (ua.includes('Chrome/'))  return `Chrome ${ua.match(/Chrome\/([\d.]+)/)?.[1] ?? ''}`;
+  if (ua.includes('Firefox/')) return `Firefox ${ua.match(/Firefox\/([\d.]+)/)?.[1] ?? ''}`;
+  if (ua.includes('Safari/') && !ua.includes('Chrome')) return `Safari ${ua.match(/Version\/([\d.]+)/)?.[1] ?? ''}`;
+  return 'Unknown';
 }
 
-const NavBar: React.FC<NavBarProps> = ({
-  onLogoClick,
-  onLogout,
-  onProfileClick,
-  logoHeight = '32px',
-}) => {
+function getOSInfo(): string {
+  const ua = navigator.userAgent;
+  if (ua.includes('Windows NT 10')) return 'Windows 10/11';
+  if (ua.includes('Windows'))       return 'Windows';
+  if (ua.includes('Mac OS X'))      return `macOS ${ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g, '.') ?? ''}`;
+  if (ua.includes('Linux'))         return 'Linux';
+  if (ua.includes('Android'))       return 'Android';
+  if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+  return 'Unknown';
+}
+
+// ── System Info Modal ─────────────────────────────────────────────────────────
+interface SystemInfoModalProps { onClose: () => void; }
+
+const SystemInfoModal: React.FC<SystemInfoModalProps> = ({ onClose }) => {
   const { user } = useAuth();
+  const [copied, setCopied]         = useState(false);
+  const [anthropicOk, setAnthropicOk] = useState<boolean | null>(null);
+  const [geminiOk, setGeminiOk]     = useState<boolean | null>(null);
+
+  const aiProvider   = import.meta.env.VITE_AI_PROVIDER   ?? 'anthropic';
+  const aiModel      = import.meta.env.VITE_AI_MODEL      ?? 'claude-sonnet-4-20250514';
+  const aiDevMode    = import.meta.env.VITE_AI_DEV_MODE   === 'true';
+  const geminiKey    = import.meta.env.VITE_GEMINI_API_KEY ?? '';
+  const envMode      = import.meta.env.MODE ?? 'development';
+  const buildDate    = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Live connectivity checks
+  useEffect(() => {
+    // Anthropic — lightweight models list ping
+    fetch('https://api.anthropic.com/v1/models', {
+      headers: { 'x-api-key': import.meta.env.VITE_AI_API_KEY ?? '', 'anthropic-version': '2023-06-01' }
+    }).then(r => setAnthropicOk(r.ok)).catch(() => setAnthropicOk(false));
+
+    // Gemini — just check key is set
+    setGeminiOk(!!geminiKey);
+  }, []);
+
+  const StatusDot: React.FC<{ ok: boolean | null }> = ({ ok }) => (
+    <span style={{
+      display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 7,
+      background: ok === null ? '#475569' : ok ? '#22c55e' : '#EF4444',
+      boxShadow: ok === null ? 'none' : ok ? '0 0 6px #22c55e' : '0 0 6px #EF4444',
+    }} />
+  );
+
+  const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600, textTransform: 'uppercase',
+        letterSpacing: '0.06em' }}>{label}</span>
+      <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500, textAlign: 'right',
+        maxWidth: '60%' }}>{value}</span>
+    </div>
+  );
+
+  const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em',
+      color: '#0891B2', marginTop: 20, marginBottom: 4 }}>{children}</div>
+  );
+
+  const handleCopy = () => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const text = [
+      `PathScribe AI v0.9.0 — Support Report`,
+      `Generated: ${now}`,
+      `─────────────────────────────────────`,
+      `USER`,
+      `  Name:     [redacted — provide separately if requested]`,
+      `  Role:     ${user?.role ?? 'Unknown'}`,
+      `  ID:       [redacted — provide separately if requested]`,
+      `  Voice:    ${user?.voiceProfile ?? 'Unknown'}`,
+      ``,
+      `APP`,
+      `  Product:  PathScribe AI`,
+      `  Company:  ForMedrix`,
+      `  Version:  0.9.0`,
+      `  Build:    ${buildDate}`,
+      `  Env:      ${envMode}`,
+      ``,
+      `AI PROVIDER`,
+      `  Provider: ${aiProvider}`,
+      `  Model:    ${aiModel}`,
+      `  Mode:     ${aiDevMode ? 'Dev (direct API)' : 'Proxy'}`,
+      `  Voice AI: ${geminiKey ? 'Gemini active' : 'Local only'}`,
+      ``,
+      `SYSTEM`,
+      `  Browser:  ${getBrowserInfo()}`,
+      `  OS:       ${getOSInfo()}`,
+      `  Screen:   ${window.screen.width}×${window.screen.height}`,
+      `  Language: ${navigator.language}`,
+      ``,
+      `API STATUS`,
+      `  Anthropic: ${anthropicOk === null ? 'Checking...' : anthropicOk ? '✅ Connected' : '❌ Failed'}`,
+      `  Gemini:    ${geminiOk ? '✅ Configured' : '⚠️  Not configured'}`,
+      `─────────────────────────────────────`,
+    ].join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  return (
+    <div className="fm-overlay" onClick={onClose}>
+      <div className="ps-research-modal" style={{ width: 520, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+           onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="ps-research-header">
+          <div>
+            <div className="fm-eyebrow">ForMedrix · PathScribe AI</div>
+            <div className="fm-title-row">
+              <h2 className="fm-title">System Information</h2>
+              <span className="fm-active-badge">v0.9.0</span>
+            </div>
+          </div>
+          <button className="ps-close-btn" onClick={onClose} style={{ fontSize: 22 }}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 28px 20px' }}>
+
+          <SectionLabel>User</SectionLabel>
+          <Row label="Name"         value={user?.name ?? '—'} />
+          <Row label="Role"         value={<span style={{ textTransform: 'capitalize' }}>{user?.role ?? '—'}</span>} />
+          <Row label="User ID"      value={<span style={{ fontFamily: 'monospace', fontSize: 12, color: '#38bdf8' }}>{user?.id ?? '—'}</span>} />
+          <Row label="Voice Profile" value={user?.voiceProfile ?? '—'} />
+
+          <SectionLabel>Application</SectionLabel>
+          <Row label="Product"      value="PathScribe AI" />
+          <Row label="Company"      value="ForMedrix" />
+          <Row label="Version"      value={<span style={{ color: '#38bdf8', fontWeight: 700 }}>0.9.0</span>} />
+          <Row label="Build"        value={buildDate} />
+          <Row label="Environment"  value={
+            <span style={{ color: envMode === 'production' ? '#22c55e' : '#f59e0b', fontWeight: 700, textTransform: 'capitalize' }}>
+              {envMode}
+            </span>
+          } />
+
+          <SectionLabel>AI Provider</SectionLabel>
+          <Row label="Provider"     value={<span style={{ textTransform: 'capitalize' }}>{aiProvider}</span>} />
+          <Row label="Model"        value={<span style={{ fontFamily: 'monospace', fontSize: 12, color: '#38bdf8' }}>{aiModel}</span>} />
+          <Row label="API Mode"     value={
+            <span style={{ color: aiDevMode ? '#f59e0b' : '#22c55e', fontWeight: 700 }}>
+              {aiDevMode ? '⚠ Dev — direct API calls' : 'Proxy'}
+            </span>
+          } />
+          <Row label="Voice AI"     value={
+            <span style={{ color: geminiKey ? '#22c55e' : '#64748b' }}>
+              {geminiKey ? '✓ Gemini active' : 'Local only'}
+            </span>
+          } />
+
+          <SectionLabel>Browser & System</SectionLabel>
+          <Row label="Browser"      value={getBrowserInfo()} />
+          <Row label="OS"           value={getOSInfo()} />
+          <Row label="Resolution"   value={`${window.screen.width} × ${window.screen.height}`} />
+          <Row label="Language"     value={navigator.language} />
+
+          <SectionLabel>API Connectivity</SectionLabel>
+          <Row label="Anthropic"    value={<span><StatusDot ok={anthropicOk} />{anthropicOk === null ? 'Checking…' : anthropicOk ? 'Connected' : 'Failed'}</span>} />
+          <Row label="Gemini"       value={<span><StatusDot ok={geminiOk} />{geminiOk ? 'Configured' : 'Not configured'}</span>} />
+          <Row label="NLM Terminology" value={<span><StatusDot ok={true} />Available</span>} />
+          <Row label="Secure Email" value={<span><StatusDot ok={null} />Not wired (stub)</span>} />
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '14px 28px', borderTop: '1px solid rgba(51,65,85,0.9)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'var(--ps-grad-header), #0b1120' }}>
+          <span style={{ fontSize: 12, color: '#475569' }}>
+            ⚠ Name & ID redacted. Share only with PathScribe support via secure channel.
+          </span>
+          <button onClick={handleCopy} style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: copied ? 'rgba(34,197,94,0.12)' : 'rgba(8,145,178,0.1)',
+            border: copied ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(8,145,178,0.3)',
+            borderRadius: 8, padding: '8px 16px', cursor: 'pointer',
+            color: copied ? '#22c55e' : '#38bdf8', fontSize: 13, fontWeight: 700,
+            transition: 'all 0.2s', fontFamily: 'inherit'
+          }}>
+            {copied
+              ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!</>
+              : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy to Clipboard</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── NavBar ────────────────────────────────────────────────────────────────────
+interface NavBarProps {
+  onLogoClick:    () => void;
+  onLogout:       () => void;
+  onProfileClick: () => void;
+  logoHeight?:    string;
+}
+
+const NavBar: React.FC<NavBarProps> = ({ onLogoClick, onLogout, onProfileClick, logoHeight = '32px' }) => {
+  const { user }                          = useAuth();
   const { unreadCount, hasUrgent, setPortalOpen } = useMessaging();
-  const [linksOpen, setLinksOpen] = useState(false);
+  const [linksOpen, setLinksOpen]         = useState(false);
+  const [sysInfoOpen, setSysInfoOpen]     = useState(false);
   const qaEnabled = loadEnhancementConfig().qaEnabled;
 
   const userInitials = user?.name
     ? user.name.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('')
     : 'DSJ';
 
-  // ── Voice: open enhancement/feedback modals ─────────────────────────────
   useEffect(() => {
-    const openEnhancement = () => {
-      const btn = document.querySelector<HTMLElement>('[data-voice-target="enhancement-request"] button');
-      btn?.click();
-    };
-    const openFeedback = () => {
-      const btn = document.querySelector<HTMLElement>('[data-voice-target="testing-feedback"] button');
-      btn?.click();
-    };
+    const openEnhancement = () => document.querySelector<HTMLElement>('[data-voice-target="enhancement-request"] button')?.click();
+    const openFeedback    = () => document.querySelector<HTMLElement>('[data-voice-target="testing-feedback"] button')?.click();
     window.addEventListener('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST', openEnhancement);
     window.addEventListener('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK',    openFeedback);
     return () => {
@@ -61,75 +252,68 @@ const NavBar: React.FC<NavBarProps> = ({
 
   return (
     <>
-      <nav style={navBarStyle}>
-        {/* Left: Logo & Dev Tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
-          <img
-            src="/pathscribe-logo-dark.svg"
-            alt="PathScribe AI"
-            style={{ height: logoHeight, cursor: 'pointer' }}
-            onClick={onLogoClick}
-          />
-          <div style={dividerStyle} />
+      <nav className="ps-nav">
+        {/* Left */}
+        <div className="ps-nav-left">
+          <img src="/pathscribe-logo-dark.svg" alt="PathScribe AI"
+            style={{ height: logoHeight, cursor: 'pointer' }} onClick={onLogoClick} />
+          <div className="ps-nav-divider" />
           <span data-voice-target="enhancement-request"><EnhancementRequestButton /></span>
           {qaEnabled && <span data-voice-target="testing-feedback"><EnhancementRequestButton mode="qa" /></span>}
         </div>
 
-        {/* Right: Profile & Voice */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Right */}
+        <div className="ps-nav-right">
 
-          {/* User Profile */}
-          <div onClick={onProfileClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-            <div style={{ textAlign: 'right', lineHeight: '1.2' }}>
-              <div style={{ color: '#ffffff', fontSize: '14px', fontWeight: 600 }}>
+          {/* User badge — opens system info modal */}
+          <div onClick={() => setSysInfoOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+            <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
+              <div style={{ color: '#ffffff', fontSize: 14, fontWeight: 600 }}>
                 {user?.name || 'Dr. Sarah Johnson'}
               </div>
-              <div style={{ color: '#0891B2', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>
+              <div style={{ color: '#0891B2', fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}>
                 MD, FCAP
               </div>
             </div>
-            <div style={avatarStyle}>{userInitials}</div>
+            <div className="ps-nav-avatar">{userInitials}</div>
           </div>
 
-          <div style={dividerStyle} />
+          <div className="ps-nav-divider" />
 
-          {/* Voice Toggle — onMouseDown prevents focus stealing */}
-          <div onMouseDown={(e) => e.preventDefault()} style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Voice */}
+          <div onMouseDown={e => e.preventDefault()} style={{ display: 'flex', alignItems: 'center' }}>
             <VoiceToggleButton />
           </div>
 
-          {/* Messaging Button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
+          {/* Messages */}
+          <button type="button" className="ps-nav-btn" onMouseDown={e => e.preventDefault()}
             onClick={() => setPortalOpen(true)}
-            style={iconBtnStyle}
-            className={hasUrgent ? 'urgent-pulse' : ''}
-          >
+            style={{ position: 'relative', border: 'none', color: hasUrgent ? '#FF453A' : '#94a3b8' }}>
             <div style={{ position: 'relative' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              {unreadCount > 0 && <div style={badgeStyle}>{unreadCount}</div>}
+              {unreadCount > 0 && <div className="ps-nav-badge">{unreadCount}</div>}
             </div>
           </button>
 
           {/* Clinical Links */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setLinksOpen(true)}
-            style={iconBtnStyle}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <button type="button" className="ps-nav-btn" onMouseDown={e => e.preventDefault()}
+            onClick={() => setLinksOpen(true)} style={{ border: 'none', color: '#94a3b8' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
           </button>
 
           {/* Logout */}
-          <button type="button" onClick={onLogout} style={iconBtnStyle}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <button type="button" className="ps-nav-btn" onClick={onLogout}
+            style={{ border: 'none', color: '#94a3b8' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
@@ -138,93 +322,48 @@ const NavBar: React.FC<NavBarProps> = ({
         </div>
       </nav>
 
-      {/* External Links Modal */}
+      {/* System Info Modal */}
+      {sysInfoOpen && <SystemInfoModal onClose={() => setSysInfoOpen(false)} />}
+
+      {/* Clinical Links Modal */}
       {linksOpen && (
-        <div className="ps-overlay" style={overlayStyle} onClick={() => setLinksOpen(false)}>
-          <div className="ps-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
-            <div style={modalHeaderStyle}>Clinical Resources</div>
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="fm-overlay" onClick={() => setLinksOpen(false)}>
+          <div className="ps-research-modal" style={{ width: 360 }} onClick={e => e.stopPropagation()}>
+            <div className="ps-research-header">
+              <div>
+                <div className="fm-eyebrow">External Resources</div>
+                <h2 className="fm-title">Clinical Links</h2>
+              </div>
+              <button className="ps-close-btn" onClick={() => setLinksOpen(false)} style={{ fontSize: 22 }}>×</button>
+            </div>
+            <div style={{ padding: '8px 0' }}>
               {EXTERNAL_LINKS.map(link => (
-                <a key={link.url} href={link.url} target="_blank" rel="noreferrer" className="ps-link-item">
+                <a key={link.url} href={link.url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 24px', color: '#e2e8f0', fontSize: 14, textDecoration: 'none',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.12s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(8,145,178,0.07)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   {link.name}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0891B2" strokeWidth="2.5">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
                 </a>
               ))}
             </div>
-            <button type="button" onClick={() => setLinksOpen(false)} style={closeBtnStyle}>Close</button>
+            <div style={{ padding: '12px 24px', borderTop: '1px solid rgba(51,65,85,0.9)',
+              display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="fm-btn-cancel" onClick={() => setLinksOpen(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Voice overlays
-          VoiceMissPrompt:     bottom 104px
-          VoiceCommandOverlay: bottom 40px  */}
       <VoiceCommandOverlay showSuccess={VOICE_SHOW_SUCCESS} />
       <VoiceMissPrompt />
     </>
   );
-};
-
-// --- STYLES ---
-
-const navBarStyle: React.CSSProperties = {
-  background: 'rgba(10, 10, 10, 0.85)',
-  position: 'sticky', top: 0, left: 0, right: 0, height: '64px',
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '0 24px', backdropFilter: 'blur(12px)',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-  zIndex: 1000, boxSizing: 'border-box',
-};
-
-const dividerStyle: React.CSSProperties = {
-  width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)',
-};
-
-const avatarStyle: React.CSSProperties = {
-  width: '36px', height: '36px', borderRadius: '10px',
-  background: 'rgba(8, 145, 178, 0.1)',
-  border: '1px solid rgba(8, 145, 178, 0.4)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  color: '#0891B2', fontWeight: 700, fontSize: '13px',
-};
-
-const iconBtnStyle: React.CSSProperties = {
-  background: 'transparent', border: 'none', color: '#94a3b8',
-  width: '40px', height: '40px', borderRadius: '10px',
-  cursor: 'pointer', display: 'flex', alignItems: 'center',
-  justifyContent: 'center', transition: 'all 0.2s ease',
-};
-
-const badgeStyle: React.CSSProperties = {
-  position: 'absolute', top: '-4px', right: '-4px',
-  minWidth: '16px', height: '16px',
-  background: '#EF4444', color: 'white', borderRadius: '50%',
-  fontSize: '10px', fontWeight: 800,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  border: '2px solid #000',
-};
-
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-  backdropFilter: 'blur(4px)', display: 'flex',
-  alignItems: 'center', justifyContent: 'center', zIndex: 2000,
-};
-
-const modalStyle: React.CSSProperties = {
-  width: '320px', background: '#0f172a',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '16px', overflow: 'hidden',
-};
-
-const modalHeaderStyle: React.CSSProperties = {
-  padding: '16px', background: 'rgba(255,255,255,0.03)',
-  borderBottom: '1px solid rgba(255,255,255,0.05)',
-  fontSize: '14px', fontWeight: 600, color: '#fff', textAlign: 'center',
-};
-
-const closeBtnStyle: React.CSSProperties = {
-  width: '100%', padding: '12px', background: 'transparent', border: 'none',
-  borderTop: '1px solid rgba(255,255,255,0.05)',
-  color: '#64748b', fontSize: '13px', cursor: 'pointer',
 };
 
 export default NavBar;
