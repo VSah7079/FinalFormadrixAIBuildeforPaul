@@ -2,15 +2,8 @@ import React, { useState, useEffect } from "react";
 import '../pathscribe.css';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
-import { useLogout } from "@hooks/useLogout";
-import {
-  SunIcon,
-  MoonIcon,
-  HelpIcon,
-  LogOutIcon,
-  MonitorIcon,
-  WarningIcon
-} from "@components/Icons";
+
+import { WarningIcon } from "@components/Icons";
 import CaseSearchBar from "@components/Search/CaseSearchBar";
 import FlagRow        from "@components/Dashboards/FlagRow";
 import CaseMixTile    from "@components/Dashboards/CaseMixTile";
@@ -170,20 +163,10 @@ const Rvu30Tile: React.FC = () => (
 const ContributionDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const logout   = useLogout();
+  
 
   const [activeTab,           setActiveTab]           = useState<DashboardTab>("overview");
-  const [themeMode,           setThemeMode]           = useState<"light" | "dark" | "system">("dark");
-  const [showProfileModal,    setShowProfileModal]    = useState(false);
-  const [showQuickLinksModal, setShowQuickLinksModal] = useState(false);
-  const [showWarningModal,    setShowWarningModal]    = useState(false);
-  const [showAboutModal,      setShowAboutModal]      = useState(false);
 
-  const applyThemeMode = (mode: "light" | "dark" | "system") => {
-    setThemeMode(mode);
-    if (mode === "system") document.documentElement.removeAttribute("data-theme");
-    else                   document.documentElement.setAttribute("data-theme", mode);
-  };
 
   // ── Voice: set WORKLIST context on mount ──────────────────────────────────
   useEffect(() => {
@@ -192,32 +175,16 @@ const ContributionDashboardPage: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ padding: "32px", color: t.colors.text.primary }}>
+    <div style={{ padding: "32px", color: t.colors.text.primary, overflowY: "auto", height: "100%" }}>
 
-      {/* ─── Header ──────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "15px" }}>
-          <span style={{ cursor: "pointer", color: t.colors.text.muted }}
-            onClick={() => navigate("/")}
-            onMouseEnter={e => (e.currentTarget.style.color = t.colors.accentTeal)}
-            onMouseLeave={e => (e.currentTarget.style.color = t.colors.text.muted)}
-          >Home</span>
-          <span style={{ color: t.colors.text.muted }}>/</span>
-          <span style={{ color: t.colors.text.primary, fontWeight: 600 }}>Contribution Dashboard</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <div onClick={() => applyThemeMode("light")}  style={{ display: "inline-flex" }}><SunIcon     size={22} style={{ opacity: themeMode === "light"  ? 1 : 0.4, transition: "0.2s" }} /></div>
-            <div onClick={() => applyThemeMode("dark")}   style={{ display: "inline-flex" }}><MoonIcon    size={22} style={{ opacity: themeMode === "dark"   ? 1 : 0.4, transition: "0.2s" }} /></div>
-            <div onClick={() => applyThemeMode("system")} style={{ display: "inline-flex" }}><MonitorIcon size={22} style={{ opacity: themeMode === "system" ? 1 : 0.4, transition: "0.2s" }} /></div>
-          </div>
-          <div onClick={() => setShowAboutModal(true)} style={{ display: "inline-flex", cursor: "pointer" }}><HelpIcon   size={22} style={{ opacity: 0.7 }} /></div>
-          <div onClick={logout} style={{ display: "inline-flex", cursor: "pointer" }}><LogOutIcon size={22} style={{ opacity: 0.7 }} /></div>
-          <div style={{ width: "42px", height: "42px", borderRadius: "50%", backgroundColor: t.colors.button.subtle, border: `1px solid ${t.colors.button.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontWeight: 700 }}
-            onClick={() => setShowProfileModal(true)}>
-            {user?.name?.[0] ?? "U"}
-          </div>
-        </div>
+      {/* ─── Page Title ──────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "28px", fontWeight: 800, color: t.colors.text.primary, margin: 0, letterSpacing: "-0.5px" }}>
+          Contribution Dashboard
+        </h1>
+        <p style={{ fontSize: "13px", color: t.colors.text.muted, marginTop: "4px" }}>
+          {user?.name} · Pathologist
+        </p>
       </div>
 
       {/* ─── Search ──────────────────────────────────────────────────────── */}
@@ -310,86 +277,9 @@ const ContributionDashboardPage: React.FC = () => {
       {/* ─── AI Contribution Tab ─────────────────────────────────────────── */}
       {activeTab === "ai" && <AIContributionTab />}
 
-      {/* ─── Modals ──────────────────────────────────────────────────────── */}
-      {showProfileModal && (
-        <div style={overlayStyle} onClick={() => setShowProfileModal(false)}>
-          <div style={modalCardStyle} onClick={e => e.stopPropagation()}>
-            <h2 style={modalHeadingStyle}>Profile & Preferences</h2>
-            <div style={{ marginBottom: "24px", color: t.colors.text.muted, fontSize: "14px" }}>
-              Signed in as <strong style={{ color: t.colors.text.primary }}>{user?.email}</strong>
-            </div>
-            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowQuickLinksModal(true); }}>Quick Links</button>
-            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowWarningModal(true);   }}>Unsaved Data Warning</button>
-            <button style={profileMenuBtnStyle} onClick={() => { setShowProfileModal(false); setShowAboutModal(true);     }}>About PathScribe AI</button>
-            <button style={{ ...closeBtnStyle, marginTop: "20px" }} onClick={() => setShowProfileModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
-      {showQuickLinksModal && (
-        <div style={overlayStyle} onClick={() => setShowQuickLinksModal(false)}>
-          <div style={modalCardStyle} onClick={e => e.stopPropagation()}>
-            <h2 style={modalHeadingStyle}>Quick Links</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <button style={profileMenuBtnStyle} onClick={() => navigate("/")}>Home</button>
-              <button style={profileMenuBtnStyle} onClick={() => navigate("/cases")}>Case List</button>
-              <button style={profileMenuBtnStyle} onClick={() => navigate("/settings")}>Settings</button>
-            </div>
-            <button style={{ ...closeBtnStyle, marginTop: "20px" }} onClick={() => setShowQuickLinksModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
-      {showWarningModal && (
-        <div style={overlayStyle} onClick={() => setShowWarningModal(false)}>
-          <div style={warningCardStyle} onClick={e => e.stopPropagation()}>
-            <WarningIcon size={42} style={{ color: t.colors.semantic.warning, marginBottom: "16px" }} />
-            <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "12px" }}>Unsaved Changes</h2>
-            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "24px" }}>You have unsaved changes. If you leave this page, your edits will be lost.</p>
-            <button style={{ ...closeBtnStyle, background: "rgba(249,115,22,0.12)", border: `1px solid ${t.colors.semantic.warning}`, color: t.colors.semantic.warning, marginBottom: "12px" }} onClick={() => setShowWarningModal(false)}>Stay on Page</button>
-            <button style={closeBtnStyle} onClick={() => { setShowWarningModal(false); navigate("/"); }}>Leave Page</button>
-          </div>
-        </div>
-      )}
-      {showAboutModal && (
-        <div style={overlayStyle} onClick={() => setShowAboutModal(false)}>
-          <div style={{ ...modalCardStyle, width: "460px" }} onClick={e => e.stopPropagation()}>
-            <h2 style={modalHeadingStyle}>About PathScribe AI</h2>
-            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>PathScribe AI is a next‑generation pathology reporting platform designed to streamline workflows, enhance diagnostic accuracy, and provide actionable insights through intelligent automation.</p>
-            <p style={{ fontSize: "14px", color: t.colors.text.muted, marginBottom: "20px" }}>This dashboard provides a high‑level overview of your case activity, productivity, quality indicators, and AI‑assisted contributions.</p>
-            <button style={closeBtnStyle} onClick={() => setShowAboutModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* ─── Modals ──────────────────────────────────────────────────────── */}    </div>
   );
 };
 
 // ─── Shared Styles ────────────────────────────────────────────────────────────
-
-const overlayStyle: React.CSSProperties = {
-  position: "fixed", inset: 0, backgroundColor: t.colors.overlay,
-  backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000,
-};
-const modalCardStyle: React.CSSProperties = {
-  width: "420px", backgroundColor: t.colors.background.base, padding: "32px",
-  borderRadius: "24px", border: `1px solid ${t.colors.button.border}`,
-  boxShadow: `0 25px 50px -12px ${t.colors.overlay}`,
-};
-const modalHeadingStyle: React.CSSProperties = { fontSize: "20px", fontWeight: 700, marginBottom: "16px" };
-const warningCardStyle: React.CSSProperties = {
-  width: "400px", backgroundColor: t.colors.background.base, padding: "40px",
-  borderRadius: "28px", textAlign: "center", border: `1px solid ${t.colors.button.border}`,
-  boxShadow: `0 25px 50px -12px ${t.colors.overlay}`,
-};
-const profileMenuBtnStyle: React.CSSProperties = {
-  padding: "12px 16px", borderRadius: "10px", background: t.colors.button.subtle,
-  border: `1px solid ${t.colors.button.border}`, color: t.colors.button.text,
-  fontWeight: 600, fontSize: "15px", cursor: "pointer", width: "100%",
-  transition: "all 0.2s", textAlign: "left", display: "flex", alignItems: "center", gap: "10px",
-};
-const closeBtnStyle: React.CSSProperties = {
-  padding: "12px 24px", borderRadius: "10px", background: t.colors.accentTealSubtle,
-  border: `1px solid ${t.colors.accentTealBorder}`, color: t.colors.accentTeal,
-  fontWeight: 600, fontSize: "15px", cursor: "pointer", width: "100%", transition: "all 0.2s ease",
-};
-
 export default ContributionDashboardPage;

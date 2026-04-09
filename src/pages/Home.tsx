@@ -82,10 +82,10 @@ const quickLinks = {
   }, []);
 
 const cards = [
-  { title: 'Worklist', description: 'View and manage pending pathology cases', route: '/worklist', color: '#0891B2', image: '/worklist.jpg' },
-  { title: 'Configuration', description: 'System settings and AI preferences', route: '/configuration', color: '#F59E0B', image: '/config.jpg' },
-  { title: 'Search', description: 'Search completed and in-progress cases', route: '/search', color: '#8B5CF6', image: '/search.jpg' },
-  { title: 'System Audit', description: 'Review system activity and audit trails', route: '/audit', color: '#EF4444', image: '/logs.jpg' },
+  { title: 'Worklist', description: 'View and manage pending pathology cases', route: '/worklist', color: '#0891B2', image: '/worklist.webp' },
+  { title: 'Configuration', description: 'System settings and AI preferences', route: '/configuration', color: '#F59E0B', image: '/config.webp' },
+  { title: 'Search', description: 'Search completed and in-progress cases', route: '/search', color: '#8B5CF6', image: '/search.webp' },
+  { title: 'System Audit', description: 'Review system activity and audit trails', route: '/audit', color: '#EF4444', image: '/logs.webp' },
 
   // ⭐ New tile
   {
@@ -93,14 +93,14 @@ const cards = [
     description: 'Workload • Quality • TAT • Trends',
     route: '/contribution',
     color: '#0EA5E9',
-    image: '/my_contributions.jpg'
+    image: '/my_contributions.webp'
   }
 ];
 
   return (
     <div className="ps-page" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)', opacity: isLoaded ? 1 : 0, transition: 'opacity 0.8s ease, background-color 0.4s ease' }}>
       {/* Background */}
-      <div className="ps-page-bg" style={{ backgroundImage: 'url(/main_background.jpg)', filter: 'var(--bg-filter)', transition: 'filter 0.5s ease' }} />
+      <div className="ps-page-bg" style={{ backgroundImage: 'url(/main_background.webp)', filter: 'var(--bg-filter)', transition: 'filter 0.5s ease' }} />
       <div className="ps-page-gradient" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, var(--bg-color) 100%)' }} />
 
       {/* UI Content */}

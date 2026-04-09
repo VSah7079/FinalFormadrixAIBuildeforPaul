@@ -1,203 +1,159 @@
 // src/pages/SynopticReportPage/components/HeaderBar.tsx
 // Rich case header — white bar with accession, patient info, progress steps.
-// Styles extracted directly from original SynopticReportPage monolith.
 
 import React from 'react';
 import type { Case } from '@/types/case/Case';
+import { getOrchestratorMode } from '@/components/Config/NarrativeTemplates';
+import '@/pathscribe.css';
 
 interface HeaderBarProps {
-  caseData: Case | null;
-  onSignOut: () => void;
-  onNavigate: (path: string) => void;
+  caseData:      Case | null;
+  onSignOut:     () => void;
+  onNavigate:    (path: string) => void;
   aiConfidence?: number; // 0–100
 }
 
 type StepStatus = 'completed' | 'current' | 'pending' | 'alert';
 
-const stepCircle = (status: StepStatus): React.CSSProperties => ({
-  width: '24px',
-  height: '24px',
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: '10px',
-  fontWeight: 700,
-  background:
-    status === 'completed' ? '#0891B2' :
-    status === 'current'   ? '#fff'    :
-    status === 'alert'     ? '#fef3c7' : '#f1f5f9',
-  color:
-    status === 'completed' ? '#fff'    :
-    status === 'current'   ? '#0891B2' :
-    status === 'alert'     ? '#92400e' : '#94a3b8',
-  border:
-    status === 'completed' ? '2px solid #0891B2' :
-    status === 'current'   ? '2px solid #0891B2' :
-    status === 'alert'     ? '2px solid #f59e0b' : '2px solid #e2e8f0',
-});
+interface ProgressStep {
+  id:     number;
+  label:  string;
+  status: StepStatus;
+}
 
-const progressSteps = [
-  { id: 1, label: 'Grossing',    status: 'completed' as StepStatus },
-  { id: 2, label: 'Processing',  status: 'completed' as StepStatus },
-  { id: 3, label: 'Synoptic',    status: 'current'   as StepStatus },
-  { id: 4, label: 'Sign-out',    status: 'pending'   as StepStatus },
-];
+// ── Status meta ───────────────────────────────────────────────────────────────
+const CASE_STATE_META: Record<string, { bg: string; border: string; color: string; dot: string }> = {
+  'draft':          { bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8', dot: '#3b82f6' },
+  'in-progress':    { bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8', dot: '#3b82f6' },
+  'finalized':      { bg: '#f0fdf4', border: '#86efac', color: '#15803d', dot: '#22c55e' },
+  'pending-review': { bg: '#fef3c7', border: '#fde047', color: '#92400e', dot: '#f59e0b' },
+};
 
-const HeaderBar: React.FC<HeaderBarProps> = ({
-  caseData,
-  onSignOut,
-  onNavigate,
-  aiConfidence,
-}) => {
+// ── Step circle class helper ──────────────────────────────────────────────────
+function stepClass(status: StepStatus): string {
+  return `ps-hb-step-circle ps-hb-step-circle--${status}`;
+}
 
-  const accession  = caseData?.accession?.fullAccession ?? caseData?.accession?.accessionNumber ?? '—';
-  const patient    = caseData?.patient ? `${caseData.patient.lastName}, ${caseData.patient.firstName}` : '—';
-  const dob        = caseData?.patient?.dateOfBirth
-    ? new Date(caseData.patient.dateOfBirth).toLocaleDateString()
-    : '—';
-  const mrn        = caseData?.patient?.mrn ?? '—';
-  const sex        = caseData?.patient?.sex ?? '—';
-  const status     = caseData?.status ?? 'draft';
+const HeaderBar: React.FC<HeaderBarProps> = ({ caseData, onSignOut, onNavigate, aiConfidence }) => {
+  const isOrchestration = getOrchestratorMode();
 
-  const caseStateMeta: Record<string, { bg: string; border: string; color: string; dot: string }> = {
-    draft:          { bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8', dot: '#3b82f6' },
-    'in-progress':  { bg: '#eff6ff', border: '#bfdbfe', color: '#1d4ed8', dot: '#3b82f6' },
-    finalized:      { bg: '#f0fdf4', border: '#86efac', color: '#15803d', dot: '#22c55e' },
-    'pending-review': { bg: '#fef3c7', border: '#fde047', color: '#92400e', dot: '#f59e0b' },
-  };
-  const meta = caseStateMeta[status] ?? caseStateMeta['draft'];
+  const accession = caseData?.accession?.fullAccession ?? caseData?.accession?.accessionNumber ?? '—';
+  const patient   = caseData?.patient ? `${caseData.patient.lastName}, ${caseData.patient.firstName}` : '—';
+  const dob       = caseData?.patient?.dateOfBirth
+    ? new Date(caseData.patient.dateOfBirth).toLocaleDateString() : '—';
+  const mrn       = caseData?.patient?.mrn ?? '—';
+  const sex       = caseData?.patient?.sex ?? '—';
+  const status    = caseData?.status ?? 'draft';
+  const meta      = CASE_STATE_META[status] ?? CASE_STATE_META['draft'];
+
+  // ── Mode-aware final step label ───────────────────────────────────────────
+  const finalStepLabel = isOrchestration ? 'Sign Out' : 'Finalise';
+
+  const progressSteps: ProgressStep[] = [
+    { id: 1, label: 'Grossing',       status: 'completed' },
+    { id: 2, label: 'Processing',     status: 'completed' },
+    { id: 3, label: 'Synoptic',       status: 'current'   },
+    { id: 4, label: finalStepLabel,   status: 'pending'   },
+  ];
 
   return (
-    <div style={{ background: 'white', padding: '8px 40px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+    <div className="ps-hb">
 
       {/* Breadcrumb */}
-      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-        <span
-          onClick={() => onNavigate('/')}
-          style={{ cursor: 'pointer' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
-          onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-        >Home</span>
-        <span style={{ color: '#cbd5e1' }}>›</span>
-        <span
-          onClick={() => onNavigate('/worklist')}
-          style={{ cursor: 'pointer' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#0891B2'}
-          onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-        >Worklist</span>
-        <span style={{ color: '#cbd5e1' }}>›</span>
-        <span style={{ color: '#0891B2', fontWeight: 600 }}>Case Report</span>
+      <div className="ps-hb-breadcrumb">
+        <span className="ps-hb-crumb" onClick={() => onNavigate('/')}>Home</span>
+        <span className="ps-hb-crumb-sep">›</span>
+        <span className="ps-hb-crumb" onClick={() => onNavigate('/worklist')}>Worklist</span>
+        <span className="ps-hb-crumb-sep">›</span>
+        <span className="ps-hb-crumb ps-hb-crumb--active">Case Report</span>
       </div>
 
-      {/* Main header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+      {/* Main row */}
+      <div className="ps-hb-row">
 
-        {/* Left — accession + patient info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+        {/* Left — accession + patient */}
+        <div className="ps-hb-left">
 
           {/* Accession block */}
-          <div style={{ flexShrink: 0 }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Accession</div>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>{accession}</div>
-            <div style={{ marginTop: '5px', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '20px', background: meta.bg, border: `1px solid ${meta.border}` }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: meta.dot, flexShrink: 0 }} />
-              <span style={{ fontSize: '10px', fontWeight: 700, color: meta.color, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{status}</span>
+          <div className="ps-hb-accession">
+            <div className="ps-hb-field-label">Accession</div>
+            <div className="ps-hb-accession-number">{accession}</div>
+            <div className="ps-hb-status-pill" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
+              <div className="ps-hb-status-dot" style={{ background: meta.dot }} />
+              <span className="ps-hb-status-text" style={{ color: meta.color }}>{status}</span>
             </div>
           </div>
 
-          <div style={{ width: '1px', height: '40px', background: '#e2e8f0', flexShrink: 0 }} />
+          <div className="ps-hb-divider" />
 
-          {/* Patient info fields */}
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Patient</div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>{patient}</div>
+          {/* Patient fields */}
+          <div className="ps-hb-patient-fields">
+            <div className="ps-hb-field">
+              <div className="ps-hb-field-label">Patient</div>
+              <div className="ps-hb-field-value ps-hb-field-value--lg">{patient}</div>
             </div>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Sex</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{sex}</div>
+            <div className="ps-hb-field">
+              <div className="ps-hb-field-label">Sex</div>
+              <div className="ps-hb-field-value">{sex}</div>
             </div>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Date of Birth</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{dob}</div>
+            <div className="ps-hb-field">
+              <div className="ps-hb-field-label">Date of Birth</div>
+              <div className="ps-hb-field-value">{dob}</div>
             </div>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>MRN</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{mrn}</div>
+            <div className="ps-hb-field">
+              <div className="ps-hb-field-label">MRN</div>
+              <div className="ps-hb-field-value">{mrn}</div>
             </div>
           </div>
-
         </div>
 
-        {/* Centre — progress steps */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px', flexShrink: 0 }}>
+        {/* Centre — progress stepper */}
+        <div className="ps-hb-stepper">
           {progressSteps.map((step, idx) => (
             <React.Fragment key={step.id}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                <div style={stepCircle(step.status)}>
+              <div className="ps-hb-step">
+                <div className={stepClass(step.status)}>
                   {step.status === 'completed' ? '✓' : step.status === 'alert' ? '⚠' : step.id}
                 </div>
-                <div style={{ fontSize: '7px', fontWeight: step.status === 'current' ? 600 : 500, color: step.status === 'alert' ? '#F59E0B' : step.status === 'current' ? '#1e293b' : '#94a3b8', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                <div className={`ps-hb-step-label ps-hb-step-label--${step.status}`}>
                   {step.label}
                 </div>
               </div>
               {idx < progressSteps.length - 1 && (
-                <div style={{ width: '10px', height: '2px', background: idx < 2 ? '#0891B2' : '#e2e8f0', marginBottom: '10px' }} />
+                <div className={`ps-hb-step-connector${idx < 2 ? ' ps-hb-step-connector--done' : ''}`} />
               )}
             </React.Fragment>
           ))}
         </div>
 
-        {/* Right — status + AI confidence */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-            border: '1px solid #6ee7b7',
-            borderRadius: '12px',
-            padding: '8px 16px',
-            minWidth: '160px',
-            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.15)',
-          }}>
-            {/* Status + priority row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <div style={{ fontWeight: 700, color: '#065f46', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                {status}
-              </div>
-              <div style={{ fontSize: '10px', color: '#047857', fontWeight: 500 }}>
-                {caseData?.order?.priority ?? 'Routine'}
-              </div>
+        {/* Right — AI confidence card */}
+        <div className="ps-hb-right">
+          <div className="ps-hb-confidence-card">
+            <div className="ps-hb-confidence-header">
+              <span className="ps-hb-confidence-status">{status}</span>
+              <span className="ps-hb-confidence-priority">{caseData?.order?.priority ?? 'Routine'}</span>
             </div>
-
-            {/* AI Confidence — hero */}
             {aiConfidence !== undefined && (
               <>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '32px', fontWeight: 800, color: '#064e3b', lineHeight: 1 }}>
-                    {aiConfidence}%
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669' }}>
-                    AI confidence
-                  </span>
+                <div className="ps-hb-confidence-score">
+                  <span className="ps-hb-confidence-pct">{aiConfidence}%</span>
+                  <span className="ps-hb-confidence-label">AI confidence</span>
                 </div>
-                {/* Bar */}
-                <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${aiConfidence}%`,
-                    borderRadius: '3px',
-                    background: aiConfidence >= 80
-                      ? 'linear-gradient(90deg, #059669, #10b981)'
-                      : aiConfidence >= 60
-                      ? 'linear-gradient(90deg, #d97706, #f59e0b)'
-                      : 'linear-gradient(90deg, #dc2626, #ef4444)',
-                    transition: 'width 0.6s ease',
-                  }} />
+                <div className="ps-hb-confidence-bar-track">
+                  <div
+                    className={`ps-hb-confidence-bar-fill${
+                      aiConfidence >= 80 ? ' ps-hb-confidence-bar-fill--high'
+                      : aiConfidence >= 60 ? ' ps-hb-confidence-bar-fill--mid'
+                      : ' ps-hb-confidence-bar-fill--low'
+                    }`}
+                    style={{ width: `${aiConfidence}%` }}
+                  />
                 </div>
               </>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
