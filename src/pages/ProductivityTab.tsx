@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { pathScribeTheme as theme } from "@theme/pathscribeTheme";
+import { pathscribeTheme as theme } from "@theme/pathscribeTheme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

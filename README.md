@@ -20,15 +20,8 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
-### Demo Credentials
-
-**Pathologist Account:**
-- Email: `demo@pathscribe.ai`
-- Password: `demo`
-
-**Admin Account:**
-- Email: `admin@pathscribe.ai`
-- Password: `admin`
+## Demo Credentials
+Contact the team lead for access credentials.
 
 ## 📁 Project Structure
 

@@ -74,9 +74,8 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173` and login with:
-- **Pathologist**: demo@pathscribe.ai / demo
-- **Admin**: admin@pathscribe.ai / admin
+## Demo Credentials
+Contact the team lead for access credentials.
 
 ## Missing Assets
 

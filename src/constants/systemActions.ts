@@ -66,8 +66,13 @@ export type ActionId =
   // ── Messages ──────────────────────────────────────────────────────────────
   | 'messages.next' | 'messages.previous'
   | 'messages.reply' | 'messages.delete'
-  | 'messages.markRead' | 'messages.markUrgent'
+  | 'messages.markRead' | 'messages.markUnread' | 'messages.markUrgent'
   | 'messages.compose' | 'messages.send' | 'messages.close'
+  | 'messages.secureEmail' | 'messages.recipientSearch' | 'messages.recipientAdd'
+  | 'messages.search' | 'messages.edit' | 'messages.restore'
+  | 'messages.viewDeleted' | 'messages.deleteAll'
+  | 'messages.gotoSubject' | 'messages.gotoBody'
+  | 'messages.clearSubject' | 'messages.clearBody'
   // ── Case management ───────────────────────────────────────────────────────
   | 'case.viewWorklist' | 'case.open' | 'case.create' | 'case.editDemographics'
   | 'case.assign' | 'case.reassign' | 'case.prioritize' | 'case.hold'
@@ -237,15 +242,34 @@ export const ACTION_GROUPS: ActionGroup[] = [
     id: 'messages',
     title: 'Messages',
     actions: [
-      { id: 'messages.next',         label: 'Next Message',     internalKey: 'F18+PS001', shortcutable: true },
-      { id: 'messages.previous',     label: 'Previous Message', internalKey: 'F18+PS002', shortcutable: true },
-      { id: 'messages.reply',        label: 'Reply',            internalKey: 'F18+PS003', shortcutable: true },
-      { id: 'messages.delete',       label: 'Delete Message',   internalKey: 'F18+PS004', shortcutable: true },
-      { id: 'messages.markRead',     label: 'Mark as Read',     internalKey: 'F18+PS005' },
-      { id: 'messages.markUrgent',   label: 'Mark as Urgent',   internalKey: 'F18+PS006' },
-      { id: 'messages.compose',      label: 'Compose Message',  internalKey: 'F18+PS007', shortcutable: true },
-      { id: 'messages.send',         label: 'Send Message',     internalKey: 'F18+PS008', shortcutable: true },
-      { id: 'messages.close',        label: 'Close Messages',   internalKey: 'F18+PS009', shortcutable: true },
+      // ── Navigation ────────────────────────────────────────────────────────
+      { id: 'messages.next',            label: 'Next Message',           internalKey: 'F18+PS001', shortcutable: true },
+      { id: 'messages.previous',        label: 'Previous Message',       internalKey: 'F18+PS002', shortcutable: true },
+      // ── Core actions ──────────────────────────────────────────────────────
+      { id: 'messages.reply',           label: 'Reply',                  internalKey: 'F18+PS003', shortcutable: true },
+      { id: 'messages.delete',          label: 'Delete Message',         internalKey: 'F18+PS004', shortcutable: true, description: 'Soft delete; permanent when in Recently Deleted view' },
+      { id: 'messages.markRead',        label: 'Mark as Read',           internalKey: 'F18+PS005' },
+      { id: 'messages.markUnread',      label: 'Mark as Unread',         internalKey: 'F18+PS014', description: 'Available via ⋯ thread menu' },
+      { id: 'messages.markUrgent',      label: 'Toggle Urgent Flag',     internalKey: 'F18+PS006', description: 'Toggles urgent on compose' },
+      // ── Compose ───────────────────────────────────────────────────────────
+      { id: 'messages.compose',         label: 'New Internal Message',   internalKey: 'F18+PS007', shortcutable: true },
+      { id: 'messages.send',            label: 'Send Message',           internalKey: 'F18+PS008', shortcutable: true },
+      { id: 'messages.secureEmail',     label: 'Send Secure Email',      internalKey: 'F18+PS015', shortcutable: true, description: 'Routes to secure external email gateway (Paubox / Virtru)' },
+      // ── To: field — recipient management ─────────────────────────────────
+      { id: 'messages.recipientSearch', label: 'Search Recipients',      internalKey: 'F18+PS016', description: 'Opens full user-search modal from the To: field' },
+      { id: 'messages.recipientAdd',    label: 'Add Recipient',          internalKey: 'F18+PS017', description: 'Confirms inline suggestion from To: field dropdown' },
+      // ── Compose field helpers ─────────────────────────────────────────────
+      { id: 'messages.gotoSubject',     label: 'Go to Subject',          internalKey: 'F18+PS010' },
+      { id: 'messages.gotoBody',        label: 'Go to Message Body',     internalKey: 'F18+PS011' },
+      { id: 'messages.clearSubject',    label: 'Clear Subject',          internalKey: 'F18+PS012' },
+      { id: 'messages.clearBody',       label: 'Clear Message Body',     internalKey: 'F18+PS013' },
+      // ── View & management ─────────────────────────────────────────────────
+      { id: 'messages.close',           label: 'Close Messages',         internalKey: 'F18+PS009', shortcutable: true },
+      { id: 'messages.search',          label: 'Search Messages',        internalKey: 'F18+PS018' },
+      { id: 'messages.edit',            label: 'Toggle Edit Mode',       internalKey: 'F18+PS019', description: 'Enables multi-select checkboxes' },
+      { id: 'messages.restore',         label: 'Restore Message',        internalKey: 'F18+PS020', description: 'Restores from Recently Deleted' },
+      { id: 'messages.viewDeleted',     label: 'View Recently Deleted',  internalKey: 'F18+PS021' },
+      { id: 'messages.deleteAll',       label: 'Delete All Selected',    internalKey: 'F18+PS022', description: 'Bulk soft-delete; permanent when in Recently Deleted view' },
     ],
   },
 
@@ -502,8 +526,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'editor.find': true, 'editor.replace': true, 'editor.selectAll': true,
     'editor.showRuler': true, 'editor.toggleFormatting': true,
     'messages.next': true, 'messages.previous': true, 'messages.reply': true,
-    'messages.delete': true, 'messages.markRead': true, 'messages.compose': true,
-    'messages.send': true, 'messages.close': true,
+    'messages.delete': true, 'messages.markRead': true, 'messages.markUnread': true,
+    'messages.compose': true, 'messages.send': true, 'messages.close': true,
+    'messages.secureEmail': true, 'messages.recipientSearch': true, 'messages.recipientAdd': true,
+    'messages.search': true, 'messages.edit': true, 'messages.restore': true,
+    'messages.viewDeleted': true, 'messages.deleteAll': true,
+    'messages.gotoSubject': true, 'messages.gotoBody': true,
+    'messages.clearSubject': true, 'messages.clearBody': true,
+    'messages.markUrgent': true,
     'physician.view': true, 'client.view': true,
     'qc.viewQueue': true, 'qc.claimReview': true, 'qc.submitReview': true,
     'qc.escalateDiscordance': true, 'qc.viewDashboard': true,
@@ -544,8 +574,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'editor.bullets': true, 'editor.numbering': true,
     'editor.find': true, 'editor.replace': true, 'editor.selectAll': true,
     'messages.next': true, 'messages.previous': true, 'messages.reply': true,
-    'messages.delete': true, 'messages.markRead': true, 'messages.compose': true,
-    'messages.send': true, 'messages.close': true,
+    'messages.delete': true, 'messages.markRead': true, 'messages.markUnread': true,
+    'messages.compose': true, 'messages.send': true, 'messages.close': true,
+    'messages.secureEmail': true, 'messages.recipientSearch': true, 'messages.recipientAdd': true,
+    'messages.search': true, 'messages.edit': true, 'messages.restore': true,
+    'messages.viewDeleted': true, 'messages.deleteAll': true,
+    'messages.gotoSubject': true, 'messages.gotoBody': true,
+    'messages.clearSubject': true, 'messages.clearBody': true,
+    'messages.markUrgent': true,
     'physician.view': true, 'client.view': true,
     'qc.viewQueue': true, 'qc.viewDashboard': true,
     // AI CoPilot — residents can use AI but not narrative generation
@@ -575,8 +611,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     'config.ai': true, 'config.macros': true, 'config.shortcuts': true,
     'config.lis': true, 'config.auditLog': true,
     'messages.next': true, 'messages.previous': true, 'messages.reply': true,
-    'messages.delete': true, 'messages.markRead': true, 'messages.compose': true,
-    'messages.send': true, 'messages.close': true,
+    'messages.delete': true, 'messages.markRead': true, 'messages.markUnread': true,
+    'messages.compose': true, 'messages.send': true, 'messages.close': true,
+    'messages.secureEmail': true, 'messages.recipientSearch': true, 'messages.recipientAdd': true,
+    'messages.search': true, 'messages.edit': true, 'messages.restore': true,
+    'messages.viewDeleted': true, 'messages.deleteAll': true,
+    'messages.gotoSubject': true, 'messages.gotoBody': true,
+    'messages.clearSubject': true, 'messages.clearBody': true,
+    'messages.markUrgent': true,
     'qc.configure': true, 'qc.viewDashboard': true, 'qc.exportReport': true,
     'admin.dashboard': true, 'admin.reports': true, 'admin.export': true,
     'admin.backups': true, 'admin.eventLog': true,

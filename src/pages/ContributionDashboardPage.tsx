@@ -17,7 +17,7 @@ import CaseMixTile    from "@components/Dashboards/CaseMixTile";
 import ProductivityTab from "./ProductivityTab";
 import QualityTab      from "./QualityTab";
 import AIContributionTab from "./AIContributionTab";
-import { pathScribeTheme as t } from "@theme/pathscribeTheme";
+import { pathscribeTheme as t } from "@theme/pathscribeTheme";
 import type {
   ContributionFlag,
   CaseMixData,

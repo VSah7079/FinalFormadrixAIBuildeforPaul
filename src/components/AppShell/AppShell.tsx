@@ -17,11 +17,10 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLogout } from '../../hooks/useLogout';
-import { UserSelectorModal } from '../Users/UserSelectorModal';
 import { messageService } from '../../services';
 import type { MessageThread } from '../../services';
 import { useMessaging } from '../../contexts/MessagingContext';
@@ -29,6 +28,31 @@ import NavBar from '../NavBar/NavBar';
 import { useBreadcrumb } from '../../contexts/BreadcrumbContext';
 import { useDirtyState } from '../../contexts/DirtyStateContext';
 import '../../pathscribe.css';
+
+// ─── Internal user directory ─────────────────────────────────────────────────
+interface InternalUser { id: string; name: string; role: string; }
+const INTERNAL_USERS: InternalUser[] = [
+  { id: 'u2',  name: 'Lab Manager',     role: 'Laboratory'           },
+  { id: 'u3',  name: 'System Admin',    role: 'IT / Administration'  },
+  { id: 'u4',  name: 'Dr. Sarah Chen',  role: 'Pathology'            },
+  { id: 'u5',  name: 'Dr. Aristhone',   role: 'Pathology'            },
+  { id: 'u6',  name: 'IT Support',      role: 'IT / Administration'  },
+  { id: 'u7',  name: 'Billing Dept',    role: 'Finance'              },
+  { id: 'u8',  name: 'Dr. Miller',      role: 'Pathology'            },
+  { id: 'u9',  name: 'Archives',        role: 'Medical Records'      },
+  { id: 'u10', name: 'QA Team',         role: 'Quality Assurance'    },
+  { id: 'u11', name: 'Dr. Patel',       role: 'Gastroenterology'     },
+  { id: 'u12', name: 'Transcription',   role: 'Medical Transcription'},
+  { id: 'u13', name: 'Medical Records', role: 'Medical Records'      },
+  { id: 'u14', name: 'Dr. Wilson',      role: 'Oncology'             },
+  { id: 'u15', name: 'Compliance',      role: 'Compliance'           },
+  { id: 'u16', name: 'Supply Room',     role: 'Operations'           },
+  { id: 'u17', name: 'Dr. Lee',         role: 'Dermatopathology'     },
+];
+
+const avatarInitials = (name: string) =>
+  name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.)\s*/i, '')
+    .split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
 
 const formatMessageDate = (date: Date | string | number) => {
   try {
@@ -56,6 +80,451 @@ const formatMessageDate = (date: Date | string | number) => {
   } catch (e) {
     return ""; // Total safety fallback
   }
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUB-COMPONENTS — defined in this file so AppShell stays self-contained
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Helpers shared by sub-components ────────────────────────────────────────
+const relTime = (ts: Date | string): string => {
+  const d = new Date(ts);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / 86_400_000);
+  if (diffDays === 0) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7)  return d.toLocaleDateString([], { weekday: 'short' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+// ── UserSearchOverlay ────────────────────────────────────────────────────────
+interface UserSearchOverlayProps {
+  alreadyAdded: string[];
+  onSelect: (u: InternalUser) => void;
+  onClose: () => void;
+}
+const UserSearchOverlay: React.FC<UserSearchOverlayProps> = ({ alreadyAdded, onSelect, onClose }) => {
+  const [q, setQ] = React.useState('');
+  const ref = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => { ref.current?.focus(); }, []);
+  const results = INTERNAL_USERS.filter(u =>
+    !alreadyAdded.includes(u.id) &&
+    (u.name.toLowerCase().includes(q.toLowerCase()) || u.role.toLowerCase().includes(q.toLowerCase()))
+  );
+  return (
+    <div className="ps-user-search-modal">
+      <div className="ps-user-search-header">
+        <span className="ps-user-search-title">Find a recipient</span>
+        <button className="ps-user-search-close" onClick={onClose}>×</button>
+      </div>
+      <div className="ps-user-search-input-wrap">
+        <div className="ps-user-search-bar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input ref={ref} className="ps-user-search-input" type="text" placeholder="Search by name or department…" value={q} onChange={e => setQ(e.target.value)} />
+        </div>
+      </div>
+      <div className="ps-user-search-results">
+        {results.length === 0
+          ? <div className="ps-user-search-empty">No users found.</div>
+          : results.map(u => (
+            <div key={u.id} className="ps-user-search-item" onClick={() => onSelect(u)}>
+              <div className="ps-user-search-avatar">{avatarInitials(u.name)}</div>
+              <div>
+                <div className="ps-user-search-name">{u.name}</div>
+                <div className="ps-user-search-role">{u.role}</div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+      <div className="ps-user-search-footer">
+        <button className="ps-user-search-cancel" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
+};
+
+// ── ComposePanel ─────────────────────────────────────────────────────────────
+interface ComposePanelProps {
+  recipients: InternalUser[];
+  toInput: string;
+  subject: string;
+  body: string;
+  isUrgent: boolean;
+  showUserSearch: boolean;
+  toDropdownOpen: boolean;
+  toHighlightIdx: number;
+  toInputRef: React.RefObject<HTMLInputElement>;
+  onRecipientsChange: React.Dispatch<React.SetStateAction<InternalUser[]>>;
+  onToInputChange: (v: string) => void;
+  onSubjectChange: (v: string) => void;
+  onBodyChange: (v: string) => void;
+  onUrgentToggle: () => void;
+  onToDropdownOpenChange: (v: boolean) => void;
+  onToHighlightIdxChange: (v: number) => void;
+  onShowUserSearch: (v: boolean) => void;
+  onCancel: () => void;
+  onSend: () => void;
+  onSecureEmail: () => void;
+}
+
+const ComposePanel: React.FC<ComposePanelProps> = ({
+  recipients, toInput, subject, body, isUrgent,
+  toDropdownOpen, toHighlightIdx, toInputRef,
+  onRecipientsChange, onToInputChange, onSubjectChange, onBodyChange,
+  onUrgentToggle, onToDropdownOpenChange, onToHighlightIdxChange, onShowUserSearch,
+  onCancel, onSend, onSecureEmail,
+}) => {
+  const suggestions = React.useMemo(() => {
+    const q = toInput.toLowerCase().trim();
+    if (!q) return [];
+    const addedIds = recipients.map(r => r.id);
+    return INTERNAL_USERS.filter(u =>
+      !addedIds.includes(u.id) &&
+      (u.name.toLowerCase().includes(q) || u.role.toLowerCase().includes(q))
+    );
+  }, [toInput, recipients]);
+
+  React.useEffect(() => {
+    onToDropdownOpenChange(suggestions.length > 0 && toInput.trim().length > 0);
+    onToHighlightIdxChange(0);
+  }, [suggestions.length, toInput]);
+
+  const addRecipient = (u: InternalUser) => {
+    onRecipientsChange(prev => [...prev, u]);
+    onToInputChange('');
+    onToDropdownOpenChange(false);
+    toInputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (toDropdownOpen) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); onToHighlightIdxChange(Math.min(toHighlightIdx + 1, suggestions.length - 1)); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); onToHighlightIdxChange(Math.max(toHighlightIdx - 1, 0)); return; }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); if (suggestions[toHighlightIdx]) addRecipient(suggestions[toHighlightIdx]); return; }
+      if (e.key === 'Escape') { onToDropdownOpenChange(false); return; }
+    }
+    if (e.key === 'Backspace' && !toInput && recipients.length > 0) {
+      onRecipientsChange(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    const exact = INTERNAL_USERS.find(u => u.name.toLowerCase() === toInput.toLowerCase().trim() && !recipients.find(r => r.id === u.id));
+    if (exact) addRecipient(exact);
+    setTimeout(() => onToDropdownOpenChange(false), 150);
+  };
+
+  const canSend = recipients.length > 0 && subject.trim() && body.trim();
+
+  return (
+    <div className="ps-compose-panel">
+      <div className="ps-compose-body">
+
+        {/* To: row */}
+        <div className="ps-compose-row ps-compose-row--to">
+          <span className="ps-compose-label">To:</span>
+          <div className="ps-compose-to-field">
+            {recipients.map(r => (
+              <span key={r.id} className="ps-compose-chip">
+                {r.name}
+                <button className="ps-compose-chip-remove" onMouseDown={e => e.preventDefault()} onClick={() => onRecipientsChange(prev => prev.filter(u => u.id !== r.id))}>×</button>
+              </span>
+            ))}
+            <input
+              ref={toInputRef}
+              className="ps-compose-to-input"
+              type="text"
+              placeholder={recipients.length === 0 ? 'Type a name…' : ''}
+              value={toInput}
+              onChange={e => onToInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
+              autoComplete="off"
+            />
+            <button className="ps-compose-search-btn" onMouseDown={e => e.preventDefault()} onClick={() => onShowUserSearch(true)} title="Browse all internal users">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            {toDropdownOpen && (
+              <div className="ps-compose-dropdown">
+                {suggestions.map((u, i) => (
+                  <div key={u.id} className={`ps-compose-dropdown-item${i === toHighlightIdx ? ' highlighted' : ''}`} onMouseDown={e => e.preventDefault()} onClick={() => addRecipient(u)}>
+                    <div className="ps-compose-dropdown-avatar">{avatarInitials(u.name)}</div>
+                    <div>
+                      <div className="ps-compose-dropdown-name">{u.name}</div>
+                      <div className="ps-compose-dropdown-role">{u.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Subject */}
+        <div className="ps-compose-row">
+          <span className="ps-compose-label">Subject</span>
+          <input className="ps-compose-field-input" type="text" placeholder="Enter subject…" value={subject} onChange={e => onSubjectChange(e.target.value)} />
+        </div>
+
+        {/* Options bar */}
+        <div className="ps-compose-options">
+          <button className={`ps-compose-urgent-btn${isUrgent ? ' active' : ''}`} onClick={onUrgentToggle}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={isUrgent ? '#EF4444' : 'none'} stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Urgent
+          </button>
+          <div className="ps-compose-actions">
+            <button className="ps-compose-cancel-btn" onClick={onCancel}>Cancel</button>
+            <button className={`ps-compose-secure-btn${canSend ? '' : ' disabled'}`} disabled={!canSend} onClick={onSecureEmail} title="Send as secure external email">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Secure Email
+            </button>
+            <button className={`ps-compose-send-btn${canSend ? '' : ' disabled'}`} disabled={!canSend} onClick={onSend}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              Send
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <textarea className="ps-compose-textarea" placeholder="Type your message here…" value={body} onChange={e => onBodyChange(e.target.value)} />
+      </div>
+    </div>
+  );
+};
+
+// ── MessageListPanel ─────────────────────────────────────────────────────────
+interface MessageListPanelProps {
+  messages: any[];
+  selectedMsgId: string | null;
+  hoveredMsgId: string | null;
+  isEditing: boolean;
+  selectedIds: string[];
+  filterType: 'all' | 'deleted';
+  loading: boolean;
+  isComposing: boolean;
+  searchText: string;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
+  onToggleCheck: (id: string) => void;
+  onSoftDelete: (id: string) => void;
+  onRestore: (id: string) => void;
+  onPermanentDelete: (id: string) => void;
+  onSearchChange: (v: string) => void;
+  onBulkMarkRead: () => void;
+  onBulkDelete: () => void;
+  onEmptyDeleted: () => void;
+  onCompose: () => void;
+  onSecureEmail: () => void;
+}
+
+const MessageListPanel: React.FC<MessageListPanelProps> = ({
+  messages, selectedMsgId, hoveredMsgId, isEditing, selectedIds,
+  filterType, loading, isComposing, searchText,
+  onHover, onSelect, onToggleCheck, onSoftDelete, onRestore, onPermanentDelete,
+  onSearchChange, onBulkMarkRead, onBulkDelete, onEmptyDeleted, onCompose, onSecureEmail,
+}) => (
+  <div className="ps-msg-sidebar">
+    <div className="ps-msg-list" style={{ flex: 1, overflowY: 'auto' }}>
+      {loading ? (
+        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b8099', fontSize: 14 }}>Loading…</div>
+      ) : messages.length === 0 ? (
+        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b8099', fontSize: 14 }}>
+          {filterType === 'deleted' ? 'No deleted messages.' : 'Your inbox is empty.'}
+        </div>
+      ) : messages.map(m => {
+        const isSelected = selectedIds.includes(m.id);
+        const isChecked  = selectedIds.includes(m.id);
+        return (
+          <div key={m.id}
+            onMouseEnter={() => onHover(m.id)}
+            onMouseLeave={() => onHover(null)}
+            onClick={() => isEditing ? onToggleCheck(m.id) : onSelect(m.id)}
+            style={{
+              padding: '11px 16px', cursor: 'pointer',
+              background: selectedMsgId === m.id ? 'rgba(8,145,178,0.09)' : hoveredMsgId === m.id ? 'rgba(255,255,255,0.025)' : 'transparent',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+              borderLeft: `3px solid ${selectedMsgId === m.id ? '#0891B2' : m.isUrgent ? '#EF4444' : 'transparent'}`,
+              display: 'flex', alignItems: 'center', gap: 11, transition: 'all 0.12s',
+            }}
+          >
+            {/* Checkbox in edit mode */}
+            {isEditing && (
+              <div style={{ width: 18, height: 18, borderRadius: 4, border: isChecked ? 'none' : '1.5px solid #6b8099', background: isChecked ? '#0891B2' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                {isChecked && <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5"><polyline points="2,6 5,9 10,3"/></svg>}
+              </div>
+            )}
+            {/* Avatar */}
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#162036', border: `1px solid ${m.isUrgent ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.07)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: m.isUrgent ? '#EF4444' : '#0891B2', flexShrink: 0 }}>
+              {avatarInitials(m.senderName)}
+            </div>
+            {/* Body */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3, gap: 6 }}>
+                <span style={{ fontWeight: m.isRead ? 500 : 700, color: m.isUrgent ? (m.isRead ? '#7f3530' : '#EF4444') : m.isRead ? '#5a7299' : '#e8f0fc', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.senderName}
+                </span>
+                {!isEditing && (
+                  hoveredMsgId === m.id ? (
+                    filterType === 'deleted' ? (
+                      <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                        <button onClick={e => { e.stopPropagation(); onRestore(m.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0891B2', fontSize: 11, fontWeight: 600, padding: 0 }}>Restore</button>
+                        <button onClick={e => { e.stopPropagation(); onPermanentDelete(m.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: 11, fontWeight: 600, padding: 0 }}>Delete</button>
+                      </div>
+                    ) : (
+                      <button onClick={e => { e.stopPropagation(); onSoftDelete(m.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', display: 'flex', alignItems: 'center', padding: 0 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
+                    )
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      {m.isUrgent && <span style={{ fontSize: 9, fontWeight: 800, color: '#EF4444', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 4, padding: '1px 5px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }}>Urgent</span>}
+                      <span style={{ fontSize: 11, color: '#7a95b0', flexShrink: 0 }}>{relTime(m.timestamp)}</span>
+                    </div>
+                  )
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: '#7a95b0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', marginBottom: 1 }}>{m.subject}</div>
+              <div style={{ fontSize: 11.5, color: '#8090a8', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{m.body}</div>
+            </div>
+            {!m.isRead && !isEditing && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />}
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Footer */}
+    <div className="ps-msg-sidebar-footer">
+      {isEditing ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={onBulkMarkRead} style={{ background: 'none', border: 'none', color: '#0891B2', cursor: 'pointer', fontSize: 14, padding: 0 }}>Read All</button>
+          <button onClick={onBulkDelete} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 14, fontWeight: 600, padding: 0 }}>Delete</button>
+        </div>
+      ) : filterType === 'deleted' ? (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button onClick={onEmptyDeleted} disabled={messages.length === 0}
+            style={{ background: 'none', border: 'none', cursor: messages.length === 0 ? 'default' : 'pointer', color: messages.length === 0 ? '#1e293b' : '#EF4444', fontSize: 14, fontWeight: 600 }}>Delete All</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Search */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(14,23,38,0.9)', border: '1px solid rgba(100,130,160,0.35)', borderRadius: 8, padding: '8px 12px', transition: 'border-color 0.15s' }}
+            onFocusCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(8,145,178,0.5)'}
+            onBlurCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(80,110,140,0.5)'}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8aaccc" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input className="ps-input" placeholder="Search" value={searchText} onChange={e => onSearchChange(e.target.value)}
+              style={{ flex: 1, background: 'none', border: 'none', color: '#d0daea', fontSize: 13, outline: 'none' }} />
+          </div>
+          {/* Compose */}
+          <button onClick={onCompose} disabled={isComposing} title="New internal message"
+            style={{ background: 'none', border: 'none', cursor: isComposing ? 'default' : 'pointer', color: isComposing ? '#334d66' : '#0891B2', display: 'flex', alignItems: 'center', padding: 5, borderRadius: 6, transition: 'all 0.15s' }}
+            onMouseEnter={e => { if (!isComposing) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(8,145,178,0.12)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          {/* Secure email */}
+          <button onClick={onSecureEmail} title="Send secure external email"
+            style={{ background: 'none', border: '1px solid rgba(100,130,160,0.3)', cursor: 'pointer', color: '#7a95b0', display: 'flex', alignItems: 'center', padding: '4px 7px', borderRadius: 6, gap: 4, transition: 'all 0.15s', fontSize: 10, fontWeight: 700 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#38bdf8'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#8aaccc'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(80,110,140,0.35)'; }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// ── ThreadPanel ───────────────────────────────────────────────────────────────
+interface ThreadPanelProps {
+  message: any;
+  userId: string;
+  inputText: string;
+  onInputChange: (v: string) => void;
+  onSend: () => void;
+  onSoftDelete: () => void;
+  onMarkUnread: () => void;
+}
+
+const ThreadPanel: React.FC<ThreadPanelProps> = ({ message, userId, inputText, onInputChange, onSend, onSoftDelete, onMarkUnread }) => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const bubbleEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => { bubbleEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [message.thread]);
+
+  const thread = message.thread?.length
+    ? message.thread
+    : [{ senderId: message.senderId, sender: message.senderName, text: message.body, timestamp: message.timestamp }];
+
+  return (
+    <>
+      <div className="ps-thread-body ps-msg-thread" style={{ position: 'relative' }}>
+        {thread.map((msg: any, idx: number) => {
+          const isMe = msg.senderId === userId;
+          return (
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: '#7a95b0', marginBottom: 4, display: 'flex', gap: 5 }}>
+                <span>{msg.sender}</span><span>·</span>
+                <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <div style={{ maxWidth: '72%', padding: '11px 15px', borderRadius: 14, fontSize: 13.5, lineHeight: 1.6, color: isMe ? '#d8f0f8' : '#d0daea', background: isMe ? '#0d5f79' : '#1a2740', border: isMe ? 'none' : '1px solid rgba(255,255,255,0.07)', borderBottomRightRadius: isMe ? 4 : 14, borderBottomLeftRadius: isMe ? 14 : 4, wordBreak: 'break-word' as const }}>
+                {msg.text}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bubbleEndRef} />
+
+        {/* ⋯ menu */}
+        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+          <button onClick={() => setMenuOpen(v => !v)} style={{ background: 'none', border: 'none', color: '#7a95b0', cursor: 'pointer', padding: 6, borderRadius: 6, display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#d0daea'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#8aaccc'; (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+          </button>
+          {menuOpen && (
+            <>
+              <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+              <div style={{ position: 'absolute', top: '100%', right: 0, background: '#162036', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', minWidth: 175, boxShadow: '0 12px 32px rgba(0,0,0,0.5)', zIndex: 50 }}>
+                {[
+                  { label: 'Mark as unread', action: () => { onMarkUnread(); setMenuOpen(false); }, danger: false },
+                  { label: 'Delete message',  action: () => { onSoftDelete(); setMenuOpen(false); }, danger: true  },
+                ].map(item => (
+                  <button key={item.label} onClick={item.action}
+                    style={{ display: 'flex', width: '100%', padding: '11px 14px', background: 'none', border: 'none', color: item.danger ? '#EF4444' : '#d0daea', fontSize: 13, cursor: 'pointer', textAlign: 'left' as const, borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
+                  >{item.label}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Reply bar */}
+      <div style={{ padding: '14px 20px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10, background: '#0a1220', flexShrink: 0 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: '#0f1d2e', border: '1px solid rgba(100,130,160,0.35)', borderRadius: 24, padding: '6px 8px 6px 16px', transition: 'border-color 0.15s' }}
+          onFocusCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(8,145,178,0.5)'}
+          onBlurCapture={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(80,110,140,0.5)'}
+        >
+          <input className="ps-input" type="text" placeholder="Reply…" value={inputText}
+            onChange={e => onInputChange(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#d0daea', fontSize: 14 }}
+          />
+          <button onClick={onSend} disabled={!inputText.trim()}
+            style={{ width: 32, height: 32, borderRadius: '50%', background: inputText.trim() ? '#0891B2' : 'transparent', border: inputText.trim() ? 'none' : '1px solid rgba(80,110,140,0.5)', cursor: inputText.trim() ? 'pointer' : 'default', color: inputText.trim() ? '#FFF' : '#6b8099', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </>
+  );
 };
 
 const AppShell: React.FC = () => {
@@ -88,16 +557,21 @@ const AppShell: React.FC = () => {
   const {
     messages, setMessages,
     unreadCount,
+    hasUrgent,
     portalOpen, setPortalOpen,
   } = useMessaging();
 
 // ─── Drawers & Modals ──────────────────────────────────────────────────────
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [userModalOpen, setUserModalOpen] = useState(false);
-  const [newTo, setNewTo] = useState('');
-  const [newToId, setNewToId] = useState('');
-  const [newSubject, setNewSubject] = useState('');
-  const [newBody, setNewBody] = useState('');
+  const [aboutOpen, setAboutOpen]             = useState(false);
+  const [newRecipients, setNewRecipients]     = useState<InternalUser[]>([]);
+  const [newToInput,    setNewToInput]        = useState('');
+  const [newSubject,    setNewSubject]        = useState('');
+  const [newBody,       setNewBody]           = useState('');
+  const [showUserSearch,   setShowUserSearch]   = useState(false);
+  const [toDropdownOpen,   setToDropdownOpen]   = useState(false);
+  const [toHighlightIdx,   setToHighlightIdx]   = useState(0);
+  const [secureEmailToast, setSecureEmailToast] = useState<string | null>(null);
+  const toInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Edit / selection ───────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
@@ -190,23 +664,29 @@ const AppShell: React.FC = () => {
   };
 
   const handleSendNew = async () => {
-    if (!newBody.trim() || !newToId) return;
-    const result = await messageService.send({
-      senderId:      userId,
-      senderName:    user?.name ?? 'Dr. Sarah Johnson',
-      recipientId:   newToId,
-      recipientName: newTo,
-      subject:       newSubject,
-      body:          newBody,
-      timestamp:     new Date(),
-      isUrgent:      isUrgentNew,
-    });
-    if (result.ok) {
-      setMessages(prev => [result.data, ...prev]);
-      setSelectedMsgId(result.data.id);
+    if (!newBody.trim() || newRecipients.length === 0) return;
+    for (const recipient of newRecipients) {
+      const result = await messageService.send({
+        senderId:      userId,
+        senderName:    user?.name ?? 'Dr. Sarah Johnson',
+        recipientId:   recipient.id,
+        recipientName: recipient.name,
+        subject:       newSubject,
+        body:          newBody,
+        timestamp:     new Date(),
+        isUrgent:      isUrgentNew,
+      });
+      if (result.ok) setMessages(prev => [result.data, ...prev]);
     }
-    setNewTo(''); setNewToId(''); setNewSubject(''); setNewBody('');
+    setNewRecipients([]); setNewToInput(''); setNewSubject(''); setNewBody('');
     setIsUrgentNew(false); setIsDirty(false); setIsComposing(false);
+  };
+
+  const handleSecureEmail = () => {
+    const names = newRecipients.map(r => r.name).join(', ') || 'recipient';
+    setSecureEmailToast(`Secure email queued for ${names}`);
+    setTimeout(() => setSecureEmailToast(null), 3200);
+    console.info('[Pathscribe] Secure email dispatch to:', newRecipients);
   };
 
   const handleBulkDelete = async () => {
@@ -240,7 +720,8 @@ const AppShell: React.FC = () => {
     setIsDirty(false);
     setIsUrgentNew(false);
     setIsComposing(false);
-    setNewTo(''); setNewToId(''); setNewSubject(''); setNewBody('');
+    setNewRecipients([]); setNewToInput(''); setNewSubject(''); setNewBody('');
+    setToDropdownOpen(false); setShowUserSearch(false);
   };
 
   const handleCloseDrawer = () => {
@@ -307,8 +788,16 @@ const AppShell: React.FC = () => {
       else handleSoftDelete(selectedMsgId);
     };
     const msgMarkRead    = () => { if (selectedMsgId) handleMarkRead(selectedMsgId); };
-    const msgMarkReadAll = () => handleBulkMarkRead();
-    const msgCompose     = () => {
+    const msgMarkReadAll  = () => handleBulkMarkRead();
+    const msgMarkUnread   = () => {
+      if (selectedMsgId) setMessages(prev => prev.map(m => m.id === selectedMsgId ? { ...m, isRead: false } : m));
+    };
+    const msgSecureEmail  = () => handleSecureEmail();
+    const msgRecipientAdd = () => {
+      // Confirms the highlighted inline To: suggestion — same as pressing Enter in the input
+      toInputRef.current?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    };
+    const msgCompose      = () => {
       setPreviousMsgId(selectedMsgId);
       setSelectedMsgId(null);
       setIsComposing(true);
@@ -339,7 +828,7 @@ const AppShell: React.FC = () => {
     const msgClearSubject    = () => setNewSubject('');
     const msgClearBody       = () => { setNewBody(''); setIsDirty(false); };
     const msgUrgent          = () => setIsUrgentNew(u => !u);
-    const msgRecipientSearch = () => setUserModalOpen(true);
+    const msgRecipientSearch = () => setShowUserSearch(true);
 
     window.addEventListener('PATHSCRIBE_OPEN_HOME',               openHome);
     window.addEventListener('PATHSCRIBE_OPEN_MESSAGES',           openMessages);
@@ -363,6 +852,9 @@ const AppShell: React.FC = () => {
     window.addEventListener('PATHSCRIBE_MSG_DELETE',              msgDelete);
     window.addEventListener('PATHSCRIBE_MSG_MARK_READ',           msgMarkRead);
     window.addEventListener('PATHSCRIBE_MSG_MARK_READ_ALL',       msgMarkReadAll);
+    window.addEventListener('PATHSCRIBE_MSG_MARK_UNREAD',         msgMarkUnread);
+    window.addEventListener('PATHSCRIBE_MSG_SECURE_EMAIL',        msgSecureEmail);
+    window.addEventListener('PATHSCRIBE_MSG_RECIPIENT_ADD',       msgRecipientAdd);
     window.addEventListener('PATHSCRIBE_MSG_COMPOSE',             msgCompose);
     window.addEventListener('PATHSCRIBE_MSG_SEND',                msgSend);
     window.addEventListener('PATHSCRIBE_MSG_CLOSE',               msgClose);
@@ -402,6 +894,9 @@ const AppShell: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_MSG_DELETE',              msgDelete);
       window.removeEventListener('PATHSCRIBE_MSG_MARK_READ',           msgMarkRead);
       window.removeEventListener('PATHSCRIBE_MSG_MARK_READ_ALL',       msgMarkReadAll);
+      window.removeEventListener('PATHSCRIBE_MSG_MARK_UNREAD',         msgMarkUnread);
+      window.removeEventListener('PATHSCRIBE_MSG_SECURE_EMAIL',        msgSecureEmail);
+      window.removeEventListener('PATHSCRIBE_MSG_RECIPIENT_ADD',       msgRecipientAdd);
       window.removeEventListener('PATHSCRIBE_MSG_COMPOSE',             msgCompose);
       window.removeEventListener('PATHSCRIBE_MSG_SEND',                msgSend);
       window.removeEventListener('PATHSCRIBE_MSG_CLOSE',               msgClose);
@@ -474,10 +969,10 @@ const AppShell: React.FC = () => {
       {/* ── MESSAGES DRAWER ── */}
       {portalOpen && (
         <>
-          <div onClick={handleCloseDrawer} style={{ position: 'fixed', top: '70px', right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', zIndex: 19999 }} />
+          <div onClick={handleCloseDrawer} style={{ position: 'fixed', top: '70px', right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', zIndex: 19998 }} />
 
           {/* ── Unified messaging surface ── */}
-          <div className="ps-msg-drawer" style={{ width: '850px' }}>
+          <div className="ps-msg-drawer" style={{ width: '850px', zIndex: 20000 }} onClick={e => e.stopPropagation()}>
 
             {/* ── Unified top bar ── */}
             <div className="ps-msg-topbar">
@@ -489,7 +984,7 @@ const AppShell: React.FC = () => {
                     {filterType === 'deleted' ? 'Recently Deleted' : 'Messages'}
                   </h2>
                   {unreadCount > 0 && filterType !== 'deleted' && (
-                    <span className="ps-unread-bubble">{unreadCount}</span>
+                    <span className={`ps-unread-bubble${hasUrgent ? " ps-unread-urgent" : ""}`}>{unreadCount}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -591,161 +1086,68 @@ const AppShell: React.FC = () => {
             <div className="ps-msg-body">
 
               {/* LEFT SIDEBAR */}
-              <div className="ps-msg-sidebar">
-                <div className="ps-msg-list" style={{ flex: 1, overflowY: 'auto' }}>
-                  {loading ? (
-                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#334155', fontSize: '14px' }}>Loading...</div>
-                  ) : displayMessages.length === 0 ? (
-                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#334155', fontSize: '14px' }}>No messages</div>
-                  ) : displayMessages.map((m) => {
-                    const isSelected = selectedIds.includes(m.id);
-                    return (
-                      <div key={m.id}
-                        onMouseEnter={() => setHoveredMsgId(m.id)}
-                        onMouseLeave={() => setHoveredMsgId(null)}
-                        onClick={() => {
-                          if (isEditing) {
-                            setSelectedIds(prev => isSelected ? prev.filter(id => id !== m.id) : [...prev, m.id]);
-                          } else {
-                            setSelectedMsgId(m.id);
-                            handleMarkRead(m.id);
-                          }
-                        }}
-                        style={{ padding: '12px 18px', cursor: 'pointer', background: selectedMsgId === m.id ? 'rgba(8,145,178,0.08)' : hoveredMsgId === m.id ? 'rgba(255,255,255,0.03)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.04)', borderLeft: `2px solid ${selectedMsgId === m.id ? '#0891B2' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.12s' }}
-                      >
-                        {isEditing && (
-                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: isSelected ? 'none' : '1.5px solid #334155', background: isSelected ? '#0891B2' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {isSelected && <span style={{ color: 'white', fontSize: '10px' }}>✓</span>}
-                          </div>
-                        )}
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                            <span style={{ fontWeight: m.isRead ? 400 : 700, color: m.isUrgent ? (m.isRead ? '#7f3530' : '#FF453A') : m.isRead ? '#6b7f99' : '#f1f5f9', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.senderName}</span>
-                            {!isEditing && (
-                              hoveredMsgId === m.id ? (
-                                filterType === 'deleted' ? (
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                                    <button onClick={(e) => { e.stopPropagation(); handleRestore(m.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0A84FF', fontSize: '11px', fontWeight: 600, padding: 0 }}>Restore</button>
-                                    <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(m.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF453A', fontSize: '11px', fontWeight: 600, padding: 0 }}>Delete</button>
-                                  </div>
-                                ) : (
-                                  <button onClick={(e) => { e.stopPropagation(); handleSoftDelete(m.id); }} title="Delete"
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF453A', display: 'flex', alignItems: 'center', padding: 0 }}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                                    </svg>
-                                  </button>
-                                )
-                              ) : (
-                                <span style={{ fontSize: '11px', color: '#6b7f99', flexShrink: 0 }}>{formatMessageDate(m.timestamp)}</span>
-                              )
-                            )}
-                          </div>
-                          <div style={{ fontSize: '12px', color: m.isRead ? '#8a9db5' : '#b8c5d4', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{m.body}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Sidebar footer */}
-                <div className="ps-msg-sidebar-footer">
-                  {isEditing ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <button onClick={handleBulkMarkRead} style={{ background: 'none', border: 'none', color: '#0A84FF', cursor: 'pointer', fontSize: '14px', padding: 0 }}>Read All</button>
-                      <button onClick={handleBulkDelete} style={{ background: 'none', border: 'none', color: '#FF453A', cursor: 'pointer', fontSize: '14px', fontWeight: 600, padding: 0 }}>Delete</button>
-                    </div>
-                  ) : filterType === 'deleted' ? (
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <button disabled={displayMessages.length === 0} onClick={handleEmptyDeleted}
-                        style={{ background: 'none', border: 'none', cursor: displayMessages.length === 0 ? 'default' : 'pointer', color: displayMessages.length === 0 ? '#1e293b' : '#FF453A', fontSize: '14px', fontWeight: 600 }}>Delete All</button>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input className="ps-input" placeholder="Search" value={searchText} onChange={e => setSearchText(e.target.value)}
-                        style={{ flex: 1, background: 'rgba(22,34,61,0.9)', border: '1px solid rgba(82,102,128,0.9)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '13px', outline: 'none' }}
-                        onFocus={e => e.currentTarget.style.borderColor = 'rgba(8,145,178,0.6)'}
-                        onBlur={e => e.currentTarget.style.borderColor = 'rgba(82,102,128,0.9)'}
-                      />
-                      <button onClick={() => { setPreviousMsgId(selectedMsgId); setSelectedMsgId(null); setIsComposing(true); setInputText(''); }}
-                        title="New Message" disabled={isComposing}
-                        style={{ background: 'none', border: 'none', cursor: isComposing ? 'default' : 'pointer', color: isComposing ? '#1e293b' : '#1ab8e0', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '6px', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { if (!isComposing) e.currentTarget.style.background = 'rgba(8,145,178,0.15)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                      >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <MessageListPanel
+                messages={displayMessages}
+                selectedMsgId={selectedMsgId}
+                hoveredMsgId={hoveredMsgId}
+                isEditing={isEditing}
+                selectedIds={selectedIds}
+                filterType={filterType}
+                loading={loading}
+                isComposing={isComposing}
+                searchText={searchText}
+                onHover={setHoveredMsgId}
+                onSelect={(id) => { setSelectedMsgId(id); handleMarkRead(id); }}
+                onToggleCheck={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+                onSoftDelete={handleSoftDelete}
+                onRestore={handleRestore}
+                onPermanentDelete={handlePermanentDelete}
+                onSearchChange={setSearchText}
+                onBulkMarkRead={handleBulkMarkRead}
+                onBulkDelete={handleBulkDelete}
+                onEmptyDeleted={handleEmptyDeleted}
+                onCompose={() => { setPreviousMsgId(selectedMsgId); setSelectedMsgId(null); setIsComposing(true); setInputText(''); }}
+                onSecureEmail={handleSecureEmail}
+              />
 
               {/* RIGHT CONTENT */}
-              <div className="ps-msg-content">
+              <div className="ps-msg-content" style={{ pointerEvents: 'all' }}>
                 {isComposing ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', gap: '0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 0' }}>
-                      <button type="button" onClick={() => setUserModalOpen(true)} style={{ color: '#0891B2', fontSize: '14px', fontWeight: 600, width: '50px', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>To:</button>
-                      <span style={{ color: newTo ? '#e2e8f0' : '#334155', fontSize: '14px' }}>{newTo || 'Select a user...'}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 0' }}>
-                      <span style={{ color: '#334155', fontSize: '14px', fontWeight: 600, width: '50px' }}>Subj:</span>
-                      <input type="text" placeholder="Subject / Case Number" value={newSubject} onChange={e => setNewSubject(e.target.value)}
-                        style={{ flex: 1, background: 'none', border: 'none', color: '#e2e8f0', outline: 'none', fontSize: '14px' }} />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', padding: '10px 0', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <button onClick={() => setIsUrgentNew(p => !p)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isUrgentNew ? 'rgba(255,69,58,0.12)' : 'none', border: isUrgentNew ? '1px solid rgba(255,69,58,0.3)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', cursor: 'pointer', color: isUrgentNew ? '#FF453A' : '#475569', fontSize: '11px', fontWeight: 600, padding: '4px 8px', transition: 'all 0.2s' }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill={isUrgentNew ? '#FF453A' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Urgent
-                      </button>
-                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                        <button onClick={() => { setIsComposing(false); setSelectedMsgId(previousMsgId); }}
-                          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', padding: '5px 14px', cursor: 'pointer', color: '#475569', fontSize: '13px', fontWeight: 600 }}>Cancel</button>
-                        <button onClick={handleSendNew}
-                          style={{ background: '#0891B2', border: 'none', borderRadius: '7px', padding: '5px 16px', cursor: 'pointer', color: '#FFF', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-                          Send
-                        </button>
-                      </div>
-                    </div>
-                    <textarea placeholder="Type your message here..." value={newBody} onChange={e => { setNewBody(e.target.value); setIsDirty(e.target.value.length > 0); }}
-                      style={{ flex: 1, background: 'none', border: 'none', color: '#e2e8f0', outline: 'none', fontSize: '14px', resize: 'none', lineHeight: '1.6', marginTop: '12px' }} />
-                  </div>
-                ) : selectedMsgId ? (
-                  <>
-                    <div className="ps-thread-body ps-msg-thread">
-                      {(currentMsg?.thread?.length ? currentMsg.thread : [{ senderId: currentMsg?.senderId ?? '', sender: currentMsg?.senderName ?? '', text: currentMsg?.body ?? '', timestamp: currentMsg?.timestamp ?? new Date() } as MessageThread]).map((msg, idx) => {
-                        const isMe = msg.senderId === userId;
-                        return (
-                          <div key={idx} className={`ps-bubble ${isMe ? 'mine' : 'theirs'}`}>
-                            {msg.text}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ padding: '14px 20px 34px', borderTop: '1px solid rgba(51,65,85,0.9)', display: 'flex', alignItems: 'center', gap: '10px', background: '#0a1628', flexShrink: 0 }}>
-                      <div className="ps-msg-input-wrap">
-                        <input className="ps-input" type="text" placeholder="Message..." value={inputText}
-                          onChange={e => { setInputText(e.target.value); setIsDirty(e.target.value.length > 0); }}
-                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                          style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#e2e8f0', fontSize: '14px' }}
-                        />
-                      </div>
-                      <button onClick={handleSend} disabled={!inputText.trim()}
-                        style={{ width: '43px', height: '43px', borderRadius: '50%', background: inputText.trim() ? '#0891B2' : 'rgba(22,34,61,0.9)', border: `1px solid ${inputText.trim() ? 'transparent' : 'rgba(82,102,128,0.9)'}`, cursor: inputText.trim() ? 'pointer' : 'default', color: inputText.trim() ? '#FFF' : '#5a7299', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}
-                        onMouseEnter={e => { if (inputText.trim()) e.currentTarget.style.background = '#0e7490'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = inputText.trim() ? '#0891B2' : 'rgba(22,34,61,0.9)'; }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </>
+                  <ComposePanel
+                    recipients={newRecipients}
+                    toInput={newToInput}
+                    subject={newSubject}
+                    body={newBody}
+                    isUrgent={isUrgentNew}
+                    showUserSearch={showUserSearch}
+                    toDropdownOpen={toDropdownOpen}
+                    toHighlightIdx={toHighlightIdx}
+                    toInputRef={toInputRef}
+                    onRecipientsChange={setNewRecipients}
+                    onToInputChange={setNewToInput}
+                    onSubjectChange={setNewSubject}
+                    onBodyChange={(v) => { setNewBody(v); setIsDirty(v.length > 0); }}
+                    onUrgentToggle={() => setIsUrgentNew(p => !p)}
+                    onToDropdownOpenChange={setToDropdownOpen}
+                    onToHighlightIdxChange={setToHighlightIdx}
+                    onShowUserSearch={setShowUserSearch}
+                    onCancel={() => { setIsComposing(false); setSelectedMsgId(previousMsgId); }}
+                    onSend={handleSendNew}
+                    onSecureEmail={handleSecureEmail}
+                  />
+                ) : selectedMsgId && currentMsg ? (
+                  <ThreadPanel
+                    message={currentMsg}
+                    userId={userId}
+                    inputText={inputText}
+                    onInputChange={(v) => { setInputText(v); setIsDirty(v.length > 0); }}
+                    onSend={handleSend}
+                    onSoftDelete={() => handleSoftDelete(selectedMsgId)}
+                    onMarkUnread={() => setMessages(prev => prev.map(m => m.id === selectedMsgId ? { ...m, isRead: false } : m))}
+                  />
                 ) : (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#1e293b' }}>
-                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#8aaccc' }}>
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
                     <p style={{ fontSize: '13px', margin: 0 }}>Select a message to read</p>
@@ -757,15 +1159,20 @@ const AppShell: React.FC = () => {
           </div>
         </>
       )}
-{userModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 4000 }}>
-          <UserSelectorModal 
-            onClose={() => setUserModalOpen(false)}
-            onSelect={(u: any) => {
-              setNewTo(u.name);
-              setNewToId(u.id);
-              setUserModalOpen(false);
-            }}
+{/* Secure email toast */}
+      {secureEmailToast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#0f1d2e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#d0daea', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 5000, whiteSpace: 'nowrap' }}>
+          <span style={{ color: '#38bdf8', fontSize: 16 }}>🔒</span>
+          {secureEmailToast}
+        </div>
+      )}
+      {/* User search modal for compose To: field */}
+      {showUserSearch && (
+        <div className="ps-user-search-overlay">
+          <UserSearchOverlay
+            alreadyAdded={newRecipients.map(r => r.id)}
+            onSelect={(u) => { setNewRecipients(prev => [...prev, u]); setShowUserSearch(false); toInputRef.current?.focus(); }}
+            onClose={() => setShowUserSearch(false)}
           />
         </div>
       )}
