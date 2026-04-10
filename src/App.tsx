@@ -26,6 +26,9 @@ import AppShell from "./components/AppShell/AppShell";
 // Loaders
 import { synopticLoader } from "./loaders/synopticLoader";
 
+//EMR Access
+import MockEMRPage from './pages/MockEMRPage';
+
 // ── Lazy-loaded pages ─────────────────────────────────────────────────────────
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./Login"));
@@ -151,6 +154,10 @@ const App: React.FC = () => (
                         <Route
                           path="/template-review/:templateId"
                           element={<TemplateRendererPage />}
+                        />
+                        <Route 
+                          path="/mock-emr" 
+                          element={<MockEMRPage />} 
                         />
                       </Route>
                     </Routes>

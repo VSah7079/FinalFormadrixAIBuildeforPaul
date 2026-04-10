@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Case } from '@/types/case/Case';
 
 interface BottomActionBarProps {
@@ -10,7 +10,7 @@ interface BottomActionBarProps {
   onFinalizeAndNext: () => void;
   onSignOut: () => void;
   onAddendumAmendment: () => void;
-  onDelegate?: () => void; // Renamed from onConsult
+  onDelegate?: () => void;
   onHistory?: () => void;
   onFlags?: () => void;
   onCodes?: () => void;
@@ -47,13 +47,9 @@ const ActionButton: React.FC<{
   };
 
   return (
-    <button 
-      onClick={onClick} 
-      style={baseStyle} 
-      title={title}
+    <button onClick={onClick} style={baseStyle} title={title}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+      onMouseLeave={() => setIsHovered(false)}>
       {children}
     </button>
   );
@@ -72,117 +68,95 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   onFinalizeAndNext,
   onSignOut,
   onAddendumAmendment,
-  onDelegate, // Updated name
+  onDelegate,
   onHistory,
   onFlags,
   onCodes,
   onNextCase,
   onPreviousCase,
 }) => {
+  const emrWindowRef = useRef<Window | null>(null);
   const status = caseData?.status ?? 'draft';
   const isFinalized = status === 'finalized';
+  
+  // Logic to auto-close EMR window when patient changes
+  useEffect(() => {
+    return () => {
+      if (emrWindowRef.current && !emrWindowRef.current.closed) {
+        emrWindowRef.current.close();
+      }
+    };
+  }, [caseData?.patient?.mrn]); // Trigger whenever MRN changes
+
+const handleLaunchEMR = () => {
+  const mrn = caseData?.patient?.mrn ?? '100004';
+  const targetUrl = `${window.location.origin}/mock-emr?patientId=${mrn}`;
+  
+  // Standard stable dimensions for demo laptops/projectors
+  const width = 1200;
+  const height = 800;
+  const left = (window.screen.width - width) / 2;
+  const top = (window.screen.height - height) / 2;
+
+  if (emrWindowRef.current && !emrWindowRef.current.closed) {
+    emrWindowRef.current.location.href = targetUrl;
+    emrWindowRef.current.focus();
+  } else {
+    emrWindowRef.current = window.open(
+      targetUrl, 
+      'PathScribeEMRSidecar', 
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+  }
+};
+
+// Keep your safety close logic
+useEffect(() => {
+  if (emrWindowRef.current && !emrWindowRef.current.closed) {
+    emrWindowRef.current.close();
+    emrWindowRef.current = null;
+  }
+}, [caseData?.id]);
 
   const hasCodes = ((caseData as any)?.coding?.icd10?.length ?? 0) > 0 ||
                    ((caseData as any)?.coding?.snomed?.length ?? 0) > 0;
   const codesColor = hasCodes ? '#0891B2' : '#f59e0b';
-  
-  const isSigned = status === 'finalized'; 
-
   const allFinalized = (caseData?.synopticReports?.length ?? 0) > 0 &&
     caseData!.synopticReports!.every(r => r.status === 'finalized');
 
   return (
     <div style={{
-      background: '#0d1829',
-      padding: '10px 24px',
-      borderTop: '1px solid rgba(255,255,255,0.08)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      flexShrink: 0,
-      gap: '8px',
+      background: '#0d1829', padding: '10px 24px', borderTop: '1px solid rgba(255,255,255,0.08)',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, gap: '8px',
     }}>
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-        <ActionButton onClick={onPreviousCase} variant="outline" color="#64748b" title="Previous case">
-          ← Previous
-        </ActionButton>
-        <ActionButton onClick={onNextCase} variant="outline" color="#64748b" title="Next case">
-          Next →
-        </ActionButton>
-
+        <ActionButton onClick={onPreviousCase} variant="outline" color="#64748b" title="Previous case">← Previous</ActionButton>
+        <ActionButton onClick={onNextCase} variant="outline" color="#64748b" title="Next case">Next →</ActionButton>
         <Divider />
-
-        {isFinalized && (
-          <ActionButton onClick={onAddendumAmendment} variant="outline" color="#0891B2">
-            📎 Addendum
-          </ActionButton>
-        )}
         
-        {/* UPDATED DELEGATE BUTTON */}
-        <ActionButton 
-          onClick={() => onDelegate?.()} 
-          variant="outline" 
-          color="#7c3aed"
-          title="Delegate case to a specialist or workgroup pool"
-        >
-          👥 Delegate
+        {/* LAUNCH EMR BUTTON */}
+        <ActionButton onClick={handleLaunchEMR} variant="outline" color="#0ea5e9" title="Open Patient Record in EMR Sidecar">
+          🌐 Launch EMR
         </ActionButton>
 
-        <ActionButton onClick={() => onHistory?.()} variant="outline" color="#0891B2">
-          📋 History
-        </ActionButton>
-        <ActionButton onClick={() => onFlags?.()} variant="outline" color="#f59e0b">
-          🚩 Flags
-        </ActionButton>
-        <ActionButton onClick={() => onCodes?.()} variant="outline" color={codesColor} title={hasCodes ? 'View / edit codes' : 'No codes assigned yet'}>
-          # Codes{!hasCodes && ' ⚠'}
-        </ActionButton>
+        <ActionButton onClick={() => onDelegate?.()} variant="outline" color="#7c3aed" title="Delegate case">👥 Delegate</ActionButton>
+        <ActionButton onClick={() => onHistory?.()} variant="outline" color="#0891B2">📋 History</ActionButton>
+        <ActionButton onClick={() => onFlags?.()} variant="outline" color="#f59e0b">🚩 Flags</ActionButton>
+        <ActionButton onClick={() => onCodes?.()} variant="outline" color={codesColor}># Codes</ActionButton>
       </div>
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
         {!isFinalized && (
           <>
-            <ActionButton
-              onClick={onSaveDraft}
-              variant="outline"
-              color={isDirty ? '#0891B2' : '#334155'}
-              title={isDirty ? 'Save draft' : 'No unsaved changes'}
-            >
-              💾 Save Draft
-            </ActionButton>
-            <ActionButton
-              onClick={isDirty ? onSaveAndNext : () => navigateToCase?.('next')}
-              variant="outline"
-              color={isDirty ? '#0891B2' : '#334155'}
-              title={isDirty ? 'Save and go to next case' : 'No unsaved changes'}
-            >
-              💾 Save &amp; Next
-            </ActionButton>
-            
+            <ActionButton onClick={onSaveDraft} variant="outline" color={isDirty ? '#0891B2' : '#334155'}>💾 Save Draft</ActionButton>
+            <ActionButton onClick={onSaveAndNext} variant="outline" color={isDirty ? '#0891B2' : '#334155'}>💾 Save &amp; Next</ActionButton>
             <Divider />
-            
-            <ActionButton onClick={onFinalize} variant="solid" color="#0891B2" hoverColor="#0E7490">
-              🔒 Finalize
-            </ActionButton>
-            <ActionButton onClick={onFinalizeAndNext} variant="solid" color="#0891B2" hoverColor="#0E7490">
-              🔒 Finalize &amp; Next
-            </ActionButton>
+            <ActionButton onClick={onFinalize} variant="solid" color="#0891B2" hoverColor="#0E7490">🔒 Finalize</ActionButton>
+            <ActionButton onClick={onFinalizeAndNext} variant="solid" color="#0891B2" hoverColor="#0E7490">🔒 Finalize &amp; Next</ActionButton>
           </>
         )}
-
-        {(allFinalized || isFinalized) && !isSigned && (
-          <>
-            <Divider />
-            <ActionButton onClick={onSignOut} variant="solid" color="#047857" hoverColor="#065f46">
-              ✍️ Sign Out Case
-            </ActionButton>
-          </>
-        )}
-
-        {isSigned && (
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 8px' }}>
-            ✓ Case Signed Out
-          </div>
+        {(allFinalized || isFinalized) && status !== 'finalized' && (
+          <ActionButton onClick={onSignOut} variant="solid" color="#047857" hoverColor="#065f46">✍️ Sign Out Case</ActionButton>
         )}
       </div>
     </div>

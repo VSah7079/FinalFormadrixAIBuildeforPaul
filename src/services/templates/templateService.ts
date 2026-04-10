@@ -1,11 +1,11 @@
-/**
+﻿/**
  * services/templateService.ts
- * ─────────────────────────────────────────────────────────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Service layer for all synoptic template operations.
  *
  * MOCK PHASE (current):
  *   All functions return realistic mock data with simulated async latency.
- *   Components are fully wired — swap the implementations below when the
+ *   Components are fully wired â€” swap the implementations below when the
  *   backend is ready. Nothing in the UI layer needs to change.
  *
  * REAL PHASE (when backend is ready):
@@ -18,13 +18,13 @@
  *   components/Config/Templates/TemplateRenderer.tsx
  *
  * Drop-in path: src/services/templateService.ts
- * ─────────────────────────────────────────────────────────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  */
 
 import { EditorTemplate } from '../../components/Config/Protocols/SynopticEditor';
 import { PROTOCOL_REGISTRY, Protocol, LifecycleState, notifyRegistryChanged, saveRegistryOverride } from '../../components/Config/Protocols/protocolShared';
 
-// ─── Shared types ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Shared types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type TemplateStatus = LifecycleState | 'deprecated';
 
@@ -74,14 +74,14 @@ export interface ServiceError {
   message: string;
 }
 
-// ─── In-memory editor state ───────────────────────────────────────────────────
+// â”€â”€â”€ In-memory editor state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Stores the full EditorTemplate structure keyed by id.
 // PROTOCOL_REGISTRY holds the summary/status view; this holds the field data.
 // Both are updated together on every write.
 
 const editorStore = new Map<string, EditorTemplate>();
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const delay = (ms = 400) => new Promise(res => setTimeout(res, ms));
 
@@ -96,7 +96,7 @@ function upsertRegistry(patch: Partial<Protocol> & { id: string }): void {
   if (idx >= 0) {
     PROTOCOL_REGISTRY[idx] = { ...PROTOCOL_REGISTRY[idx], ...patch };
   } else {
-    // New entry — build a full Protocol from the patch
+    // New entry â€” build a full Protocol from the patch
     PROTOCOL_REGISTRY.push({
       name:         patch.name         ?? 'Untitled',
       category:     patch.category     ?? 'OTHER',
@@ -117,28 +117,28 @@ function upsertRegistry(patch: Partial<Protocol> & { id: string }): void {
   notifyRegistryChanged();
 }
 
-// ─── GET /api/templates ───────────────────────────────────────────────────────
+// â”€â”€â”€ GET /api/templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function listTemplates(
   status?: TemplateStatus | TemplateStatus[]
 ): Promise<Protocol[]> {
   await delay(300);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const statuses = status ? (Array.isArray(status) ? status : [status]) : null;
   return PROTOCOL_REGISTRY.filter(p => !statuses || statuses.includes(p.status as TemplateStatus));
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const q = status ? `?status=${Array.isArray(status) ? status.join(',') : status}` : '';
   // const res = await fetch(`/api/templates${q}`);
   // if (!res.ok) throw await res.json() as ServiceError;
   // return res.json();
 }
 
-// ─── GET /api/templates/:id ───────────────────────────────────────────────────
+// â”€â”€â”€ GET /api/templates/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getTemplate(id: string): Promise<TemplateDetail> {
   await delay(350);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
   const template = editorStore.get(id) ?? {
@@ -161,17 +161,17 @@ export async function getTemplate(id: string): Promise<TemplateDetail> {
     template,
   };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}`);
   // if (!res.ok) throw await res.json() as ServiceError;
   // return res.json();
 }
 
-// ─── POST /api/templates ──────────────────────────────────────────────────────
+// â”€â”€â”€ POST /api/templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function saveDraft(template: EditorTemplate): Promise<SaveDraftResult> {
   await delay(400);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const ts = now();
   editorStore.set(template.id, template);
   upsertRegistry({
@@ -189,7 +189,7 @@ export async function saveDraft(template: EditorTemplate): Promise<SaveDraftResu
   console.info(`[templateService] Draft saved: ${template.name} (${template.id})`);
   return { id: template.id, status: 'draft', updatedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch('/api/templates', {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ template }),
@@ -198,11 +198,11 @@ export async function saveDraft(template: EditorTemplate): Promise<SaveDraftResu
   // return res.json();
 }
 
-// ─── POST /api/templates/:id/submit ──────────────────────────────────────────
+// â”€â”€â”€ POST /api/templates/:id/submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function submitForReview(id: string, note?: string): Promise<SubmitResult> {
   await delay(500);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
 
@@ -212,7 +212,7 @@ export async function submitForReview(id: string, note?: string): Promise<Submit
   console.info(`[templateService] Submitted for review: ${entry.name}`);
   return { id, status: 'in_review', submittedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}/submit`, {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ note }),
@@ -221,11 +221,11 @@ export async function submitForReview(id: string, note?: string): Promise<Submit
   // return res.json();
 }
 
-// ─── POST /api/templates/:id/approve ─────────────────────────────────────────
+// â”€â”€â”€ POST /api/templates/:id/approve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function approveTemplate(id: string, note?: string, reviewedBy?: string): Promise<TransitionResult> {
   await delay(500);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
 
@@ -240,7 +240,7 @@ export async function approveTemplate(id: string, note?: string, reviewedBy?: st
   console.info(`[templateService] Approved: ${entry.name}`);
   return { id, status: 'approved', updatedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}/approve`, {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ note }),
@@ -249,11 +249,11 @@ export async function approveTemplate(id: string, note?: string, reviewedBy?: st
   // return res.json();
 }
 
-// ─── POST /api/templates/:id/publish ─────────────────────────────────────────
+// â”€â”€â”€ POST /api/templates/:id/publish â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function publishTemplate(id: string, _note?: string): Promise<TransitionResult> {
   await delay(600);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
 
@@ -263,7 +263,7 @@ export async function publishTemplate(id: string, _note?: string): Promise<Trans
   console.info(`[templateService] Published: ${entry.name}`);
   return { id, status: 'published', updatedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}/publish`, {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ note }),
@@ -272,11 +272,11 @@ export async function publishTemplate(id: string, _note?: string): Promise<Trans
   // return res.json();
 }
 
-// ─── POST /api/templates/:id/request-changes ─────────────────────────────────
+// â”€â”€â”€ POST /api/templates/:id/request-changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function requestChanges(id: string, note: string, reviewedBy?: string): Promise<TransitionResult> {
   await delay(500);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
 
@@ -288,10 +288,10 @@ export async function requestChanges(id: string, note: string, reviewedBy?: stri
     lastModified: ts.slice(0, 10),
   });
 
-  console.info(`[templateService] Changes requested: ${entry.name} — "${note}"`);
+  console.info(`[templateService] Changes requested: ${entry.name} â€” "${note}"`);
   return { id, status: 'needs_changes', reviewNote: note, updatedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}/request-changes`, {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ note }),
@@ -300,11 +300,11 @@ export async function requestChanges(id: string, note: string, reviewedBy?: stri
   // return res.json();
 }
 
-// ─── POST /api/templates/:id/resubmit ────────────────────────────────────────
+// â”€â”€â”€ POST /api/templates/:id/resubmit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function resubmitForReview(id: string, _note?: string): Promise<SubmitResult> {
   await delay(500);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
 
@@ -314,7 +314,7 @@ export async function resubmitForReview(id: string, _note?: string): Promise<Sub
   console.info(`[templateService] Resubmitted: ${entry.name}`);
   return { id, status: 'in_review', submittedAt: ts };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}/resubmit`, {
   //   method: 'POST', headers: { 'Content-Type': 'application/json' },
   //   body: JSON.stringify({ note }),
@@ -323,11 +323,11 @@ export async function resubmitForReview(id: string, _note?: string): Promise<Sub
   // return res.json();
 }
 
-// ─── DELETE /api/templates/:id ───────────────────────────────────────────────
+// â”€â”€â”€ DELETE /api/templates/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function deleteTemplate(id: string): Promise<{ deleted: true }> {
   await delay(300);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const idx = PROTOCOL_REGISTRY.findIndex(p => p.id === id);
   if (idx < 0) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
   if (PROTOCOL_REGISTRY[idx].status !== 'draft') {
@@ -347,13 +347,13 @@ export async function deleteTemplate(id: string): Promise<{ deleted: true }> {
   console.info(`[templateService] Deleted draft: ${id}`);
   return { deleted: true };
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
   // if (!res.ok) throw await res.json() as ServiceError;
   // return res.json();
 }
 
-// ─── Convenience: lifecycle transition dispatcher ─────────────────────────────
+// â”€â”€â”€ Convenience: lifecycle transition dispatcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function transitionTemplate(
   id:         string,
   target:     TemplateStatus,
@@ -370,7 +370,7 @@ export async function transitionTemplate(
   }
 }
 
-// ─── Terminology validation ───────────────────────────────────────────────────
+// â”€â”€â”€ Terminology validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // POST /api/v1/terminology/validate (see /docs/api/pathscribe-api-contract.yaml)
 //
 // Mock phase: validates against MOCK_DEPRECATED_CODES.
@@ -395,8 +395,8 @@ export interface TerminologyAlert {
   replacements?: TermCode[];
 }
 
-// Known deprecated codes — mock registry.
-// Format: code → { severity, message, replacements? }
+// Known deprecated codes â€” mock registry.
+// Format: code â†’ { severity, message, replacements? }
 // Replace with API call in real phase.
 const MOCK_DEPRECATED_CODES: Record<string, {
   system:       'snomed' | 'icd';
@@ -404,7 +404,7 @@ const MOCK_DEPRECATED_CODES: Record<string, {
   message:      string;
   replacements?: TermCode[];
 }> = {
-  // SNOMED CT — retired concepts
+  // SNOMED CT â€” retired concepts
   '363346000': {
     system: 'snomed', severity: 'error',
     message: 'SNOMED CT 363346000 (Malignant neoplastic disease) was retired on 2024-01-31.',
@@ -420,10 +420,10 @@ const MOCK_DEPRECATED_CODES: Record<string, {
     message: 'SNOMED CT 413448000 is flagged for deprecation in the next release (Jan 2026). Plan replacement.',
     replacements: [{ code: '413448001', system: 'snomed', display: 'Adenocarcinoma of colon (disorder)' }],
   },
-  // ICD — retired codes
+  // ICD â€” retired codes
   'C18':  {
     system: 'icd', severity: 'warning',
-    message: 'ICD-10 C18 (unspecified) — use a more specific 4th-character code (e.g. C18.0–C18.9) for CAP compliance.',
+    message: 'ICD-10 C18 (unspecified) â€” use a more specific 4th-character code (e.g. C18.0â€“C18.9) for CAP compliance.',
   },
   'D05.1': {
     system: 'icd', severity: 'error',
@@ -437,7 +437,7 @@ export async function validateTerminologyCodes(
 ): Promise<TerminologyAlert[]> {
   await delay(300);
 
-  // ── MOCK ──
+  // â”€â”€ MOCK â”€â”€
   const alerts: TerminologyAlert[] = [];
 
   template.sections.forEach(section => {
@@ -519,7 +519,7 @@ export async function validateTerminologyCodes(
 
   return alerts;
 
-  // ── REAL ──
+  // â”€â”€ REAL â”€â”€
   // const res = await fetch('/api/v1/terminology/validate', {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
@@ -529,16 +529,16 @@ export async function validateTerminologyCodes(
   // return res.json();
 }
 
-// ─── DEVELOPMENT SEED (CAP eCC JSON files) ───────────────────────────────────
+// â”€â”€â”€ DEVELOPMENT SEED (CAP eCC JSON files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Imports real CAP protocol JSON files converted from official eCCs.
 // Each is seeded into editorStore at module load so getTemplate() returns
 // real field data during development. Remove when backend API is wired in.
 
-import BREAST_INVASIVE_JSON      from '../../data/templates/breast_invasive.json';
-import BREAST_DCIS_JSON          from '../../data/templates/breast_dcis_resection.json';
-import LUNG_ADENO_JSON           from '../../data/templates/lung_adeno.json';
-import PROSTATE_NEEDLE_JSON      from '../../data/templates/prostate_needle_biopsy.json';
-import COLON_RESECTION_JSON      from '../../data/templates/colon_resection.json';
+import BREAST_INVASIVE_JSON      from '../../data/templates/CAP/breast_invasive.json';
+import BREAST_DCIS_JSON          from '../../data/templates/CAP/breast_dcis_resection.json';
+import LUNG_ADENO_JSON           from '../../data/templates/CAP/lung_adeno.json';
+import PROSTATE_NEEDLE_JSON      from '../../data/templates/CAP/prostate_needle_biopsy.json';
+import COLON_RESECTION_JSON      from '../../data/templates/CAP/colon_resection.json';
 
 // Seed all real CAP templates
 editorStore.set('breast_invasive',      BREAST_INVASIVE_JSON   as any);
@@ -548,3 +548,4 @@ editorStore.set('prostate_needle_biopsy', PROSTATE_NEEDLE_JSON as any);
 editorStore.set('colon_resection',         COLON_RESECTION_JSON   as any);
 
 // Keep melanoma (already seeded above from skin_melanoma_bx.json)
+
