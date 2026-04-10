@@ -84,7 +84,7 @@ const PageLoader: React.FC = () => (
 
 // ── App ───────────────────────────────────────────────────────────────────────
 const App: React.FC = () => (
-  <Router>
+  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <ToastContainer />
     <SystemConfigProvider>
       <AuthProvider>

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import '../pathscribe.css';
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@contexts/AuthContext";
-
 import { WarningIcon } from "@components/Icons";
 import CaseSearchBar from "@components/Search/CaseSearchBar";
 import FlagRow        from "@components/Dashboards/FlagRow";
@@ -16,13 +14,14 @@ import type {
   CaseMixData,
   KpiTile,
 } from "../types/ContributionDashboard";
+import { getOrchestratorMode } from "@components/Config/NarrativeTemplates";
 import { mockActionRegistryService } from '../services/actionRegistry/mockActionRegistryService';
 import { VOICE_CONTEXT } from '../constants/systemActions';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const mockKpis: KpiTile[] = [
-  { label: "Cases Signed Out",  value: 128,  unit: "",      delta: "+12%",     up: true,  icon: "✓"  },
+  { label: "CASE_LABEL_PLACEHOLDER",  value: 128,  unit: "",      delta: "+12%",     up: true,  icon: "✓"  },
   { label: "Cases In Progress", value: 14,   unit: "",      delta: "-3",       up: false, icon: "⏳" },
   { label: "AI‑Assisted Cases", value: 92,   unit: "",      delta: "+8%",      up: true,  icon: "🤖" },
   { label: "Avg TAT",           value: 27.4, unit: " hrs",  delta: "-2.1 hrs", up: true,  icon: "⚡" },
@@ -161,11 +160,12 @@ const Rvu30Tile: React.FC = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ContributionDashboardPage: React.FC = () => {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const { user } = useAuth();
   
 
   const [activeTab,           setActiveTab]           = useState<DashboardTab>("overview");
+  const finalCaseLabel = getOrchestratorMode() ? "Cases Signed Out" : "Cases Finalised";
 
 
   // ── Voice: set WORKLIST context on mount ──────────────────────────────────
@@ -211,7 +211,9 @@ const ContributionDashboardPage: React.FC = () => {
             {mockKpis.map((kpi) => (
               <div key={kpi.label} style={{ padding: "16px", borderRadius: "16px", background: t.colors.surfaceSubtle, border: `1px solid ${t.colors.border.subtle}`, display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: t.colors.text.muted }}>{kpi.label}</span>
+                  <span style={{ fontSize: "13px", color: t.colors.text.muted }}>
+                  {kpi.label === "CASE_LABEL_PLACEHOLDER" ? finalCaseLabel : kpi.label}
+                </span>
                   <span style={{ fontSize: "16px" }}>{kpi.icon}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
