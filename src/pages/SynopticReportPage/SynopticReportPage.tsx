@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-
+import AddSynopticModal from './components/AddSynopticModal';
 import NavBar             from '@/components/NavBar/NavBar';
 import HeaderBar          from './components/HeaderBar';
 import Sidebar            from './components/Sidebar';
@@ -43,7 +43,7 @@ import { useDirtyState } from '@/contexts/DirtyStateContext';
 import { useLogout } from '@/hooks/useLogout';
 import '@/pathscribe.css';
 
-import type { Case, SynopticReportInstance } from '@/types/case/Case';
+import type { Case } from '@/types/case/Case';
 import type { MissingRequiredField, ReviewField } from './components/RightSynopticPanel';
 import { AiReviewModal }  from './modals/AiReviewModal';
 import { DelegateModal }  from '../Synoptic/Delegate/DelegateModal';
@@ -91,11 +91,10 @@ const SynopticReportPage: React.FC = () => {
   const [worklistCases, setWorklistCases] = useState<string[]>([]);
   const [worklistIndex, setWorklistIndex] = useState(0);
   const [alertFieldId, setAlertFieldId] = useState<string | null>(null);
-  const [selectedSpecimenIds, setSelectedSpecimenIds] = useState<string[]>([]);
-  const [selectedProtocol, setSelectedProtocol] = useState('');
-  const [protocolSearch, setProtocolSearch] = useState('');
-  const [showProtocolDropdown, setShowProtocolDropdown] = useState(false);
-  const [learnPairing, setLearnPairing] = useState(true);
+  
+ 
+  
+ 
   const [availableProtocols, setAvailableProtocols] = useState<{id:string;name:string}[]>([]);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showDelegateModal, setShowDelegateModal]   = useState(false);
@@ -717,139 +716,17 @@ Proceed with sign-out?`)) return;
 
       {/* Add Synoptic Modal */}
       {showAddSynopticModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setShowAddSynopticModal(false)}>
-          <div style={{ width: '500px', backgroundColor: '#111', borderRadius: '20px', padding: '40px', border: '1px solid rgba(8,145,178,0.3)' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ color: '#0891B2', fontSize: '24px', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>Add Synoptic Report</div>
-
-            {/* Specimen selector */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>Select Specimen(s)</div>
-              {(caseData?.specimens ?? []).map(spec => (
-                <label key={spec.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: selectedSpecimenIds.includes(spec.id) ? 'rgba(8,145,178,0.1)' : 'rgba(255,255,255,0.03)', border: `2px solid ${selectedSpecimenIds.includes(spec.id) ? '#0891B2' : 'rgba(255,255,255,0.1)'}`, marginBottom: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedSpecimenIds.includes(spec.id)}
-                    onChange={e => setSelectedSpecimenIds(prev => e.target.checked ? [...prev, spec.id] : prev.filter(id => id !== spec.id))}
-                    style={{ width: '18px', height: '18px' }} />
-                  <div>
-                    <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '2px' }}>Specimen {spec.label}</div>
-                    <div style={{ color: '#94a3b8', fontSize: '12px' }}>{spec.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            {/* Protocol search */}
-            <div style={{ marginBottom: '24px', position: 'relative' }}>
-              <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase' }}>Select Protocol</div>
-              <input type="text"
-                value={selectedProtocol ? (availableProtocols.find(p => p.id === selectedProtocol)?.name ?? '') : protocolSearch}
-                onChange={e => { setProtocolSearch(e.target.value); setSelectedProtocol(''); setShowProtocolDropdown(true); }}
-                onFocus={() => setShowProtocolDropdown(true)}
-                placeholder="🔍 Search protocols…"
-                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: `2px solid ${selectedProtocol ? '#0891B2' : 'rgba(255,255,255,0.1)'}`, color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-              {showProtocolDropdown && !selectedProtocol && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', maxHeight: '220px', overflowY: 'auto', background: '#1a1a1a', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', zIndex: 100 }}>
-                  {availableProtocols
-                    .filter(p => !protocolSearch.trim() || p.name.toLowerCase().includes(protocolSearch.toLowerCase()))
-                    .map(p => (
-                      <div key={p.id}
-                        onClick={() => { setSelectedProtocol(p.id); setProtocolSearch(''); setShowProtocolDropdown(false); }}
-                        style={{ padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#fff', fontSize: '14px' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(8,145,178,0.15)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                        {p.name}
-                      </div>
-                    ))}
-                </div>
-              )}
-              {selectedProtocol && (
-                <div style={{ marginTop: '8px', padding: '10px 12px', background: 'rgba(8,145,178,0.15)', border: '1px solid #0891B2', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#0891B2', fontSize: '13px', fontWeight: 600 }}>✓ {availableProtocols.find(p => p.id === selectedProtocol)?.name}</span>
-                  <button onClick={() => { setSelectedProtocol(''); setProtocolSearch(''); }} style={{ background: 'none', border: 'none', color: '#0891B2', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-                </div>
-              )}
-            </div>
-
-            {/* Learn pairing */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', marginBottom: '24px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={learnPairing} onChange={e => setLearnPairing(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-              <div>
-                <div style={{ color: '#10B981', fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>🤖 Learn this pairing</div>
-                <div style={{ color: '#6ee7b7', fontSize: '11px' }}>AI will suggest this protocol for similar specimens in future cases</div>
-              </div>
-            </label>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => { setShowAddSynopticModal(false); setSelectedSpecimenIds([]); setSelectedProtocol(''); setProtocolSearch(''); }}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, fontSize: '15px', cursor: 'pointer' }}>
-                Cancel
-              </button>
-              <button
-                disabled={!selectedSpecimenIds.length || !selectedProtocol}
-                onClick={async () => {
-                  if (!caseData || !selectedProtocol || !selectedSpecimenIds.length) return;
-                  const now = new Date().toISOString();
-                  const templateName = availableProtocols.find(p => p.id === selectedProtocol)?.name ?? selectedProtocol;
-
-                  // If the case has a legacy synopticTemplateId but no synopticReports array yet,
-                  // migrate the legacy entry into the array first so we don't lose it.
-                  const existingReports: SynopticReportInstance[] = caseData.synopticReports
-                    ? [...caseData.synopticReports]
-                    : caseData.synopticTemplateId
-                      ? [{
-                          instanceId: `legacy_${caseData.synopticTemplateId}`,
-                          specimenId: caseData.specimens?.[0]?.id ?? '',
-                          templateId: caseData.synopticTemplateId,
-                          templateName: availableProtocols.find(p => p.id === caseData.synopticTemplateId)?.name
-                            ?? caseData.synopticTemplateId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                          answers: caseData.synopticAnswers ?? {},
-                          status: 'draft' as const,
-                          createdAt: now,
-                          updatedAt: now,
-                        }]
-                      : [];
-
-                  // Create one new report instance per selected specimen
-                  const newInstances: SynopticReportInstance[] = selectedSpecimenIds.map(specId => ({
-                    instanceId: `${specId}_${selectedProtocol}_${Date.now()}`,
-                    specimenId: specId,
-                    templateId: selectedProtocol,
-                    templateName,
-                    answers: {},
-                    status: 'draft' as const,
-                    createdAt: now,
-                    updatedAt: now,
-                  }));
-
-                  const updated: Case = {
-                    ...caseData,
-                    synopticReports: [...existingReports, ...newInstances],
-                    // Clear legacy fields once migrated to array
-                    synopticTemplateId: undefined,
-                    synopticAnswers: undefined,
-                  };
-                  // Adding a synoptic report is dirty — not auto-saved
-                  // User must explicitly Save Draft or Finalize
-                  setCaseData(updated);
-                  setHasUnsavedData(true);
-
-                  // Activate the first new instance
-                  setActiveReportInstanceId(newInstances[0].instanceId);
-                  setActiveSpecimenId(selectedSpecimenIds[0]);
-
-                  setShowAddSynopticModal(false);
-                  setSelectedSpecimenIds([]);
-                  setSelectedProtocol('');
-                  setProtocolSearch('');
-                }}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: (!selectedSpecimenIds.length || !selectedProtocol) ? 'rgba(8,145,178,0.2)' : '#0891B2', border: 'none', color: (!selectedSpecimenIds.length || !selectedProtocol) ? '#64748b' : '#fff', fontWeight: 600, fontSize: '15px', cursor: (!selectedSpecimenIds.length || !selectedProtocol) ? 'not-allowed' : 'pointer' }}>
-                Add Report
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddSynopticModal
+          caseData={caseData}
+          availableProtocols={availableProtocols}
+          onClose={() => setShowAddSynopticModal(false)}
+          onAdd={(newInstances, updatedCase) => {
+            setCaseData(updatedCase);
+            setHasUnsavedData(true);
+            setActiveReportInstanceId(newInstances[0].instanceId);
+            setActiveSpecimenId(newInstances[0].specimenId);
+          }}
+        />
       )}
 
       {/* Case Comment Modal */}

@@ -549,3 +549,19 @@ editorStore.set('colon_resection',         COLON_RESECTION_JSON   as any);
 
 // Keep melanoma (already seeded above from skin_melanoma_bx.json)
 
+// RCPath Templates (UK)
+import RCPATH_BREAST_JSON         from '../../data/templates/RCPATH/rcpath_g148_breast_surgical_excision.json';
+import RCPATH_COLORECTAL_RES_JSON from '../../data/templates/RCPATH/rcpath_colorectal_resection.json';
+import RCPATH_COLORECTAL_LOC_JSON from '../../data/templates/RCPATH/rcpath_colorectal_local_excision.json';
+import RCPATH_COLORECTAL_FI_JSON  from '../../data/templates/RCPATH/rcpath_colorectal_further_investigations.json';
+import RCPATH_PROSTATE_BX_JSON    from '../../data/templates/RCPATH/rcpath_prostate_biopsy.json';
+import RCPATH_PROSTATE_RP_JSON    from '../../data/templates/RCPATH/rcpath_prostate_radical_prostatectomy.json';
+import RCPATH_PROSTATE_TURP_JSON  from '../../data/templates/RCPATH/rcpath_prostate_turp_enucleation.json';
+
+editorStore.set('rcpath_g148_breast_surgical_excision',       RCPATH_BREAST_JSON        as any);
+editorStore.set('rcpath_colorectal_resection',                RCPATH_COLORECTAL_RES_JSON as any);
+editorStore.set('rcpath_colorectal_local_excision',           RCPATH_COLORECTAL_LOC_JSON as any);
+editorStore.set('rcpath_colorectal_further_investigations',   RCPATH_COLORECTAL_FI_JSON  as any);
+editorStore.set('rcpath_prostate_biopsy',                     RCPATH_PROSTATE_BX_JSON   as any);
+editorStore.set('rcpath_prostate_radical_prostatectomy',      RCPATH_PROSTATE_RP_JSON   as any);
+editorStore.set('rcpath_prostate_turp_enucleation',           RCPATH_PROSTATE_TURP_JSON as any);

@@ -131,6 +131,56 @@ export let PROTOCOL_REGISTRY: Protocol[] = [
     status: 'draft', fields: 21, snomedPct: 33, icdPct: 15,
     lastModified: '2025-12-04', owner: 'Dr. J. Williams',
   },
+  // ── RCPath Templates (UK) ──────────────────────────────────────────────
+  {
+    id: 'rcpath_g148_breast_surgical_excision',
+    name: 'RCPath Breast Disease — Surgical Excision (G148)',
+    category: 'BREAST', version: 'G148-2024-11', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 52, snomedPct: 88, icdPct: 80,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_colorectal_resection',
+    name: 'RCPath Colorectal Carcinoma — Resection (Appendix F)',
+    category: 'COLON', version: 'v4-TNM9', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 56, snomedPct: 91, icdPct: 88,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_colorectal_local_excision',
+    name: 'RCPath Colorectal Carcinoma — Local Excision (Appendix D)',
+    category: 'COLON', version: 'v4-TNM9', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 38, snomedPct: 88, icdPct: 85,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_colorectal_further_investigations',
+    name: 'RCPath Colorectal — Further Investigations (Appendix E)',
+    category: 'COLON', version: 'v4-2024', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 18, snomedPct: 82, icdPct: 75,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_prostate_biopsy',
+    name: 'RCPath Prostate — Needle Biopsy',
+    category: 'PROSTATE', version: 'v5-2024', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 32, snomedPct: 85, icdPct: 78,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_prostate_radical_prostatectomy',
+    name: 'RCPath Prostate — Radical Prostatectomy',
+    category: 'PROSTATE', version: 'v5-2024', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 44, snomedPct: 87, icdPct: 80,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
+    id: 'rcpath_prostate_turp_enucleation',
+    name: 'RCPath Prostate — TURP / Enucleation',
+    category: 'PROSTATE', version: 'v5-2024', source: 'RCPath', type: 'Base template',
+    status: 'published', fields: 22, snomedPct: 80, icdPct: 72,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
 ];
 
 // Hydrate from localStorage on module load — merges saved overrides so that
