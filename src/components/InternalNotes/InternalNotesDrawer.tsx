@@ -102,6 +102,36 @@ const InternalNotesDrawer: React.FC<Props> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // once on mount
 
+  // ─── Handlers ───────────────────────────────────────────────────────────────
+  const handleAdd = async () => {
+    if (!noteBody.trim()) return;
+    setSubmitting(true);
+    const result = await internalNoteService.add({
+      accession,
+      authorId:        userId,
+      authorName:      userName,
+      type:            noteType,
+      body:            noteBody.trim(),
+      visibility:      noteVisibility,
+      messageThreadId: messageThreadId ?? undefined,
+    });
+    if (result.ok) {
+      setNotes(prev => [result.data, ...prev]);
+      setNoteBody('');
+      setNoteType('informal_review');
+      setNoteVisibility('shared');
+      setIsAdding(false);
+    }
+    setSubmitting(false);
+  };
+
+  const handleCancel = () => {
+    setIsAdding(false);
+    setNoteBody('');
+    setNoteType('informal_review');
+    setNoteVisibility('shared');
+  };
+
   // ─── Voice command listeners ─────────────────────────────────────────────────
   useEffect(() => {
     const addNote         = () => { setIsAdding(true); setTimeout(() => textareaRef.current?.focus(), 100); };
@@ -153,42 +183,12 @@ const InternalNotesDrawer: React.FC<Props> = ({
     };
   }, [isAdding, startDictation, stopDictation, handleAdd, handleCancel, onClose]);
 
-  // ─── Handlers ───────────────────────────────────────────────────────────────
-  const handleAdd = async () => {
-    if (!noteBody.trim()) return;
-    setSubmitting(true);
-    const result = await internalNoteService.add({
-      accession,
-      authorId:        userId,
-      authorName:      userName,
-      type:            noteType,
-      body:            noteBody.trim(),
-      visibility:      noteVisibility,
-      messageThreadId: messageThreadId ?? undefined,
-    });
-    if (result.ok) {
-      setNotes(prev => [result.data, ...prev]);
-      setNoteBody('');
-      setNoteType('informal_review');
-      setNoteVisibility('shared');
-      setIsAdding(false);
-    }
-    setSubmitting(false);
-  };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm('Delete this note? This cannot be undone.')) return;
     setDeletingId(id);
     const result = await internalNoteService.remove(id, userId);
     if (result.ok) setNotes(prev => prev.filter(n => n.id !== id));
     setDeletingId(null);
-  };
-
-  const handleCancel = () => {
-    setIsAdding(false);
-    setNoteBody('');
-    setNoteType('informal_review');
-    setNoteVisibility('shared');
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────────

@@ -125,7 +125,7 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
     <div className="fm-overlay" onClick={onClose}>
       <div
         className="ps-research-modal"
-        style={{ width: 780, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        style={{ width: 980, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -147,7 +147,7 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
 
           {/* Left — Specimens */}
           <div style={{
-            width: 260, flexShrink: 0, borderRight: '1px solid rgba(51,65,85,0.9)',
+            width: 320, flexShrink: 0, borderRight: '1px solid rgba(51,65,85,0.9)',
             overflowY: 'auto', padding: '12px 0',
           }}>
             <div style={{

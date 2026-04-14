@@ -25,8 +25,10 @@ export { mockModelService         as modelService         } from './models/mockM
 export { mockSavedSearchService   as savedSearchService   } from './savedSearches/mockSavedSearchService';
 export { mockAuditService         as auditService         } from './auditLog/mockAuditService';
 export { mockCaseService          as caseService          } from './cases/mockCaseService';
-export { mockCodeService          as codeService          } from './codes/mockCodeService';
+export { umlsCodeService          as codeService          } from './codes/umlsCodeService';
 export { mockMessageService       as messageService       } from './messages/mockMessageService';
+export { mockInternalNoteService  as internalNoteService  } from './internalNotes/mockInternalNoteService';
+export { INTERNAL_NOTE_TYPE_LABELS                        } from './internalNotes/IInternalNoteService';
 
 // ─── Re-export types so components don't need to know the file structure ──────
 export type { StaffUser }         from './users/IUserService';
@@ -47,6 +49,7 @@ export type { Case as PathologyCase } from '../types/case/Case';
 
 export type { ClinicalCode, CodeSystem, CodeSearchParams, IcdOSubtype } from './codes/ICodeService';
 export type { Message }           from './messages/IMessageService';
+export type { InternalNote, InternalNoteType, InternalNoteVisibility } from './internalNotes/IInternalNoteService';
 export type { ServiceResult }     from './types';
 // src/services/index.ts
 export * from './physicians';

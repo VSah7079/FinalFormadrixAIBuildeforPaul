@@ -166,12 +166,16 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({ isOpen, onClose, r
                 return (
                   <button
                     key={dt.id}
-                    onClick={() => setDelegationType(dt.id)}
+                    onClick={() => { setDelegationType(dt.id); setStep('recipient'); }}
                     className={'fm-flag-card' + (isSelected ? ' applied' : '')}
                     style={{ textAlign: 'left', cursor: 'pointer' }}
                   >
-                    <span className="fm-code-chip" style={{ width: 100, textAlign: 'center', fontSize: 10, background: isSelected ? dt.color + '22' : undefined, color: isSelected ? dt.color : undefined }}>
-                      {dt.id}
+                    <span
+                      className="fm-code-chip"
+                      title={dt.id}
+                      style={{ width: 76, minWidth: 76, flexShrink: 0, textAlign: 'center', fontSize: 9, letterSpacing: '0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background: isSelected ? dt.color + '22' : undefined, color: isSelected ? dt.color : undefined }}
+                    >
+                      {dt.id.replace('_', ' ')}
                     </span>
                     <div className="fm-flag-info">
                       <div className="fm-flag-name-row">
@@ -320,8 +324,8 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({ isOpen, onClose, r
                         className={'fm-flag-card' + (isSelected ? ' applied' : '')}
                         onClick={() => setSelectedId(isSelected ? null : staff.id)}
                       >
-                        <span className="fm-code-chip" style={{ width: 108, textAlign: 'center', fontSize: 11 }}>
-                          {staff.role.slice(0, 8)}
+                        <span className="fm-code-chip" style={{ width: 80, minWidth: 80, flexShrink: 0, textAlign: 'center', fontSize: 9, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {staff.role}
                         </span>
                         <div className="fm-flag-info">
                           <div className="fm-flag-name-row">

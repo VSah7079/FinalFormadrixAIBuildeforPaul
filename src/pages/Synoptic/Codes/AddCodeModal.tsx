@@ -9,6 +9,7 @@ import { callAi } from '@/services/aiIntegration/aiProviderService';
 import '../../../pathscribe.css';
 import type { MedicalCode } from '../synopticTypes';
 import { searchCodes, type CodeResult, type SnomedFilter } from './codeSearchService';
+import { getOrganisationByHospitalId, type CodingSystem } from '@/services/organisation/organisationService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ export interface AddCodeModalProps {
   activeSpecimenIndex?: number;  // reserved for future per-specimen default targeting
   onAddToSpecimens: (codes: Omit<MedicalCode, 'id' | 'source'>[], specimenIndices: number[]) => void;
   onClose: () => void;
+  originHospitalId?: string;
   /** Optional — if provided, enables AI code suggestions */
   caseText?: { gross: string; microscopic: string; ancillary: string };
   synopticAnswers?: Record<string, string | string[]>;
@@ -39,7 +41,7 @@ export interface AddCodeModalProps {
   narrativeText?: string;
 }
 
-type CodeSystem = 'SNOMED' | 'ICD10' | 'ICD11' | 'LOINC' | 'ICDO' | 'CPT';
+type CodeSystem = 'SNOMED' | 'ICD10' | 'ICD11' | 'LOINC' | 'ICDO' | 'CPT' | 'OPCS4';
 
 interface PendingCode {
   code: string;
@@ -51,13 +53,16 @@ interface PendingCode {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SYSTEMS: { id: CodeSystem; label: string; accent: string }[] = [
+// Full registry of all supported coding systems
+// Visibility per site is controlled by organisationService.Site.codingSystems
+const ALL_SYSTEMS: { id: CodeSystem; label: string; accent: string }[] = [
   { id: 'SNOMED', label: 'SNOMED CT', accent: '#0891B2' },
   { id: 'ICD10',  label: 'ICD-10',   accent: '#7c3aed' },
   { id: 'ICD11',  label: 'ICD-11',   accent: '#0369a1' },
   { id: 'LOINC',  label: 'LOINC',    accent: '#0f766e' },
   { id: 'ICDO',   label: 'ICD-O',    accent: '#b45309' },
   { id: 'CPT',    label: 'CPT',      accent: '#7c3aed' },
+  { id: 'OPCS4',  label: 'OPCS-4',   accent: '#0891B2' },
 ];
 
 const SNOMED_FILTERS: { id: SnomedFilter; label: string; hint: string }[] = [
@@ -116,7 +121,22 @@ const IcoUndo = () => (
 export const AddCodeModal: React.FC<AddCodeModalProps> = ({
   existingCodes, allSpecimens, onAddToSpecimens, onClose,
   caseText, synopticAnswers, templateName, synopticDerivedCodes, narrativeText,
+  originHospitalId,
 }) => {
+  // ── Site coding config ────────────────────────────────────────────────────
+  // Coding systems shown are driven by site config from organisationService.
+  // This replaces any hardcoded locale/country checks.
+  // When backend is ready: replace with useSessionSiteConfig() hook.
+  const siteOrg = React.useMemo(() => {
+    return getOrganisationByHospitalId(originHospitalId ?? 'HOSP-001');
+  }, [originHospitalId]);
+  const siteCodingSystems = React.useMemo<CodeSystem[]>(() => {
+    const systems = siteOrg?.sites?.[0]?.codingSystems;
+    return (systems?.length ? systems : ['SNOMED', 'ICD10', 'ICD11', 'LOINC', 'ICDO', 'CPT']) as CodeSystem[];
+  }, [siteOrg]);
+  const SYSTEMS = ALL_SYSTEMS.filter(s => siteCodingSystems.includes(s.id));
+  const isUK = siteOrg?.sites?.[0]?.defaultLocale === 'en-GB';
+
   const [system,       setSystem]       = useState<CodeSystem>('SNOMED');
   const [snomedFilter, setSnomedFilter] = useState<SnomedFilter>('morphology');
   const [query,        setQuery]        = useState('');
@@ -244,8 +264,57 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
         : 'No synoptic answers available';
 
       const { text: raw } = await callAi({
-        system: 'You are a pathology coding specialist with expertise in surgical pathology CPT, ICD-10, SNOMED CT, and ICD-O coding. Return only valid JSON — no markdown, no preamble.',
-        prompt: `Suggest appropriate medical codes for this pathology case. Include BOTH diagnostic codes AND procedure (CPT) codes.
+        system: isUK
+          ? 'You are a pathology coding specialist with expertise in NHS surgical pathology coding — SNOMED CT, ICD-10, ICD-O, and OPCS-4. Return only valid JSON — no markdown, no preamble.'
+          : 'You are a pathology coding specialist with expertise in surgical pathology CPT, ICD-10, SNOMED CT, and ICD-O coding. Return only valid JSON — no markdown, no preamble.',
+        prompt: isUK
+          ? `Suggest appropriate medical codes for this NHS pathology case. Include diagnostic codes and OPCS-4 procedure codes.
+
+TEMPLATE: ${templateName ?? 'Unknown'}
+${narrativeText ? `NARRATIVE REPORT (primary source):\n${narrativeText}\n\nSUPPORTING:` : ''}
+GROSS: ${caseText.gross}
+MICROSCOPIC: ${caseText.microscopic}
+ANCILLARY: ${caseText.ancillary}
+SYNOPTIC ANSWERS:
+${answersText}
+
+Return a JSON array covering:
+
+DIAGNOSTIC CODES (ICD-10, SNOMED CT, ICD-O):
+- Primary diagnosis ICD-10 code (UK 5th edition)
+- SNOMED CT morphology code (UK SNOMED release)
+- ICD-O topography and morphology codes if applicable
+
+PROCEDURE CODES (OPCS-4):
+- Primary surgical pathology procedure code
+- Additional procedures if applicable (IHC, molecular)
+
+Format:
+[
+  {
+    "code": "C20",
+    "display": "Malignant neoplasm of rectum",
+    "system": "ICD10",
+    "confidence": 95,
+    "rationale": "Rectal adenocarcinoma primary diagnosis",
+    "rvu": null
+  },
+  {
+    "code": "Y76.8",
+    "display": "Examination of specimen from rectum",
+    "system": "OPCS4",
+    "confidence": 92,
+    "rationale": "Histological examination of resection specimen",
+    "rvu": null
+  }
+]
+
+Rules:
+- system must be one of: ICD10, SNOMED, ICDO, LOINC, OPCS4
+- Do NOT include CPT codes — not used in NHS
+- confidence 0-100, rationale ≤12 words
+- Return 4-8 codes total — MUST include at least one SNOMED morphology code`
+          : `Suggest appropriate medical codes for this pathology case. Include BOTH diagnostic codes AND procedure (CPT) codes.
 
 TEMPLATE: ${templateName ?? 'Unknown'}
 ${narrativeText ? `NARRATIVE REPORT (primary source):
@@ -306,7 +375,10 @@ Rules:
 
       const clean = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
       const parsed: AiCodeSuggestion[] = JSON.parse(clean);
-      setAiSuggestions(Array.isArray(parsed) ? parsed : []);
+      const filtered = Array.isArray(parsed)
+        ? parsed.filter(s => siteCodingSystems.includes(s.system as CodeSystem))
+        : [];
+      setAiSuggestions(filtered);
       setAiRan(true);
     } catch (e: any) {
       setAiError(e?.message ?? 'AI suggestion failed');
@@ -552,7 +624,10 @@ Rules:
               )}
             </div>
           </div>
-          <button className="ps-close-btn" aria-label="Close" onClick={onClose}>✕</button>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 18, cursor: 'pointer', padding: '2px 6px', lineHeight: 1, flexShrink: 0 }} aria-label="Close" onClick={onClose}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+          >✕</button>
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>

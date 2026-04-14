@@ -12,6 +12,7 @@
 // Key params:
 //   sf = search fields  (which fields NLM searches against)
 //   df = display fields (which fields NLM returns in data[3])
+//   rec_type = SNOMED concept type filter
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { TERMINOLOGY_CONFIG } from '../../../components/Config/Terminology/terminologyConfig';
@@ -28,8 +29,20 @@ const NLM_BASE = TERMINOLOGY_CONFIG.nlm.baseUrl;
 export type SnomedFilter = 'all' | 'morphology' | 'anatomy' | 'specimen' | 'organism';
 
 // ─── SNOMED CT ────────────────────────────────────────────────────────────────
-// Endpoint: /snomed/v3/search
-// data[1] = concept IDs, data[3] = [[code, term], ...] when df=code,term
+// Endpoint: UTS REST API (uts-ws.nlm.nih.gov) — NLM Clinical Tables SNOMED
+// endpoint has been retired and returns 404 for all queries.
+// UTS 'approximate' search type gives the best substring/partial word matching.
+
+const UMLS_API_KEY = import.meta.env.VITE_UMLS_KEY ?? 'a29978e5-905a-4b4e-af8d-2c7ec4bd90d7';
+const UTS_SEARCH   = 'https://uts-ws.nlm.nih.gov/rest/search/current';
+
+const SNOMED_FILTER_KEYWORDS: Record<SnomedFilter, string[]> = {
+  all:        [],
+  morphology: ['carcinoma','adenocarcinoma','sarcoma','lymphoma','melanoma','neoplasm','dysplasia','adenoma','in situ','tumour','tumor','hyperplasia','metaplasia','invasion'],
+  anatomy:    ['structure','region','area','wall','lobe','node','duct','gland','tissue','tract','junction','zone'],
+  specimen:   ['specimen','biopsy','resection','excision','aspirate','curettage','washings'],
+  organism:   ['bacterium','virus','fungus','organism','parasite'],
+};
 
 export async function searchSnomed(
   query: string,
@@ -37,41 +50,41 @@ export async function searchSnomed(
   maxResults = 20
 ): Promise<CodeResult[]> {
   if (!query.trim()) return [];
+  const q = query.trim();
   try {
-    // Dev/demo: NLM Conditions API — free, no license required.
-    // Returns common clinical conditions with SNOMED concept IDs.
-    // Production: swap to UMLS API with your license key via backend proxy:
-    //   GET https://uts-ws.nlm.nih.gov/rest/search/current?string={q}&sabs=SNOMEDCT_US&apiKey={key}
-    //
-    // Filter mapping — Conditions API uses 'type' param:
-    //   morphology → diagnosis (closest available)
-    //   anatomy    → no direct filter, search all
-    //   specimen   → no direct filter, search all
-    //   organism   → no direct filter, search all
     const params = new URLSearchParams({
-      terms:   query,
-      maxList: String(maxResults),
-      df:      'primary_name,snomed_cid',
-      sf:      'primary_name,synonyms',
+      string:       q,
+      searchType:   'rightTruncation',
+      sabs:         'SNOMEDCT_US',
+      returnIdType: 'code',
+      pageSize:     String(maxResults),
+      apiKey:       UMLS_API_KEY,
     });
 
-    const res = await fetch(`${NLM_BASE}/conditions/v3/search?${params}`);
-    if (!res.ok) throw new Error(`NLM Conditions ${res.status}`);
+    const res = await fetch(`${UTS_SEARCH}?${params}`);
+    if (!res.ok) throw new Error(`UTS SNOMED ${res.status}`);
     const data = await res.json();
 
-    // Response format:
-    //   data[0] = total count
-    //   data[1] = primary codes (condition names used as display key)
-    //   data[3] = [[primary_name, snomed_cid], ...] matching df param
-    const extraArr: any[][] = data[3] ?? [];
+    const results: any[] = data?.result?.results ?? [];
 
-    return extraArr
-      .filter(row => row[1]) // must have a SNOMED CID
-      .map(row => ({
-        code:    String(row[1]),   // SNOMED concept ID
-        display: String(row[0]),   // primary condition name
+    let mapped: CodeResult[] = results
+      .filter(r => r.ui && r.ui !== 'NONE' && r.rootSource === 'SNOMEDCT_US')
+      .map(r => ({
+        code:    r.ui,
+        display: r.name,
         system:  'SNOMED',
       }));
+
+    // Apply filter client-side via keyword matching
+    const keywords = SNOMED_FILTER_KEYWORDS[filter];
+    if (keywords.length > 0) {
+      const filtered = mapped.filter(r =>
+        keywords.some(kw => r.display.toLowerCase().includes(kw))
+      );
+      if (filtered.length > 0) mapped = filtered;
+    }
+
+    return mapped;
   } catch (err) {
     console.warn('[codeSearchService] SNOMED search failed:', err);
     return [];
@@ -176,35 +189,34 @@ export async function searchLoinc(query: string, maxResults = 20): Promise<CodeR
 }
 
 // ─── ICD-O ────────────────────────────────────────────────────────────────────
-// NLM has no dedicated ICD-O endpoint.
-// Falls back to SNOMED morphology subset (rec_type=Morphologic abnormality)
-// which covers the most common oncology morphology codes.
-// Replace with a dedicated backend endpoint for full ICD-O-3 coverage.
+// Uses UTS SNOMED morphology search filtered to morphologic abnormality concepts.
+// Replace with a dedicated backend ICD-O-3 endpoint for full topography coverage.
 
 export async function searchIcdo(query: string, maxResults = 20): Promise<CodeResult[]> {
   if (!query.trim()) return [];
   try {
-    // Dev/demo: NLM Conditions API filtered to neoplasm/cancer conditions.
-    // Returns SNOMED morphology codes which closely map to ICD-O-3 morphology.
-    // Production: use a dedicated ICD-O-3 backend endpoint.
     const params = new URLSearchParams({
-      terms:   query,
-      maxList: String(maxResults),
-      df:      'primary_name,snomed_cid',
-      sf:      'primary_name,synonyms',
+      string:       query.trim(),
+      searchType:   'rightTruncation',
+      sabs:         'SNOMEDCT_US',
+      returnIdType: 'code',
+      pageSize:     String(maxResults),
+      apiKey:       UMLS_API_KEY,
     });
 
-    const res = await fetch(`${NLM_BASE}/conditions/v3/search?${params}`);
-    if (!res.ok) throw new Error(`NLM Conditions (ICD-O) ${res.status}`);
+    const res = await fetch(`${UTS_SEARCH}?${params}`);
+    if (!res.ok) throw new Error(`UTS SNOMED (ICD-O) ${res.status}`);
     const data = await res.json();
 
-    const extraArr: any[][] = data[3] ?? [];
+    const results: any[] = data?.result?.results ?? [];
+    const morphologyKeywords = ['carcinoma','adenocarcinoma','sarcoma','lymphoma','melanoma','neoplasm','dysplasia','adenoma','in situ','tumour','tumor','metaplasia'];
 
-    return extraArr
-      .filter(row => row[1])
-      .map(row => ({
-        code:    String(row[1]),
-        display: String(row[0]),
+    return results
+      .filter(r => r.ui && r.ui !== 'NONE' && r.rootSource === 'SNOMEDCT_US')
+      .filter(r => morphologyKeywords.some(kw => r.name.toLowerCase().includes(kw)))
+      .map(r => ({
+        code:    r.ui,
+        display: r.name,
         system:  'ICDO',
       }));
   } catch (err) {
@@ -213,12 +225,23 @@ export async function searchIcdo(query: string, maxResults = 20): Promise<CodeRe
   }
 }
 
+// ─── OPCS-4 ───────────────────────────────────────────────────────────────────
+// NHS UK procedure classification — no public NLM endpoint exists.
+// Requires NHS TRUD licence and backend proxy for production.
+// Dev/demo: returns empty with a console note.
+// TODO: wire to NHS TRUD API via backend proxy.
+
+export async function searchOpcs4(_query: string, _maxResults = 20): Promise<CodeResult[]> {
+  console.info('[codeSearchService] OPCS-4 search requires NHS TRUD backend proxy — not yet implemented');
+  return [];
+}
+
 // ─── CPT ──────────────────────────────────────────────────────────────────────
 // NLM does not have CPT codes (AMA copyright restriction).
 // Requires a licensed backend proxy — placeholder until implemented.
 
 export async function searchCpt(_query: string, _maxResults = 20): Promise<CodeResult[]> {
-  // TODO: wire to licensed CPT API via backend proxy at VITE_CPT_PROXY_URL
+  console.info('[codeSearchService] CPT search requires AMA-licensed backend proxy — not yet implemented');
   return [];
 }
 
@@ -236,6 +259,7 @@ export async function searchCodes(
     case 'ICD11':  return searchIcd11(query, maxResults);
     case 'LOINC':  return searchLoinc(query, maxResults);
     case 'ICDO':   return searchIcdo(query, maxResults);
+    case 'OPCS4':  return searchOpcs4(query, maxResults);
     case 'CPT':    return searchCpt(query, maxResults);
     default:       return [];
   }

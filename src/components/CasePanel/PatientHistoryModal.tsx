@@ -422,7 +422,9 @@ export default function PatientHistoryModal({ patientName, mrn, onClose }: Patie
               )}
             </div>
           </div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
+          <button style={S.closeBtn} onClick={view === 'report' ? goBack : onClose}>
+            {view === 'report' ? '← Back' : '✕'}
+          </button>
         </div>
 
         {/* Body */}

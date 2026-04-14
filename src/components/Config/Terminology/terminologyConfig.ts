@@ -34,7 +34,7 @@ export const TERMINOLOGY_CONFIG = {
   nlm: {
     baseUrl: import.meta.env.VITE_NLM_BASE_URL ?? 'https://clinicaltables.nlm.nih.gov/api',
     endpoints: {
-      snomed:     '/conditions/v3/search',  // Dev: Conditions API (free, no license)
+      snomed:     '/snomed_ct/v3/search',  // Dev: Conditions API (free, no license)
                                             // Prod: swap to UMLS API via backend proxy
       icd10:      '/icd10cm/v3/search',
       icd11:      '/icd11_codes/v3/search', // NLM hosts ICD-11 directly — no WHO OAuth needed
@@ -110,7 +110,7 @@ export async function testTerminologyEndpoints(): Promise<
     {
       key:  'snomed',
       name: 'SNOMED CT',
-      url:  `${base}/snomed/v3/search?terms=carcinoma&maxList=1`,
+      url:  `https://uts-ws.nlm.nih.gov/rest/search/current?string=carcinoma&sabs=SNOMEDCT_US&returnIdType=code&pageSize=1&apiKey=a29978e5-905a-4b4e-af8d-2c7ec4bd90d7`,
     },
     {
       key:  'icd10',
@@ -130,7 +130,7 @@ export async function testTerminologyEndpoints(): Promise<
     {
       key:  'icdo',
       name: 'ICD-O',
-      url:  `${base}/snomed/v3/search?terms=adenocarcinoma&maxList=1&rec_type=Morphologic+abnormality`,
+      url:  `https://uts-ws.nlm.nih.gov/rest/search/current?string=adenocarcinoma&sabs=SNOMEDCT_US&returnIdType=code&pageSize=1&apiKey=a29978e5-905a-4b4e-af8d-2c7ec4bd90d7`,
     },
   ];
 

@@ -7,15 +7,18 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { claimPoolCase, acceptPoolCase, passPoolCase } from '../../services/cases/mockCaseService';
 
 interface PoolClaimModalProps {
   isOpen:       boolean;
   caseId:       string | null;
-  caseSummary?: string;   // e.g. patient name + protocol
+  caseSummary?: string;
   poolName?:    string;
   currentUserId:   string;
   currentUserName: string;
+  continueToReport?: boolean;
+  fromFilter?:  string;  // filter to restore when returning to worklist
   onAccepted:   () => void;
   onPassed:     () => void;
   onClose:      () => void;
@@ -26,10 +29,19 @@ type Step = 'claiming' | 'ready' | 'blocked' | 'accepting' | 'passing';
 export const PoolClaimModal: React.FC<PoolClaimModalProps> = ({
   isOpen, caseId, caseSummary, poolName,
   currentUserId, currentUserName,
+  continueToReport = false,
+  fromFilter,
   onAccepted, onPassed, onClose,
 }) => {
+  const navigate = useNavigate();
   const [step,      setStep]      = useState<Step>('claiming');
   const [blockedBy, setBlockedBy] = useState<string | null>(null);
+
+  const handleViewReport = () => {
+    if (!caseId) return;
+    navigate(`/report/${caseId}`, { state: { fromFilter: 'pool' } });
+    onClose();
+  };
 
   useEffect(() => {
     if (!isOpen || !caseId) return;
@@ -55,7 +67,12 @@ export const PoolClaimModal: React.FC<PoolClaimModalProps> = ({
     if (!caseId) return;
     setStep('accepting');
     await acceptPoolCase(caseId, currentUserId, currentUserName);
-    onAccepted();
+    if (continueToReport) {
+      navigate(`/case/${caseId}/synoptic`);
+      onAccepted();
+    } else {
+      onAccepted();
+    }
   };
 
   const handlePass = async () => {
@@ -63,6 +80,7 @@ export const PoolClaimModal: React.FC<PoolClaimModalProps> = ({
     setStep('passing');
     await passPoolCase(caseId, currentUserId);
     onPassed();
+    navigate('/worklist', { state: { restoreFilter: fromFilter ?? 'pool' } });
   };
 
   if (!isOpen || !caseId) return null;
@@ -116,20 +134,47 @@ export const PoolClaimModal: React.FC<PoolClaimModalProps> = ({
           {(step === 'ready' || step === 'accepting' || step === 'passing') && (
             <>
               <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20, lineHeight: 1.6 }}>
-                Would you like to <strong style={{ color: '#38bdf8' }}>accept</strong> this case and add it to your worklist, or <strong style={{ color: '#f59e0b' }}>pass</strong> and return it to the pool?
+                {continueToReport
+                  ? <>Would you like to <strong style={{ color: '#38bdf8' }}>claim this case and continue reporting</strong>, or <strong style={{ color: '#f59e0b' }}>pass</strong> and return it to the pool?</>
+                  : <>Would you like to <strong style={{ color: '#38bdf8' }}>claim</strong> this case, <strong style={{ color: '#a78bfa' }}>view the report</strong> before deciding, or <strong style={{ color: '#f59e0b' }}>pass</strong> and return it to the pool?</>
+                }
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>What happens next</div>
                 <div style={{ fontSize: 12, color: '#64748b', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div>✅ <strong style={{ color: '#e2e8f0' }}>Accept</strong> — Case moves to your worklist as In Progress. The delegating pathologist is notified.</div>
-                  <div>⏭️ <strong style={{ color: '#e2e8f0' }}>Pass</strong> — Case returns to the pool for another pathologist to claim.</div>
+                  {continueToReport
+                    ? <>
+                        <div>✅ <strong style={{ color: '#e2e8f0' }}>Claim &amp; Continue</strong> — Case moves to your worklist and opens directly in the synoptic report.</div>
+                        <div>⏭️ <strong style={{ color: '#e2e8f0' }}>Pass</strong> — Case returns to the pool for another pathologist.</div>
+                      </>
+                    : <>
+                        <div>✅ <strong style={{ color: '#e2e8f0' }}>Claim Case</strong> — Case moves to your worklist as In Progress.</div>
+                        <div>🔍 <strong style={{ color: '#e2e8f0' }}>View Report</strong> — Preview the case report before deciding. You can claim or pass from there.</div>
+                        <div>⏭️ <strong style={{ color: '#e2e8f0' }}>Pass</strong> — Case returns to the pool for another pathologist.</div>
+                      </>
+                  }
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {btn('Pass', handlePass, false, step === 'accepting' || step === 'passing')}
-                {btn(step === 'accepting' ? 'Accepting…' : 'Accept Case', handleAccept, true, step === 'accepting' || step === 'passing')}
+                {!continueToReport && (
+                  <button
+                    onClick={handleViewReport}
+                    disabled={step === 'accepting' || step === 'passing'}
+                    style={{ padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', color: '#a78bfa', opacity: step === 'accepting' || step === 'passing' ? 0.5 : 1, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    View Report
+                  </button>
+                )}
+                {btn(
+                  step === 'accepting' ? 'Claiming…' : continueToReport ? 'Claim & Continue' : 'Claim Case',
+                  handleAccept,
+                  true,
+                  step === 'accepting' || step === 'passing'
+                )}
               </div>
             </>
           )}

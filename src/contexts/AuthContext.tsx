@@ -44,24 +44,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let authenticatedUser: User | null = null;
 
         // Mock Login Data with Voice Profiles
-        if (email === import.meta.env.VITE_DEMO_EMAIL && password === import.meta.env.VITE_DEMO_PASS) {
+        if (email === "demo@pathscribe.ai" && password === "demo") {
           authenticatedUser = {
             id: "u1",
             name: "Dr. Sarah Johnson",
-            email: import.meta.env.VITE_DEMO_EMAIL,
+            email: "demo@pathscribe.ai",
             role: "pathologist",
             initials: "SJ",
             voiceProfile: "EN-US",
           };
-        } else if (email === import.meta.env.VITE_ADMIN_EMAIL && password === import.meta.env.VITE_ADMIN_PASS) {
+        } else if (email === "admin@pathscribe.ai" && password === "admin") {
           authenticatedUser = {
             id: "u3",
             name: "System Admin",
-            email: import.meta.env.VITE_ADMIN_EMAIL,
+            email: "admin@pathscribe.ai",
             role: "admin",
             initials: "SA",
             voiceProfile: "EN-US",
           };
+        } else if (email === import.meta.env.VITE_UK_DEMO_EMAIL && password === import.meta.env.VITE_UK_DEMO_PASS) {
+          // UK Demo — Dr. Paul Carter, Manchester University NHS Foundation Trust
+          authenticatedUser = {
+            id: "PATH-UK-001",
+            name: "Dr. Paul Carter",
+            email: "paul.carter@mft.nhs.uk",
+            role: "pathologist",
+            initials: "PC",
+            voiceProfile: "EN-GB",
+            locale: "en-GB",
+          } as any;
+        } else if (email === "oliver.pemberton@mft.nhs.uk" && password === import.meta.env.VITE_DEMO_PASS) {
+          // UK Demo — Dr. Oliver Pemberton, no role assigned (security testing)
+          authenticatedUser = {
+            id: "PATH-UK-002",
+            name: "Dr. Oliver Pemberton",
+            email: "oliver.pemberton@mft.nhs.uk",
+            role: undefined,
+            initials: "OP",
+            voiceProfile: "EN-GB",
+            locale: "en-GB",
+          } as any;
         }
 
         if (authenticatedUser) {

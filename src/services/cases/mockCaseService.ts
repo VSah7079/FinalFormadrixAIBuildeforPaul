@@ -937,6 +937,486 @@ const MOCK_CASES: Case[] = [
     reportingMode: 'pathscribe', coding: {},
   } as any,
 
+  // ══════════════════════════════════════════════════════════════════════════════
+  // UK DEMO CASES — Paul Carter (PATH-UK-001), Copilot Mode
+  // NHS Trust: Manchester University NHS Foundation Trust
+  // Templates: RCPath (en-GB), TNM 9
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── UK Case 1: Colorectal — Anterior Resection, in-progress ─────────────────
+  {
+    id: 'MFT26-8801-CR-RES',
+    accession: { accessionNumber: '8801', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8801-CR-RES' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-001', mrn: '200001',
+      firstName: 'William', lastName: 'Hartley',
+      dateOfBirth: isoYearsAgo(68, 4, 12), sex: 'M',
+      phone: '0161 234 5678', email: 'w.hartley@nhs.net',
+      address: '14 Deansgate, Manchester, M3 2EX',
+      nhsNumber: '485 777 3456',
+    },
+    specimens: [
+      { id: 'MFT26-8801-SP-1', label: 'A', description: 'Anterior resection specimen', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
+      { id: 'MFT26-8801-SP-2', label: 'B', description: 'Mesorectal lymph nodes', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Mr. James Whitfield',
+      clinicalIndication: 'Rectal adenocarcinoma, 7 cm from anal verge. MRI staging: mrT3N1. Completed neoadjuvant long-course chemoradiotherapy. Good radiological response. Proceeding to laparoscopic anterior resection.',
+      receivedDate: isoDaysAgo(3),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Received fresh labelled "anterior resection specimen" is a segment of rectum and sigmoid colon measuring 28 cm in length with attached mesorectum. The mesorectal envelope is intact and complete. An ulcerating tumour measuring 3.8 × 2.9 cm is present on the posterior wall, 7 cm from the distal resection margin. The tumour appears to invade into but not through the muscularis propria macroscopically. The circumferential resection margin appears clear. Multiple lymph nodes are identified within the mesorectal fat.',
+      microscopicDescription: 'Sections show moderately differentiated adenocarcinoma with evidence of treatment response. Residual tumour invades into the pericolorectal adipose tissue (ypT3). The plane of mesorectal excision is at the level of the mesorectal fascia. Circumferential resection margin clear, closest approach 4 mm. Longitudinal margins clear. No lymphovascular invasion identified. Perineural invasion present. Tumour regression score: TRS 2 (residual cancer with evident tumour regression). 16 lymph nodes identified; 2 of 16 positive for metastatic carcinoma, no extranodal extension (ypN1b).',
+      ancillaryStudies: 'Mismatch repair proteins: MLH1, PMS2, MSH2, MSH6 — all nuclear expression intact (MMR proficient). KRAS codon 12/13: p.G12V mutation detected. BRAF V600E: wild type. MSI testing: MS-stable.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8801-SP-1_rcpath_colorectal_resection_001',
+        specimenId: 'MFT26-8801-SP-1',
+        templateId: 'rcpath_colorectal_resection',
+        templateName: 'RCPath Colorectal Carcinoma — Resection (Appendix F)',
+        status: 'draft',
+        answers: {
+          specimen_type: 'anterior_resection',
+          tumour_site: 'rectum',
+          maximum_tumour_diameter_mm: '38',
+          tumour_perforation: 'perforation_no',
+          relation_to_peritoneal_reflection: 'below_reflection',
+          tumour_type: 'adenocarcinoma',
+          differentiation: 'well_moderate',
+          local_invasion: ['pT3'],
+          max_distance_beyond_muscularis_propria_mm: '4',
+          plane_of_mesorectal_excision: 'mesorectal_fascia',
+          venous_invasion: 'venous_none',
+          lymphatic_invasion: 'lymphatic_none',
+          perineural_invasion: 'perineural_extramural',
+          number_of_lymph_nodes_examined: '16',
+          number_of_positive_lymph_nodes: '2',
+          tumour_deposits: 'no_deposits',
+          longitudinal_margin_involvement: 'longitudinal_not_involved',
+          circumferential_margin_involvement: 'crm_not_involved',
+          crm_distance_mm: '4',
+          tumour_regression_score: 'trs_2',
+          pt_category: 'ypT3',
+          pn_category: 'ypN1b',
+          pm_category: 'pM0',
+          resection_status: 'r0',
+          mmr_mlh1: 'mlh1_intact',
+          mmr_pms2: 'pms2_intact',
+          mmr_msh2: 'msh2_intact',
+          mmr_msh6: 'msh6_intact',
+          msi_status: 'ms_stable',
+          kras_status: 'kras_mutant',
+          kras_mutation_detail: 'p.G12V',
+          braf_v600e: 'braf_absent',
+          snomed_topography: 'T68000',
+          snomed_morphology: 'M81403',
+        },
+        aiSuggestions: {
+          specimen_type:           { value: 'anterior_resection',        confidence: 96, source: 'Gross: "anterior resection specimen"',                        verification: 'unverified' },
+          tumour_site:             { value: 'rectum',                    confidence: 94, source: 'Order: "rectal adenocarcinoma, 7 cm from anal verge"',         verification: 'unverified' },
+          maximum_tumour_diameter: { value: '38',                        confidence: 91, source: 'Gross: "3.8 × 2.9 cm"',                                       verification: 'unverified' },
+          tumour_perforation:      { value: 'perforation_no',             confidence: 88, source: 'Gross: no perforation mentioned',                             verification: 'unverified' },
+          relation_to_peritoneal_reflection: { value: 'below_reflection', confidence: 82, source: 'Order: "7 cm from anal verge"',                               verification: 'unverified' },
+          tumour_type_adenocarcinoma: { value: 'adenocarcinoma',          confidence: 98, source: 'Micro: "moderately differentiated adenocarcinoma"',            verification: 'unverified' },
+          differentiation:         { value: 'well_moderate',             confidence: 90, source: 'Micro: "moderately differentiated"',                          verification: 'unverified' },
+          plane_of_mesorectal_excision: { value: 'mesorectal_fascia',    confidence: 93, source: 'Micro: "plane of mesorectal excision is at the level of the mesorectal fascia"', verification: 'unverified' },
+          perineural_invasion:     { value: 'perineural_extramural',     confidence: 85, source: 'Micro: "perineural invasion present"',                         verification: 'unverified' },
+          number_of_lymph_nodes:   { value: '16',                        confidence: 92, source: 'Micro: "16 lymph nodes identified"',                           verification: 'unverified' },
+          number_of_involved_lymph_nodes: { value: '2',                  confidence: 92, source: 'Micro: "2 of 16 positive"',                                   verification: 'unverified' },
+          distance_to_circumferential_margin: { value: '4',              confidence: 88, source: 'Micro: "closest approach 4 mm"',                              verification: 'unverified' },
+          preoperative_therapy_response: { value: 'Residual cancer with evident tumour regression (TRS 2)', confidence: 87, source: 'Micro: "TRS 2"',            verification: 'unverified' },
+          pT:                      { value: 'ypT3',                      confidence: 90, source: 'Micro: "ypT3"',                                               verification: 'unverified' },
+          pN:                      { value: 'ypN1b',                     confidence: 90, source: 'Micro: "ypN1b"',                                              verification: 'unverified' },
+          resection_status:        { value: 'r0',                         confidence: 89, source: 'Micro: "Longitudinal margins clear, CRM clear"',               verification: 'unverified' },
+          mmr_mlh1:                { value: 'mlh1_intact',               confidence: 96, source: 'Ancillary: "MLH1 nuclear expression intact"',                  verification: 'unverified' },
+          kras_mutation:           { value: 'kras_mutant',               confidence: 97, source: 'Ancillary: "p.G12V mutation detected"',                        verification: 'unverified' },
+          kras_mutation_specify:   { value: 'p.G12V',                    confidence: 95, source: 'Ancillary: "KRAS codon 12/13: p.G12V"',                       verification: 'unverified' },
+          braf_v600e:              { value: 'braf_absent',               confidence: 97, source: 'Ancillary: "BRAF V600E: wild type"',                          verification: 'unverified' },
+          snomed_topography:       { value: 'T68000',                    confidence: 92, source: 'SNOMED: Rectum structure',                                    verification: 'unverified' },
+          snomed_morphology:       { value: 'M81403',                    confidence: 94, source: 'SNOMED: Adenocarcinoma',                                      verification: 'unverified' },
+        },
+        createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(1),
+      },
+    ],
+    status: 'in-progress' as CaseStatus,
+    createdAt: isoDaysAgo(3), updatedAt: isoDaysAgo(1),
+    caseFlags: [
+      { id: 'mdt_colorectal', name: 'Colorectal MDT — Wed 14:00', color: 'blue', severity: 2 },
+      { id: 'kras_result',    name: 'KRAS Result — Oncology Notified', color: 'green', severity: 1 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: {
+      icd10: ['C20'],
+      snomed: ['413448001'],
+    },
+  },
+
+  // ── UK Case 2: Prostate — Needle Biopsy, draft ───────────────────────────────
+  {
+    id: 'MFT26-8802-PR-BX',
+    accession: { accessionNumber: '8802', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8802-PR-BX' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-002', mrn: '200002',
+      firstName: 'Geoffrey', lastName: 'Barrowclough',
+      dateOfBirth: isoYearsAgo(71, 9, 3), sex: 'M',
+      phone: '0161 345 6789', email: 'g.barrowclough@nhs.net',
+      address: '7 Piccadilly Gardens, Manchester, M1 1RG',
+      nhsNumber: '612 345 9087',
+    },
+    specimens: [
+      { id: 'MFT26-8802-SP-1', label: 'A', description: 'Prostate biopsy — right apex', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8802-SP-2', label: 'B', description: 'Prostate biopsy — right mid', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8802-SP-3', label: 'C', description: 'Prostate biopsy — right base', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8802-SP-4', label: 'D', description: 'Prostate biopsy — left apex', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8802-SP-5', label: 'E', description: 'Prostate biopsy — left mid', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8802-SP-6', label: 'F', description: 'Prostate biopsy — left base', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Mr. David Whitmore',
+      clinicalIndication: 'PSA 12.4 ng/mL, rising trend. Abnormal DRE: nodule right lobe. mpMRI prostate: PI-RADS 5 lesion right mid-gland, 14 mm. Proceeding to MRI-targeted and systematic transperineal biopsy under general anaesthetic.',
+      receivedDate: isoDaysAgo(1),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Received in formalin, six containers labelled A through F. Specimen A (right apex): 2 cores, 17 mm and 14 mm. Specimen B (right mid): 2 cores, 18 mm and 16 mm — targeted cores from PI-RADS 5 lesion. Specimen C (right base): 2 cores, 15 mm and 13 mm. Specimens D–F (left apex, mid, base): 2 cores each, 12–16 mm. All cores are grey-white and rubbery.',
+      microscopicDescription: 'Specimens A, B, C (right apex, mid, base): Acinar adenocarcinoma (usual type), Gleason score 4+3=7 (Grade Group 3). 5 of 6 cores involved. Maximum % core involvement: 85% (right mid, targeted core). Perineural invasion present. No seminal vesicle involvement identified on biopsy. Specimens D, E, F (left apex, mid, base): Benign prostatic tissue with mild chronic inflammation. No carcinoma identified.',
+      ancillaryStudies: 'PSMA IHC: Strongly positive in carcinoma foci. PIN-4 cocktail (CK5/6, p63, AMACR): Confirms adenocarcinoma, loss of basal cells confirmed.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8802-SP-1_rcpath_prostate_biopsy_001',
+        specimenId: 'MFT26-8802-SP-1',
+        templateId: 'rcpath_prostate_biopsy',
+        templateName: 'RCPath Prostate — Needle Biopsy',
+        status: 'draft',
+        answers: {},
+        aiSuggestions: {},
+        createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+      },
+    ],
+    status: 'draft' as CaseStatus,
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
+      { id: 'psma_positive', name: 'PSMA IHC — Positive', color: 'yellow', severity: 2 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C61'], snomed: [] },
+  },
+
+  // ── UK Case 3: Colorectal — Local Excision, pending review ──────────────────
+  {
+    id: 'MFT26-8803-CR-LOC',
+    accession: { accessionNumber: '8803', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8803-CR-LOC' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-003', mrn: '200003',
+      firstName: 'Margaret', lastName: 'Ashworth',
+      dateOfBirth: isoYearsAgo(58, 7, 19), sex: 'F',
+      phone: '0161 456 7890', email: 'm.ashworth@nhs.net',
+      address: '22 Oxford Road, Manchester, M13 9PL',
+      nhsNumber: '345 678 1234',
+    },
+    specimens: [
+      { id: 'MFT26-8803-SP-1', label: 'A', description: 'Transanal endoscopic microsurgery (TEMS) excision — rectal polyp', receivedAt: isoDaysAgo(3), collectedAt: isoDaysAgo(4), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Mr. James Whitfield',
+      clinicalIndication: 'Sessile rectal polyp, 4 cm, 6 cm from anal verge. Colonoscopy biopsy: tubulovillous adenoma with high-grade dysplasia. Proceeding to TEMS excision.',
+      receivedDate: isoDaysAgo(4),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Received fresh labelled "TEMS excision — rectal polyp" is an intact disc of rectal wall measuring 4.2 × 3.8 cm. The mucosal surface shows a sessile polyp measuring 3.9 × 3.5 cm with a villous surface. The deep margin is inked blue. Sectioning reveals the polyp extends to but does not appear to breach the muscularis propria.',
+      microscopicDescription: 'Sections show a tubulovillous adenoma with focal areas of invasive adenocarcinoma (well differentiated, pT1). Maximum depth of invasive tumour from muscularis mucosae: 1.8 mm. Width of invasive tumour: 6 mm. Haggitt level: not applicable (sessile). Kikuchi level: sm1. No lymphovascular invasion. No perineural invasion. Deep margin: not involved (clearance 1.2 mm). Peripheral margin: not involved. Tumour budding: Bd1 (3 buds identified). Resection status: R0.',
+      ancillaryStudies: 'MMR IHC: MLH1, PMS2, MSH2, MSH6 — all nuclear expression intact.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8803-SP-1_rcpath_colorectal_local_excision_001',
+        specimenId: 'MFT26-8803-SP-1',
+        templateId: 'rcpath_colorectal_local_excision',
+        templateName: 'RCPath Colorectal Carcinoma — Local Excision (Appendix D)',
+        status: 'draft',
+        answers: {
+          specimen_type: 'Endoscopic submucosal dissection',
+          site_of_tumour: 'Rectum',
+          maximum_tumour_diameter: '39',
+          tumour_type_adenocarcinoma: 'Yes',
+          differentiation: 'Well/moderate',
+          local_invasion: ['Submucosa (pT1)'],
+          kikuchi_level: 'sm1',
+          venous_invasion: 'None',
+          lymphatic_invasion: 'None',
+          perineural_invasion: 'None',
+          tumour_budding: 'Bd1 (<5 buds)',
+          margin_peripheral: 'Not involved',
+          margin_deep: 'Not involved',
+          resection_status: 'Yes (R0)',
+          tnm_edition: 'UICC9',
+          pT: 'pT1',
+          pN: 'pNX',
+          snomed_topography: 'T59600',
+          snomed_morphology: 'M81403',
+        },
+        aiSuggestions: {
+          specimen_type:       { value: 'Endoscopic submucosal dissection', confidence: 88, source: 'Order: "TEMS excision"', verification: 'unverified' },
+          site_of_tumour:      { value: 'Rectum',                          confidence: 95, source: 'Order: "rectal polyp, 6 cm from anal verge"', verification: 'unverified' },
+          differentiation:     { value: 'Well/moderate',                   confidence: 90, source: 'Micro: "well differentiated"', verification: 'unverified' },
+          local_invasion:      { value: ['Submucosa (pT1)'],               confidence: 88, source: 'Micro: "invasive adenocarcinoma pT1"', verification: 'unverified' },
+          kikuchi_level:       { value: 'sm1',                             confidence: 85, source: 'Micro: "Kikuchi level: sm1"', verification: 'unverified' },
+          tumour_budding:      { value: 'Bd1 (<5 buds)',                   confidence: 82, source: 'Micro: "Bd1 (3 buds identified)"', verification: 'unverified' },
+          margin_deep:         { value: 'Not involved',                    confidence: 90, source: 'Micro: "Deep margin: not involved"', verification: 'unverified' },
+          resection_status:    { value: 'Yes (R0)',                        confidence: 92, source: 'Micro: "Resection status: R0"', verification: 'unverified' },
+          pT:                  { value: 'pT1',                             confidence: 90, source: 'Micro: "pT1"', verification: 'unverified' },
+          snomed_topography:   { value: 'T59600',                         confidence: 90, source: 'SNOMED: Rectum structure', verification: 'unverified' },
+          snomed_morphology:   { value: 'M81403',                         confidence: 93, source: 'SNOMED: Adenocarcinoma', verification: 'unverified' },
+        },
+        createdAt: isoDaysAgo(2), updatedAt: isoDaysAgo(1),
+      },
+    ],
+    status: 'pending-review' as CaseStatus,
+    createdAt: isoDaysAgo(4), updatedAt: isoDaysAgo(1),
+    caseFlags: [
+      { id: 'second_opinion', name: 'Second Opinion Requested', color: 'blue', severity: 2 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C20'], snomed: ['413448001'] },
+  },
+
+  // ── UK Case 4: Prostate — Radical Prostatectomy, draft ──────────────────────
+  {
+    id: 'MFT26-8804-PR-RP',
+    accession: { accessionNumber: '8804', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8804-PR-RP' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-004', mrn: '200004',
+      firstName: 'Thomas', lastName: 'Pemberton',
+      dateOfBirth: isoYearsAgo(63, 11, 28), sex: 'M',
+      phone: '0161 567 8901', email: 't.pemberton@nhs.net',
+      address: '45 Wilmslow Road, Manchester, M14 5AQ',
+      nhsNumber: '789 012 3456',
+    },
+    specimens: [
+      { id: 'MFT26-8804-SP-1', label: 'A', description: 'Radical prostatectomy specimen', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8804-SP-2', label: 'B', description: 'Right pelvic lymph nodes', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'MFT26-8804-SP-3', label: 'C', description: 'Left pelvic lymph nodes', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Mr. David Whitmore',
+      clinicalIndication: 'Prostate adenocarcinoma, Gleason 4+3=7, Grade Group 3. PSA 11.2 ng/mL. MRI: T2N0. Proceeding to robot-assisted radical prostatectomy with bilateral pelvic lymph node dissection.',
+      receivedDate: isoDaysAgo(1),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Received fresh labelled "radical prostatectomy" is a prostate gland with attached seminal vesicles weighing 54g and measuring 4.8 × 4.2 × 3.9 cm. The external surface is inked (right: red, left: black, anterior: blue). Serial sectioning reveals a firm, grey-white tumour predominantly involving the right mid and base, estimated to occupy 35% of the gland volume. The tumour appears to extend to the inked right posterolateral margin in one section. Bilateral seminal vesicles unremarkable. Bilateral pelvic lymph node packages submitted separately.',
+      microscopicDescription: 'Sections show acinar adenocarcinoma, Gleason score 4+3=7 (Grade Group 3). Tumour involves right mid, right base, and right apex. Extraprostatic extension present at right posterolateral aspect, spanning 2.1 mm. Right posterolateral surgical margin positive over 1.2 mm. All other margins clear. No seminal vesicle invasion. No lymphovascular invasion. Right pelvic lymph nodes: 0 of 8 positive. Left pelvic lymph nodes: 0 of 7 positive.',
+      ancillaryStudies: 'PIN-4 cocktail: confirms adenocarcinoma. PSMA IHC: positive.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8804-SP-1_rcpath_prostate_rp_001',
+        specimenId: 'MFT26-8804-SP-1',
+        templateId: 'rcpath_prostate_radical_prostatectomy',
+        templateName: 'RCPath Prostate — Radical Prostatectomy',
+        status: 'draft',
+        answers: {},
+        aiSuggestions: {},
+        createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+      },
+    ],
+    status: 'draft' as CaseStatus,
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'positive_margin', name: 'Positive Surgical Margin', color: 'red', severity: 3 },
+      { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C61'], snomed: [] },
+  },
+
+  // ── UK Case 5: Colorectal — Completed/Finalised ──────────────────────────────
+  {
+    id: 'MFT26-8805-CR-FIN',
+    accession: { accessionNumber: '8805', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8805-CR-FIN' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-005', mrn: '200005',
+      firstName: 'Patricia', lastName: 'Hollingsworth',
+      dateOfBirth: isoYearsAgo(55, 2, 8), sex: 'F',
+      phone: '0161 678 9012', email: 'p.hollingsworth@nhs.net',
+      address: '8 King Street, Manchester, M2 6AQ',
+      nhsNumber: '234 567 8901',
+    },
+    specimens: [
+      { id: 'MFT26-8805-SP-1', label: 'A', description: 'Right hemicolectomy specimen', receivedAt: isoDaysAgo(7), collectedAt: isoDaysAgo(8), specimenFlags: [] },
+      { id: 'MFT26-8805-SP-2', label: 'B', description: 'Apical lymph node', receivedAt: isoDaysAgo(7), collectedAt: isoDaysAgo(8), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Mr. James Whitfield',
+      clinicalIndication: 'Caecal adenocarcinoma, colonoscopy biopsy confirmed. CT staging: T3N0M0. Proceeding to laparoscopic right hemicolectomy.',
+      receivedDate: isoDaysAgo(8),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Right hemicolectomy specimen, 38 cm in length. Fungating tumour in caecum measuring 5.2 × 4.1 cm. Tumour invades through muscularis propria into pericolorectal fat. All margins clear.',
+      microscopicDescription: 'Well differentiated adenocarcinoma, pT3. No lymphovascular invasion. No perineural invasion. 22 lymph nodes; 0 of 22 positive (pN0). CRM clear, 8 mm. R0 resection. MMR proficient.',
+      ancillaryStudies: 'MMR IHC: all four proteins retained. MSI: MS-stable. KRAS: wild type. BRAF V600E: wild type.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8805-SP-1_rcpath_colorectal_resection_001',
+        specimenId: 'MFT26-8805-SP-1',
+        templateId: 'rcpath_colorectal_resection',
+        templateName: 'RCPath Colorectal Carcinoma — Resection (Appendix F)',
+        status: 'draft',
+        answers: {
+          specimen_type: 'Right hemicolectomy',
+          site_of_tumour: 'Caecum',
+          maximum_tumour_diameter: '52',
+          tumour_type_adenocarcinoma: 'Yes',
+          differentiation: 'Well/moderate',
+          local_invasion: ['Beyond muscularis propria'],
+          venous_invasion: 'None',
+          lymphatic_invasion: 'None',
+          perineural_invasion: 'None',
+          number_of_lymph_nodes: '22',
+          number_of_involved_lymph_nodes: '0',
+          margin_longitudinal: 'Not involved',
+          margin_circumferential: 'Not involved',
+          distance_to_circumferential_margin: '8',
+          preoperative_therapy_response: 'Not applicable',
+          tnm_edition: 'UICC9',
+          pT: 'pT3',
+          pN: 'pN0',
+          pM: 'Not applicable',
+          resection_status: 'Yes (R0)',
+          mmr_mlh1: 'Yes', mmr_pms2: 'Yes', mmr_msh2: 'Yes', mmr_msh6: 'Yes',
+          msi_status: 'MS-stable',
+          kras_mutation: 'Absent',
+          braf_v600e: 'Absent',
+          snomed_topography: 'T59100',
+          snomed_morphology: 'M81403',
+        },
+        aiSuggestions: {},
+        createdAt: isoDaysAgo(6), updatedAt: isoDaysAgo(5),
+      },
+    ],
+    status: 'finalized' as CaseStatus,
+    createdAt: isoDaysAgo(8), updatedAt: isoDaysAgo(5),
+    caseFlags: [],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C18.0'], snomed: ['413448001'] },
+  },
+
+  // ── UK Case 6: STAT — Colorectal, urgent, unstarted ──────────────────────────
+  {
+    id: 'MFT26-8806-CR-STAT',
+    accession: { accessionNumber: '8806', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8806-CR-STAT' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: {
+      id: 'PAT-UK-006', mrn: '200006',
+      firstName: 'Edward', lastName: 'Blackwood',
+      dateOfBirth: isoYearsAgo(74, 6, 30), sex: 'M',
+      phone: '0161 789 0123', email: 'e.blackwood@nhs.net',
+      address: '3 Albert Square, Manchester, M2 5PF',
+      nhsNumber: '901 234 5678',
+    },
+    specimens: [
+      { id: 'MFT26-8806-SP-1', label: 'A', description: 'Sigmoid colectomy — emergency resection', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'STAT',
+      requestingProvider: 'Mr. Peter Thornton',
+      clinicalIndication: 'Emergency presentation with perforated sigmoid colon. CT: sigmoid mass with free air. Proceeding to emergency Hartmann\'s procedure. Intraoperative finding: perforated sigmoid adenocarcinoma.',
+      receivedDate: isoDaysAgo(0),
+      assignedTo: 'PATH-UK-001',
+    },
+    diagnostic: {
+      grossDescription: 'Fresh sigmoid colectomy specimen, 18 cm. Perforated tumour, 6.5 × 5.2 cm, on the anterior wall. Perforation site 8 mm in diameter. Tumour invades through full bowel wall thickness.',
+      microscopicDescription: 'Pending processing.',
+      ancillaryStudies: 'Pending.',
+    },
+    synopticReports: [],
+    status: 'draft' as CaseStatus,
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'stat_flag', name: 'STAT — Rush Processing', color: 'red', severity: 3 },
+      { id: 'perforation', name: 'Tumour Perforation — pT4', color: 'red', severity: 3 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C18.7'], snomed: [] },
+  },
+
+  // ── UK Pool Cases — Manchester University NHS Foundation Trust ───────────────
+  {
+    id: 'MFT26-8807-POOL',
+    accession: { accessionNumber: '8807', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8807-POOL' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: { id: 'PAT-UK-007', mrn: '200007', firstName: 'Susan', lastName: 'Hargreaves', dateOfBirth: isoYearsAgo(62, 5, 14), sex: 'F', phone: '0161 890 1234', email: 's.hargreaves@nhs.net', address: '19 Portland Street, Manchester, M1 3HU', nhsNumber: '345 891 2345' },
+    specimens: [{ id: 'MFT26-8807-SP-1', label: 'A', description: 'Sigmoid colon biopsy — three fragments', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Helen Marsden', clinicalIndication: 'Change in bowel habit. Colonoscopy: 18mm sessile polyp sigmoid colon. Biopsy taken.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: 'Received in formalin labelled "sigmoid colon biopsy" are three tan-pink fragments measuring 0.3–0.7 cm.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: 'GI-UK',
+    poolName: 'Gastrointestinal',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  {
+    id: 'MFT26-8808-POOL',
+    accession: { accessionNumber: '8808', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8808-POOL' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: { id: 'PAT-UK-008', mrn: '200008', firstName: 'Alan', lastName: 'Butterworth', dateOfBirth: isoYearsAgo(77, 3, 22), sex: 'M', phone: '0161 901 2345', email: 'a.butterworth@nhs.net', address: '6 St Anns Square, Manchester, M2 7LP', nhsNumber: '456 902 3456' },
+    specimens: [{ id: 'MFT26-8808-SP-1', label: 'A', description: 'Prostate biopsy — right apex', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
+                { id: 'MFT26-8808-SP-2', label: 'B', description: 'Prostate biopsy — right mid', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
+                { id: 'MFT26-8808-SP-3', label: 'C', description: 'Prostate biopsy — right base', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
+    order: { priority: 'Routine', requestingProvider: 'Mr. David Whitmore', clinicalIndication: 'PSA 9.1 ng/mL. PI-RADS 4 lesion right mid. Proceeding to targeted biopsy.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: 'Three containers labelled A–C, each containing 2 prostate needle biopsy cores, 12–15 mm each.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: 'URO-UK',
+    poolName: 'Uropathology',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  {
+    id: 'MFT26-8809-POOL',
+    accession: { accessionNumber: '8809', accessionPrefix: 'MFT', accessionYear: 2026, fullAccession: 'MFT26-8809-POOL' },
+    originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
+    patient: { id: 'PAT-UK-009', mrn: '200009', firstName: 'Dorothy', lastName: 'Whitworth', dateOfBirth: isoYearsAgo(49, 8, 5), sex: 'F', phone: '0161 012 3456', email: 'd.whitworth@nhs.net', address: '31 Chapel Street, Salford, M3 5JJ', nhsNumber: '567 013 4567' },
+    specimens: [{ id: 'MFT26-8809-SP-1', label: 'A', description: 'Right hemicolectomy — emergency resection', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
+    order: { priority: 'STAT', requestingProvider: 'Mr. Peter Thornton', clinicalIndication: 'Emergency right hemicolectomy for obstructing caecal mass. CT: suspected adenocarcinoma.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: 'Right hemicolectomy specimen, 32 cm, received fresh. Obstructing tumour in caecum, 5.8 cm. Tumour perforates the serosal surface at one point.', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: 'GI-UK',
+    poolName: 'Gastrointestinal',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [{ id: 'stat_rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }],
+    specimenFlags: [],
+    reportingMode: 'pathscribe', coding: {},
+  } as any,
 ];
 
 // ─── Per-case patient history & similar cases ────────────────────────────────
@@ -1048,7 +1528,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '5'; // bumped: all field IDs aligned with real CAP JSON templates
+const MOCK_VERSION = '6'; // bumped: UK cases added, listCasesForUser now filters by user
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);
@@ -1426,6 +1906,8 @@ const PATHOLOGIST_NAMES: Record<string, string> = {
   'PATH-003': 'Dr. Anil Sharma',
   'PATH-004': 'Dr. Linda Park',
   'PATH-005': 'Dr. James Nguyen',
+  'PATH-UK-001': 'Dr. Paul Carter',
+  'PATH-UK-002': 'Dr. Oliver Pemberton',
 };
 
 // ─── Patient History ──────────────────────────────────────────────────────────
@@ -1455,6 +1937,148 @@ export interface PatientHistoryCase {
 }
 
 export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
+  // ── MFT UK patients — Paul Carter's cases ────────────────────────────────────
+
+  // Hartley, William — MRN 200001 — Rectal adenocarcinoma (current: anterior resection)
+  '200001': [
+    {
+      id: 'MFT24-3301',
+      date: 'Sep 12, 2024',
+      diagnosis: 'Rectal adenocarcinoma, moderately differentiated — staging biopsy',
+      site: 'Rectum, posterior wall, 7 cm from anal verge',
+      procedure: 'Flexible sigmoidoscopy biopsy',
+      physician: 'Dr. Paul Carter',
+      receptors: 'N/A',
+      ki67: '45%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: 'Five fragments of colonic mucosa and submucosa each 0.3–0.5 cm. Submitted entirely in one cassette.',
+      microscopic: 'Sections show moderately differentiated adenocarcinoma with irregular gland formation infiltrating the submucosa. Lymphovascular invasion not identified in the biopsy. No treatment effect.',
+      comment: 'Moderately differentiated rectal adenocarcinoma confirmed. Staging biopsy prior to MRI and MDT discussion. Patient proceeded to long-course chemoradiotherapy.',
+      tags: ['Rectal adenocarcinoma', 'Grade 2', 'Staging biopsy', 'Pre-treatment', 'Colorectal MDT'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 2, _erPositive: false, _her2Positive: false,
+    },
+    {
+      id: 'MFT22-0914',
+      date: 'Mar 4, 2022',
+      diagnosis: 'Tubular adenoma with low grade dysplasia — surveillance colonoscopy',
+      site: 'Sigmoid colon',
+      procedure: 'Colonoscopic polypectomy',
+      physician: 'Dr. H. Marsden',
+      receptors: 'N/A',
+      ki67: '< 10%',
+      margins: 'Clear (diathermy margin)',
+      nodes: 'Not sampled',
+      gross: 'Single polypectomy specimen 1.2 cm. Tan-pink pedunculated polyp.',
+      microscopic: 'Sections show tubular adenoma with low grade dysplasia. Stalk margin clear. No high grade dysplasia or invasive carcinoma.',
+      comment: 'Tubular adenoma, completely excised. 3-year surveillance interval recommended per BSG guidelines.',
+      tags: ['Adenoma', 'Low grade dysplasia', 'Polypectomy', 'Complete excision'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+    },
+  ],
+
+  // Barrowclough, Geoffrey — MRN 200002 — Prostate biopsy (current: TRUS biopsy)
+  '200002': [
+    {
+      id: 'MFT23-7712',
+      date: 'Nov 8, 2023',
+      diagnosis: 'Prostatic adenocarcinoma, Gleason 3+3=6 (Grade Group 1) — 2/12 cores',
+      site: 'Prostate — right mid and right apex',
+      procedure: 'TRUS-guided 12-core prostate biopsy',
+      physician: 'Dr. Paul Carter',
+      receptors: 'N/A',
+      ki67: '12%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: '12 individually labelled core biopsies, each 1.2–1.8 cm. Submitted by anatomical site.',
+      microscopic: 'Tumour in 2 of 12 cores: right mid (15% involvement) and right apex (10% involvement). Gleason pattern 3 only (well-formed glands). Maximum core involvement 3 mm. No perineural invasion.',
+      comment: 'Low-volume Gleason Grade Group 1 prostate adenocarcinoma. Patient enrolled on active surveillance protocol. PSA 6.2 ng/mL at time of biopsy.',
+      tags: ['Prostate adenocarcinoma', 'Gleason 3+3', 'Grade Group 1', 'Active surveillance', 'Low volume'],
+      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+    },
+    {
+      id: 'MFT21-4456',
+      date: 'Jun 17, 2021',
+      diagnosis: 'Benign prostatic tissue — no malignancy',
+      site: 'Prostate',
+      procedure: 'TRUS-guided 12-core prostate biopsy',
+      physician: 'Dr. R. Patel',
+      receptors: 'N/A',
+      ki67: '< 2%',
+      margins: 'N/A',
+      nodes: 'Not sampled',
+      gross: '12 core biopsies submitted. No macroscopically suspicious areas.',
+      microscopic: 'Sections show benign prostatic glands with focal chronic inflammation. High-grade PIN in 1 core. No invasive carcinoma identified.',
+      comment: 'No malignancy. HGPIN in 1 core — rebiopsy recommended within 12 months. PSA 4.8 ng/mL.',
+      tags: ['Benign', 'HGPIN', 'No malignancy', 'Surveillance'],
+      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+    },
+  ],
+
+  // Pemberton, Thomas — MRN 200004 — Radical prostatectomy (current)
+  '200004': [
+    {
+      id: 'MFT25-1143',
+      date: 'Apr 22, 2025',
+      diagnosis: 'Prostatic adenocarcinoma, Gleason 4+3=7 (Grade Group 3) — 6/12 cores',
+      site: 'Prostate — bilateral, posterior zones predominant',
+      procedure: 'TRUS-guided 12-core prostate biopsy',
+      physician: 'Dr. Paul Carter',
+      receptors: 'N/A',
+      ki67: '28%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: '12 individually labelled core biopsies submitted by anatomical site.',
+      microscopic: 'Tumour identified in 6 of 12 cores. Gleason pattern 4 predominant (poorly formed/fused glands). Right posterior zone most extensively involved (70% of core). No perineural invasion at biopsy margin.',
+      comment: 'Intermediate-high risk prostate adenocarcinoma (Grade Group 3). PSA 14.2 ng/mL. Discussed at urology MDT — recommendation for robotic radical prostatectomy with bilateral pelvic lymph node dissection.',
+      tags: ['Prostate adenocarcinoma', 'Gleason 4+3', 'Grade Group 3', 'Intermediate-high risk', 'Pre-surgical biopsy'],
+      _templateId: 'rcpath_prostate_radical_prostatectomy', _grade: 3, _erPositive: false, _her2Positive: false,
+    },
+  ],
+
+  // Hollingsworth, Patricia — MRN 200005 — Right hemicolectomy (current: finalising)
+  '200005': [
+    {
+      id: 'MFT25-6630',
+      date: 'Jan 9, 2025',
+      diagnosis: 'Moderately differentiated adenocarcinoma of ascending colon — staging biopsy',
+      site: 'Ascending colon / hepatic flexure',
+      procedure: 'Colonoscopic biopsy',
+      physician: 'Dr. Paul Carter',
+      receptors: 'N/A',
+      ki67: '52%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: 'Four fragments of colonic mucosa 0.3–0.8 cm submitted entirely.',
+      microscopic: 'Moderately differentiated adenocarcinoma with irregular gland formation infiltrating the lamina propria and muscularis mucosae. No lymphovascular invasion in the biopsy.',
+      comment: 'Colorectal adenocarcinoma confirmed. CT staging: T3N1M0. Patient discussed at colorectal MDT — laparoscopic right hemicolectomy planned.',
+      tags: ['Colorectal adenocarcinoma', 'Grade 2', 'Staging biopsy', 'Colorectal MDT'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 2, _erPositive: false, _her2Positive: false,
+    },
+  ],
+
+  // Ashworth, Margaret — MRN 200003 — TEMS excision / second opinion
+  '200003': [
+    {
+      id: 'MFT24-9918',
+      date: 'Dec 3, 2024',
+      diagnosis: 'Rectal polyp — tubulovillous adenoma with focal high grade dysplasia',
+      site: 'Rectum, anterior wall',
+      procedure: 'Flexible sigmoidoscopy biopsy',
+      physician: 'Dr. Paul Carter',
+      receptors: 'N/A',
+      ki67: '35%',
+      margins: 'N/A (biopsy)',
+      nodes: 'Not sampled',
+      gross: 'Three polypoid fragments 0.5–1.2 cm submitted entirely.',
+      microscopic: 'Tubulovillous adenoma with focal high grade dysplasia. No definitive invasive carcinoma identified in the biopsy material. Margin assessment not possible.',
+      comment: 'High grade dysplasia confirmed. Patient referred for transanal endoscopic microsurgery (TEMS) for complete excision and definitive staging.',
+      tags: ['Tubulovillous adenoma', 'High grade dysplasia', 'Pre-TEMS biopsy', 'Rectal polyp'],
+      _templateId: 'rcpath_colorectal_local_excision', _grade: 2, _erPositive: false, _her2Positive: false,
+    },
+  ],
+
+  // ── US patients (existing) ───────────────────────────────────────────────────
   '100001': [
     {
       id: 'S24-04821',
@@ -1773,9 +2397,15 @@ export const mockCaseService: ICaseService = {
     return CASES.find(c => c.id === id);
   },
 
-  async listCasesForUser(_userId: string): Promise<Case[]> {
+  async listCasesForUser(userId: string): Promise<Case[]> {
     await delay();
-    return CASES;
+    if (!userId || userId === 'all' || userId === 'current') return CASES;
+    // Get the user's organisation from their assigned cases
+    const userOrg = CASES.find(c => c.order?.assignedTo === userId)?.originHospitalId;
+    return CASES.filter(c =>
+      c.order?.assignedTo === userId ||
+      ((c as any).status === 'pool' && (!userOrg || c.originHospitalId === userOrg))
+    );
   },
 
   async updateCase(caseId: string, updates: Partial<Case>): Promise<void> {

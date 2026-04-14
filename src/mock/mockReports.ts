@@ -638,6 +638,234 @@ const reportMap = new Map<string, Report>(
   reports.map(r => [r.accession, r])
 );
 reportMap.set('S23-9981', minimalReport);
+
+// ── MFT UK demo cases — Paul Carter (PATH-UK-001) ────────────────────────────
+// Accession numbers match the caseNumber fields in mockMessageService.ts
+// so the case link button in the messaging drawer navigates correctly.
+
+reportMap.set('MFT26-8807-POOL', {
+  accession:              'MFT26-8807-POOL',
+  patientName:            'Hargreaves, Susan',
+  gender:                 'Female',
+  mrn:                    '200007',
+  dob:                    '1964-05-14',
+  collectedAt:            '2026-04-13T08:00:00Z',
+  receivedAt:             '2026-04-13T10:00:00Z',
+  reportedAt:             '',
+  diagnosis:              'Pending — sigmoid colon biopsy — three fragments. Awaiting assignment.',
+  specimens: [
+    { id: 'A', type: 'Sigmoid colon biopsy — three fragments', description: 'Three fragments of sigmoid colon mucosa received in formalin.' },
+  ],
+  synoptic: {
+    tumorType:              'Pending',
+    grade:                  'Pending',
+    size:                   'Pending',
+    margins:                'Pending',
+    lymphovascularInvasion: 'Pending',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'Three fragments of sigmoid colon mucosa each measuring 0.3–0.5 cm. Submitted entirely in one cassette.',
+  microscopicDescription: 'Pending — case not yet assigned.',
+  ancillaryStudies:       'Pending.',
+  lastUpdated:            '2026-04-13T10:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8808-POOL', {
+  accession:              'MFT26-8808-POOL',
+  patientName:            'Butterworth, Alan',
+  gender:                 'Male',
+  mrn:                    '200008',
+  dob:                    '1949-03-22',
+  collectedAt:            '2026-04-13T08:00:00Z',
+  receivedAt:             '2026-04-13T10:00:00Z',
+  reportedAt:             '',
+  diagnosis:              'Pending — prostate biopsy (12-core TRUS). Awaiting assignment.',
+  specimens: [
+    { id: 'A', type: 'Prostate biopsy — right apex', description: '12-core transrectal ultrasound-guided prostate biopsy, cores labelled by anatomical site.' },
+    { id: 'B', type: 'Prostate biopsy — right mid', description: '' },
+    { id: 'C', type: 'Prostate biopsy — right base', description: '' },
+  ],
+  synoptic: {
+    tumorType:              'Pending',
+    grade:                  'Pending',
+    size:                   'Pending',
+    margins:                'Cannot assess (biopsy)',
+    lymphovascularInvasion: 'Pending',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       '12 individually labelled core biopsies each measuring 1.2–1.8 cm in length. Submitted by anatomic site in 12 cassettes.',
+  microscopicDescription: 'Pending — case not yet assigned.',
+  ancillaryStudies:       'Pending.',
+  lastUpdated:            '2026-04-13T10:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8809-POOL', {
+  accession:              'MFT26-8809-POOL',
+  patientName:            'Whitworth, Dorothy',
+  gender:                 'Female',
+  mrn:                    '200009',
+  dob:                    '1977-08-05',
+  collectedAt:            '2026-04-13T08:00:00Z',
+  receivedAt:             '2026-04-13T10:00:00Z',
+  reportedAt:             '',
+  diagnosis:              'STAT — Right hemicolectomy emergency resection. Awaiting assignment.',
+  specimens: [
+    { id: 'A', type: 'Right hemicolectomy — emergency resection', description: 'Right hemicolectomy specimen received fresh following emergency surgery. Ileocolic resection.' },
+  ],
+  synoptic: {
+    tumorType:              'Pending',
+    grade:                  'Pending',
+    size:                   'Pending',
+    margins:                'Pending',
+    lymphovascularInvasion: 'Pending',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'Right hemicolectomy specimen received fresh following emergency resection. Specimen measures approximately 28 cm including terminal ileum. Gross examination pending assignment.',
+  microscopicDescription: 'Pending — STAT case not yet assigned.',
+  ancillaryStudies:       'Pending.',
+  lastUpdated:            '2026-04-13T10:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8801-CR-RES', {
+  accession:              'MFT26-8801-CR-RES',
+  patientName:            'Hartley, William',
+  gender:                 'Male',
+  mrn:                    '200001',
+  dob:                    '1958-04-12',
+  collectedAt:            '2026-04-10T08:00:00Z',
+  receivedAt:             '2026-04-10T10:00:00Z',
+  reportedAt:             '2026-04-13T09:00:00Z',
+  diagnosis:              'Moderately differentiated adenocarcinoma of rectum, pT3 N1b (2/18 nodes), KRAS G12D mutant',
+  specimens: [
+    { id: 'A', type: 'Anterior resection specimen', description: 'Anterior resection specimen received fresh, orientated with serosal marking sutures.' },
+    { id: 'B', type: 'Mesorectal lymph nodes', description: 'Mesorectal fatty tissue submitted separately for lymph node harvest.' },
+  ],
+  synoptic: {
+    tumorType:              'Colorectal adenocarcinoma',
+    grade:                  'Moderately differentiated (Grade 2)',
+    size:                   '4.2 cm',
+    margins:                'Negative, circumferential radial margin 2.1 mm',
+    lymphovascularInvasion: 'Present',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'Anterior resection specimen measuring 24 cm in length. An ulcerated annular tumour measuring 4.2 × 3.8 cm is identified in the mid rectum, 7 cm from the distal resection margin. Tumour penetrates through the muscularis propria into perirectal fat. Circumferential radial margin (CRM) 2.1 mm.',
+  microscopicDescription: 'Sections show moderately differentiated adenocarcinoma with gland formation infiltrating through muscularis propria into perirectal fat (pT3). Lymphovascular invasion is present. 2 of 18 mesorectal lymph nodes show metastatic adenocarcinoma (pN1b). Circumferential radial margin 2.1 mm (not involved). Proximal and distal resection margins clear.',
+  ancillaryStudies:       'MMR IHC: MLH1, MSH2, MSH6, PMS2 intact (mismatch repair proficient). KRAS mutation analysis: G12D mutation detected. NRAS/BRAF: wildtype. Colorectal MDT review Wednesday 14:00.',
+  lastUpdated:            '2026-04-13T09:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8802-PR-BX', {
+  accession:              'MFT26-8802-PR-BX',
+  patientName:            'Barrowclough, Geoffrey',
+  gender:                 'Male',
+  mrn:                    '200002',
+  dob:                    '1955-09-03',
+  collectedAt:            '2026-04-12T08:00:00Z',
+  receivedAt:             '2026-04-12T10:00:00Z',
+  reportedAt:             '2026-04-13T09:00:00Z',
+  diagnosis:              'Prostatic adenocarcinoma, Gleason score 3+4=7 (Grade Group 2), involving 4/12 cores. PSMA IHC positive.',
+  specimens: [
+    { id: 'A', type: 'Prostate biopsy — right apex', description: '12-core transrectal ultrasound-guided prostate biopsy, cores labelled by anatomical site.' },
+    { id: 'B', type: 'Prostate biopsy — right mid', description: '' },
+    { id: 'C', type: 'Prostate biopsy — right base', description: '' },
+  ],
+  synoptic: {
+    tumorType:              'Prostatic adenocarcinoma',
+    grade:                  'Gleason 3+4=7 (Grade Group 2)',
+    size:                   'Up to 7 mm core involvement',
+    margins:                'Cannot assess (biopsy)',
+    lymphovascularInvasion: 'Not identified',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       '12 individually labelled core biopsies each measuring 1.2–1.8 cm in length. Submitted by anatomic site in 12 cassettes.',
+  microscopicDescription: 'Tumour is identified in 4 of 12 cores: right apex (40%), right mid (70%), left apex (15%), left base (10%). Gleason pattern 3 (well-formed glands) predominant with secondary pattern 4 (poorly formed/fused glands). Maximum core involvement 7 mm/16 mm (44%). No perineural invasion at biopsy margin.',
+  ancillaryStudies:       'PSMA IHC: positive (strong, diffuse). ERG IHC: negative. PTEN IHC: intact expression. Urology MDT review Friday 09:00.',
+  lastUpdated:            '2026-04-13T09:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8803-CR-LOC', {
+  accession:              'MFT26-8803-CR-LOC',
+  patientName:            'Ashworth, Margaret',
+  gender:                 'Female',
+  mrn:                    '200003',
+  dob:                    '1968-07-19',
+  collectedAt:            '2026-04-09T08:00:00Z',
+  receivedAt:             '2026-04-09T10:00:00Z',
+  reportedAt:             '2026-04-13T09:00:00Z',
+  diagnosis:              'Transanal endoscopic microsurgery (TEMS) excision — rectal polyp. Tubulovillous adenoma with high grade dysplasia. Second opinion requested regarding deep margin.',
+  specimens: [
+    { id: 'A', type: 'TEMS excision — rectal polyp', description: 'TEMS excision specimen from anterior wall, below peritoneal reflection, received fresh and pin-mounted.' },
+  ],
+  synoptic: {
+    tumorType:              'Tubulovillous adenoma with high grade dysplasia',
+    grade:                  'High grade dysplasia',
+    size:                   '2.8 cm',
+    margins:                'Deep margin — SECOND OPINION REQUESTED',
+    lymphovascularInvasion: 'Not identified',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'TEMS excision specimen measuring 3.8 × 2.8 cm, pin-mounted. Specimen is from the anterior rectal wall, below the peritoneal reflection. Mucosal surface shows a polypoid lesion measuring 2.8 × 2.1 cm with focal areas of flattening.',
+  microscopicDescription: 'Sections show tubulovillous adenoma (villous component 45%) with focal high grade dysplasia. No unequivocal invasive adenocarcinoma identified. The deep (muscularis propria) margin is the area of concern — there is focal glandular irregularity at the deep aspect which may represent pT1 invasion vs. tangential sectioning of dysplastic glands. SECOND OPINION REQUESTED.',
+  ancillaryStudies:       'p53 IHC: focal aberrant expression in high grade dysplastic foci. Ki-67 elevated (>60% in HGD areas). MMR IHC intact. CD34 highlights intact muscularis mucosae in most areas.',
+  lastUpdated:            '2026-04-13T09:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8804-PR-RP', {
+  accession:              'MFT26-8804-PR-RP',
+  patientName:            'Pemberton, Thomas',
+  gender:                 'Male',
+  mrn:                    '200004',
+  dob:                    '1963-11-28',
+  collectedAt:            '2026-04-12T08:00:00Z',
+  receivedAt:             '2026-04-12T10:00:00Z',
+  reportedAt:             '2026-04-13T09:00:00Z',
+  diagnosis:              'Prostatic adenocarcinoma, Gleason score 4+3=7 (Grade Group 3), pT3a. Positive surgical margin — right posterior, 3 mm extent.',
+  specimens: [
+    { id: 'A', type: 'Radical prostatectomy specimen', description: 'Radical prostatectomy specimen received fresh, seminal vesicles attached.' },
+    { id: 'B', type: 'Right pelvic lymph nodes', description: 'Right pelvic lymph node dissection.' },
+    { id: 'C', type: 'Left pelvic lymph nodes', description: 'Left pelvic lymph node dissection.' },
+  ],
+  synoptic: {
+    tumorType:              'Prostatic adenocarcinoma',
+    grade:                  'Gleason 4+3=7 (Grade Group 3)',
+    size:                   'Bilateral, largest focus 2.1 cm',
+    margins:                'POSITIVE — right posterior margin, 3 mm extent',
+    lymphovascularInvasion: 'Present',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'Radical prostatectomy specimen weighing 56 g, measuring 4.6 × 4.1 × 3.4 cm. Seminal vesicles intact. Inked per protocol (right = black, left = blue, anterior = yellow). Serial sections at 3 mm intervals. Tumour involves bilateral lobes predominantly in the posterior zones.',
+  microscopicDescription: 'Sections show prostatic adenocarcinoma with Gleason pattern 4 (poorly formed/fused glands) predominant and secondary pattern 3. Extraprostatic extension at right posterolateral aspect (pT3a). Positive surgical margin at right posterior, extent 3 mm. Seminal vesicles not involved (pT3a). Lymphovascular invasion present.',
+  ancillaryStudies:       'ERG IHC: positive. PTEN IHC: loss of expression (adverse prognostic marker). Pelvic lymph nodes: 0/16 positive (pN0). Adjuvant radiotherapy to prostate bed under discussion at Friday urology MDT.',
+  lastUpdated:            '2026-04-13T09:00:00Z',
+} as FullReport);
+
+reportMap.set('MFT26-8805-CR-FIN', {
+  accession:              'MFT26-8805-CR-FIN',
+  patientName:            'Hollingsworth, Patricia',
+  gender:                 'Female',
+  mrn:                    '200005',
+  dob:                    '1971-02-08',
+  collectedAt:            '2026-04-05T08:00:00Z',
+  receivedAt:             '2026-04-05T10:00:00Z',
+  reportedAt:             '2026-04-13T09:00:00Z',
+  diagnosis:              'Moderately differentiated adenocarcinoma of right colon, pT3 N2a (4/14 nodes). Apical lymph node with extranodal extension — peer review comment added.',
+  specimens: [
+    { id: 'A', type: 'Right hemicolectomy specimen', description: 'Right hemicolectomy specimen received fresh, ileocolic resection.' },
+    { id: 'B', type: 'Apical lymph node', description: 'Apical lymph node submitted separately.' },
+  ],
+  synoptic: {
+    tumorType:              'Colorectal adenocarcinoma',
+    grade:                  'Moderately differentiated (Grade 2)',
+    size:                   '5.1 cm',
+    margins:                'Negative, radial margin 3.2 mm',
+    lymphovascularInvasion: 'Present',
+    biomarkers:             { er: 'Not applicable', pr: 'Not applicable', her2: 'Not applicable', ki67: 'Not applicable' },
+  },
+  grossDescription:       'Right hemicolectomy specimen measuring 31 cm including 7 cm terminal ileum. A 5.1 × 4.2 cm ulcerated tumour is identified in the hepatic flexure. Tumour penetrates through muscularis propria into pericolonic fat. Radial margin 3.2 mm.',
+  microscopicDescription: 'Sections show moderately differentiated adenocarcinoma infiltrating through muscularis propria into pericolonic fat (pT3). Lymphovascular invasion present. 4 of 14 regional lymph nodes show metastatic adenocarcinoma (pN2a). Apical lymph node: metastatic adenocarcinoma with extranodal extension — noted on peer review by Dr. S. Okafor.',
+  ancillaryStudies:       'MMR IHC: MLH1, MSH2, MSH6, PMS2 intact. KRAS: wildtype. NRAS: wildtype. BRAF V600E: wildtype. RAS/RAF profiling complete — eligible for anti-EGFR therapy consideration.',
+  lastUpdated:            '2026-04-13T09:00:00Z',
+} as FullReport);
 // Male demo alias — accessible as both S25-12346 and the worklist entry
 // reportMap already contains S25-12346 from the main reports array
 

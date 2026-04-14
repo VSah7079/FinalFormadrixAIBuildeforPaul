@@ -3,7 +3,6 @@ import { mockCaseService, getDelegations } from '@/services/cases/mockCaseServic
 import type { Case } from '@/types/case/Case';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLogout } from '@hooks/useLogout';
-import { PathologyCase } from '../../components/Worklist/types';
 import WorklistTable      from '../../components/Worklist/WorklistTable';
 import ResourcesModal     from './ResourcesModal';
 import LogoutWarningModal from './LogoutWarningModal';
@@ -11,9 +10,11 @@ import CaseSearchBar from '../../components/Search/CaseSearchBar';
 import { mockActionRegistryService } from '../../services/actionRegistry/mockActionRegistryService';
 import { VOICE_CONTEXT } from '../../constants/systemActions';
 import { PoolClaimModal } from '../../components/Worklist/PoolClaimModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const WorklistPage: React.FC = () => {
   const handleLogout = useLogout();
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing'>('all');
   const [realCases, setRealCases]             = useState<Case[]>([]);
   const [delegatedToMeCount, setDelegatedToMeCount] = useState(0);
@@ -21,21 +22,39 @@ const WorklistPage: React.FC = () => {
   const [physicianPrompt, setPhysicianPrompt] = useState<string | null>(null);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [showLogoutWarning, setShowLogoutWarning] = useState(false);
-  const CURRENT_USER_ID   = 'PATH-001';
-  const CURRENT_USER_NAME = 'Dr. Sarah Johnson';
+  const CURRENT_USER_ID   = user?.id   ?? 'PATH-001';
+  const CURRENT_USER_NAME = user?.name ?? 'Dr. Sarah Johnson';
+
+  // Measure available height for the table container.
+  // We get the wrapper's top offset from the viewport and subtract from 100vh.
+  // This is immune to any parent overflow/flex chain issues.
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const [tableHeight, setTableHeight] = useState<number>(400);
+  useEffect(() => {
+    const measure = () => {
+      if (!wrapperRef.current) return;
+      const top = wrapperRef.current.getBoundingClientRect().top;
+      const available = window.innerHeight - top - 16; // 16px bottom breathing room
+      setTableHeight(Math.max(200, available));
+    };
+    // Small delay so the tiles/header have rendered and settled
+    const t = setTimeout(measure, 50);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure); };
+  }, []);
 
   // Pool claim modal state
   const [claimModal, setClaimModal] = useState<{ caseId: string; summary: string; poolName: string } | null>(null);
 
   // Load real cases from mockCaseService on mount
   useEffect(() => {
-    mockCaseService.listCasesForUser('current').then(setRealCases).catch(() => {});
+    mockCaseService.listCasesForUser(user?.id ?? 'current').then(setRealCases).catch(() => {});
     // Load delegated-to-me count
     getDelegations().then(all => {
       const count = all.filter(d => d.toUserId === CURRENT_USER_ID && d.status === 'pending').length;
       setDelegatedToMeCount(count);
     }).catch(() => {});
-  }, []);
+  }, [user?.id]);
 
   // Quick Links Data
   const quickLinks = {
@@ -54,840 +73,6 @@ const WorklistPage: React.FC = () => {
   };
 
   // ── 50 Mock Cases ──────────────────────────────────────────────────────────
-  const allCases: PathologyCase[] = [
-    {
-      // S26-4401 — Breast Invasive, in-progress — has pre-filled synoptic
-      id: 'S26-4401',
-      patient: 'Thompson, Grace',
-      protocol: 'CAP Breast Invasive Carcinoma — Resection',
-      specimen: 'Left Breast Mastectomy + Sentinel LN',
-      status: 'Synoptic',
-      aiStatus: 'Draft Ready',
-      confidence: 91,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '03/28/2026',
-      submittingPhysician: 'Dr. Sarah Chen',
-      caseFlags: [
-        { id: 'tumor_board_schedule', name: 'Tumor Board Scheduled', color: 'blue', severity: 2 }
-      ],
-      specimenFlags: [
-        { id: 'her2_fish_pending', name: 'HER2 ISH Pending', color: 'blue', severity: 2 }
-      ]
-    },
-    {
-      // S26-4402 — Colorectal sigmoid, in-progress — has pre-filled synoptic
-      id: 'S26-4402',
-      patient: 'Jackson, Robert',
-      protocol: 'CAP Colon & Rectum Carcinoma — Resection',
-      specimen: 'Sigmoid Colon Resection + Apical LN',
-      status: 'Synoptic',
-      aiStatus: 'Draft Ready',
-      confidence: 88,
-      time: '1h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '03/29/2026',
-      submittingPhysician: 'Dr. Michael Torres',
-      caseFlags: [
-        { id: 'oncology_awaiting', name: 'Oncology Awaiting Report', color: 'red', severity: 5 }
-      ],
-      specimenFlags: [
-        { id: 'kras_pending', name: 'KRAS/RAS Panel Pending', color: 'green', severity: 2 }
-      ]
-    },
-    {
-      // S26-4403 — Lung RUL lobectomy, draft — partially filled synoptic
-      id: 'S26-4403',
-      patient: 'Williams, Helen',
-      protocol: 'CAP Lung — Resection',
-      specimen: 'Right Upper Lobe Lobectomy + Mediastinal LN',
-      status: 'Synoptic',
-      aiStatus: 'Staged',
-      confidence: 84,
-      time: '45m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '03/30/2026',
-      submittingPhysician: 'Dr. James Park',
-      caseFlags: [
-        { id: 'stat___rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }
-      ],
-      specimenFlags: [
-        { id: 'ngs_pending', name: 'NGS Panel Pending', color: 'blue', severity: 3 }
-      ]
-    },
-    {
-      // S26-4404 — Prostate needle biopsy, draft — partially filled synoptic
-      id: 'S26-4404',
-      patient: 'Martinez, David',
-      protocol: 'CAP Prostate — Needle Biopsy',
-      specimen: 'Prostate Cores x6 Sites (A–F)',
-      status: 'Synoptic',
-      aiStatus: 'Draft Ready',
-      confidence: 87,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '03/30/2026',
-      submittingPhysician: 'Dr. Anil Sharma',
-    },
-    {
-      // S26-4405 — Breast DCIS, finalized — tests read-only flow
-      id: 'S26-4405',
-      patient: 'Taylor, Susan',
-      protocol: 'CAP Breast DCIS — Resection',
-      specimen: 'Right Breast Lumpectomy',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 99,
-      time: '4d ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '03/26/2026',
-      submittingPhysician: 'Dr. Lisa Wong',
-    },
-    {
-      // S26-4406 — Breast Invasive blank form — tests empty synoptic state
-      id: 'S26-4406',
-      patient: 'Anderson, Ruth',
-      protocol: 'CAP Breast Invasive Carcinoma — Resection',
-      specimen: 'Left Breast Core Needle Biopsy',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '20m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '03/30/2026',
-      submittingPhysician: 'Dr. Patricia Moore',
-      caseFlags: [
-        { id: 'stat___rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }
-      ]
-    },
-    {
-      // S26-4407 — Colorectal rectal post-chemo — tests treatment effect fields
-      id: 'S26-4407',
-      patient: 'Chen, Michael',
-      protocol: 'CAP Colon & Rectum Carcinoma — Resection',
-      specimen: 'Anterior Resection — Rectum + Mesorectal LN',
-      status: 'Synoptic',
-      aiStatus: 'Draft Ready',
-      confidence: 86,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '03/28/2026',
-      submittingPhysician: 'Dr. James Nguyen',
-      specimenFlags: [
-        { id: 'braf_pending', name: 'BRAF V600E Result Noted', color: 'orange', severity: 3 }
-      ]
-    },
-    {
-      // S26-4408 — Breast invasive + DCIS same specimen — tests multi-report sidebar
-      id: 'S26-4408',
-      patient: 'Davis, Carol',
-      protocol: 'CAP Breast Invasive + DCIS — Resection',
-      specimen: 'Right Breast Mastectomy + Axillary Contents',
-      status: 'Synoptic',
-      aiStatus: 'Draft Ready',
-      confidence: 89,
-      time: '1h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '03/29/2026',
-      submittingPhysician: 'Dr. Sarah Chen',
-      caseFlags: [
-        { id: 'brca1_positive', name: 'BRCA1 Positive', color: 'purple', severity: 3 },
-        { id: 'oncology_holding', name: 'Oncology Treatment on Hold', color: 'red', severity: 5 }
-      ],
-      specimenFlags: [
-        { id: 'her2_3plus', name: 'HER2 3+ — Oncology Alert', color: 'red', severity: 4 }
-      ]
-    },
-    {
-      id: 'S26-4415',
-      patient: 'Thompson, Grace',
-      protocol: 'Thyroid Resection',
-      specimen: 'Total Thyroidectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 91,
-      time: '30m ago',
-      priority: 'Routine',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Anika Sharma',
-      caseFlags: [{ id: 'intraoperative_consu', name: 'Intraoperative Consult', color: 'orange', severity: 4 }]
-    },
-    {
-      id: 'S26-4416',
-      patient: 'Martinez, Carlos',
-      protocol: 'Melanoma Excision',
-      specimen: 'Back Wide Excision',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '1h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Derek Osei',
-      caseFlags: [{ id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 }]
-    },
-    {
-      id: 'S26-4417',
-      patient: 'Lee, Sung-Min',
-      protocol: 'Kidney Resection',
-      specimen: 'Left Partial Nephrectomy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 88,
-      time: '15m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. James Nguyen'
-    },
-    {
-      id: 'S26-4418',
-      patient: 'Patel, Priya',
-      protocol: 'Endometrial Carcinoma',
-      specimen: 'Total Hysterectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 93,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      specimenFlags: [{ id: 'frozen_section_corre', name: 'Frozen Section Correlation', color: 'blue', severity: 2 }]
-    },
-    {
-      id: 'S26-4419',
-      patient: 'Brown, Henry',
-      protocol: 'Bladder Biopsy',
-      specimen: 'TURBT Chips',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 99,
-      time: '4h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Anika Sharma'
-    },
-    {
-      id: 'S26-4420',
-      patient: 'Garcia, Isabella',
-      protocol: 'Cervical LEEP',
-      specimen: 'LEEP Cone',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '20m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Sarah Chen'
-    },
-    {
-      id: 'S26-4421',
-      patient: 'Anderson, Paul',
-      protocol: 'Liver Biopsy',
-      specimen: 'Liver Core Biopsy x3',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 85,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Marcus Webb',
-      specimenFlags: [{ id: 'trichrome_pending', name: 'Trichrome Pending', color: 'green', severity: 2 }]
-    },
-    {
-      id: 'S26-4422',
-      patient: 'White, Eleanor',
-      protocol: 'Ovarian Mass',
-      specimen: 'Left Oophorectomy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 87,
-      time: '1h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      caseFlags: [{ id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 }]
-    },
-    {
-      id: 'S26-4423',
-      patient: 'Harris, Samuel',
-      protocol: 'Skin Punch Biopsy',
-      specimen: 'Left Forearm Punch x2',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 98,
-      time: '5h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/23/2026',
-      submittingPhysician: 'Dr. Derek Osei'
-    },
-    {
-      id: 'S26-4424',
-      patient: 'Clark, Diana',
-      protocol: 'Appendix Resection',
-      specimen: 'Appendectomy Specimen',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 90,
-      time: '45m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. James Nguyen'
-    },
-    {
-      id: 'S26-4425',
-      patient: 'Lewis, Nathan',
-      protocol: 'Testicular Tumor',
-      specimen: 'Left Orchiectomy',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '2h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Anika Sharma',
-      caseFlags: [{ id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 }, { id: 'tumor_markers_ordere', name: 'Tumor Markers Ordered', color: 'blue', severity: 2 }]
-    },
-    {
-      id: 'S26-4426',
-      patient: 'Robinson, Faye',
-      protocol: 'Salivary Gland',
-      specimen: 'Parotid Gland Excision',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 92,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Sarah Chen'
-    },
-    {
-      id: 'S26-4427',
-      patient: 'Walker, Jerome',
-      protocol: 'Colon Polyp',
-      specimen: 'Sigmoid Polypectomy x4',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 97,
-      time: '6h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/23/2026',
-      submittingPhysician: 'Dr. Marcus Webb'
-    },
-    {
-      id: 'S26-4428',
-      patient: 'Young, Angela',
-      protocol: 'Soft Tissue Tumor',
-      specimen: 'Thigh Excision Biopsy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 78,
-      time: '30m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Derek Osei',
-      caseFlags: [{ id: 'sarcoma_protocol', name: 'Sarcoma Protocol', color: 'purple', severity: 3 }],
-      specimenFlags: [{ id: 'cytogenetics_pending', name: 'Cytogenetics Pending', color: 'yellow', severity: 3 }]
-    },
-    {
-      id: 'S26-4429',
-      patient: 'Allen, Thomas',
-      protocol: 'Gastric Resection',
-      specimen: 'Partial Gastrectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 86,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Lisa Patel'
-    },
-    {
-      id: 'S26-4430',
-      patient: 'King, Veronica',
-      protocol: 'Lymph Node Biopsy',
-      specimen: 'Left Axillary Node Excision',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. James Nguyen',
-      specimenFlags: [{ id: 'flow_cytometry_order', name: 'Flow Cytometry Ordered', color: 'green', severity: 2 }]
-    },
-    {
-      id: 'S26-4431',
-      patient: 'Scott, Raymond',
-      protocol: 'Prostate Biopsy',
-      specimen: 'TRUS Biopsy 12-Core',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 95,
-      time: '4h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/23/2026',
-      submittingPhysician: 'Dr. Anika Sharma'
-    },
-    {
-      id: 'S26-4432',
-      patient: 'Green, Harriet',
-      protocol: 'Fallopian Tube',
-      specimen: 'Bilateral Salpingectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 88,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Sarah Chen'
-    },
-    {
-      id: 'S26-4433',
-      patient: 'Adams, Victor',
-      protocol: 'Brain Biopsy',
-      specimen: 'Right Temporal Stereotactic Biopsy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 82,
-      time: '10m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Marcus Webb',
-      caseFlags: [
-        { id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 },
-        { id: 'neuro_oncology_consu', name: 'Neuro-Oncology Consult', color: 'purple', severity: 3 }
-      ]
-    },
-    {
-      id: 'S26-4434',
-      patient: 'Baker, Monica',
-      protocol: 'Vulvar Excision',
-      specimen: 'Wide Local Excision Vulva',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Lisa Patel'
-    },
-    {
-      id: 'S26-4435',
-      patient: 'Gonzalez, Enrique',
-      protocol: 'Esophageal Resection',
-      specimen: 'Esophagogastrectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 91,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Derek Osei',
-      specimenFlags: [{ id: 'her2_testing_ordered', name: 'HER2 Testing Ordered', color: 'blue', severity: 2 }]
-    },
-    {
-      id: 'S26-4436',
-      patient: 'Nelson, Betty',
-      protocol: 'Skin Excision',
-      specimen: 'Nose BCC Excision',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 99,
-      time: '7h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/23/2026',
-      submittingPhysician: 'Dr. James Nguyen'
-    },
-    {
-      id: 'S26-4437',
-      patient: 'Carter, Denise',
-      protocol: 'Lung Biopsy',
-      specimen: 'CT-Guided Core Biopsy x2',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '45m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Anika Sharma',
-      caseFlags: [{ id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 }],
-      specimenFlags: [{ id: 'molecular_panel_orde', name: 'Molecular Panel Ordered', color: 'orange', severity: 4 }]
-    },
-    {
-      id: 'S26-4438',
-      patient: 'Mitchell, Franklin',
-      protocol: 'Spleen Resection',
-      specimen: 'Splenectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 84,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Sarah Chen'
-    },
-    {
-      id: 'S26-4439',
-      patient: 'Perez, Luisa',
-      protocol: 'Bone Biopsy',
-      specimen: 'Iliac Crest Core Biopsy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 79,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Marcus Webb',
-      specimenFlags: [{ id: 'decal_in_progress', name: 'Decal in Progress', color: 'yellow', severity: 3 }]
-    },
-    {
-      id: 'S26-4440',
-      patient: 'Roberts, Clarence',
-      protocol: 'Pancreas Resection',
-      specimen: 'Whipple Procedure',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 90,
-      time: '30m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      caseFlags: [{ id: 'tumor_board_schedule', name: 'Tumor Board Scheduled', color: 'blue', severity: 2 }]
-    },
-    {
-      id: 'S26-4441',
-      patient: 'Turner, Sylvia',
-      protocol: 'Vaginal Biopsy',
-      specimen: 'Colposcopic Biopsy x3',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 96,
-      time: '8h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/22/2026',
-      submittingPhysician: 'Dr. Derek Osei'
-    },
-    {
-      id: 'S26-4442',
-      patient: 'Phillips, Gordon',
-      protocol: 'Renal Transplant Biopsy',
-      specimen: 'Allograft Core Biopsy x2',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '20m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. James Nguyen',
-      caseFlags: [
-        { id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 },
-        { id: 'rejection_rule_out', name: 'Rejection Rule-Out', color: 'orange', severity: 4 }
-      ]
-    },
-    {
-      id: 'S26-4443',
-      patient: 'Campbell, Rosemary',
-      protocol: 'Breast Biopsy',
-      specimen: 'US-Guided Core Biopsy x4',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 93,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Anika Sharma'
-    },
-    {
-      id: 'S26-4444',
-      patient: 'Parker, Leonard',
-      protocol: 'Colon Resection',
-      specimen: 'Left Hemicolectomy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 88,
-      time: '50m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Sarah Chen',
-      specimenFlags: [{ id: 'msi_testing_ordered', name: 'MSI Testing Ordered', color: 'green', severity: 2 }]
-    },
-    {
-      id: 'S26-4445',
-      patient: 'Evans, Constance',
-      protocol: 'Skin Shave Biopsy',
-      specimen: 'Scalp Shave x2',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 97,
-      time: '9h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/22/2026',
-      submittingPhysician: 'Dr. Marcus Webb'
-    },
-    {
-      id: 'S26-4446',
-      patient: 'Edwards, Wallace',
-      protocol: 'Bladder Resection',
-      specimen: 'Cystectomy Specimen',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 89,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Lisa Patel'
-    },
-    {
-      id: 'S26-4447',
-      patient: 'Collins, Marguerite',
-      protocol: 'Adrenal Resection',
-      specimen: 'Right Adrenalectomy',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Derek Osei'
-    },
-    {
-      id: 'S26-4448',
-      patient: 'Stewart, Reginald',
-      protocol: 'Lung Resection',
-      specimen: 'Left Lower Lobectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 92,
-      time: '2h ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. James Nguyen',
-      caseFlags: [
-        { id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 },
-        { id: 'molecular_profiling_', name: 'Molecular Profiling Pending', color: 'yellow', severity: 3 }
-      ]
-    },
-    {
-      id: 'S26-4449',
-      patient: 'Sanchez, Olivia',
-      protocol: 'Uterine Fibroid',
-      specimen: 'Myomectomy Specimen',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 99,
-      time: '10h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/22/2026',
-      submittingPhysician: 'Dr. Anika Sharma'
-    },
-    {
-      id: 'S26-4450',
-      patient: 'Morris, Clifford',
-      protocol: 'Head & Neck Resection',
-      specimen: 'Oropharyngeal Resection',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 83,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Sarah Chen',
-      caseFlags: [{ id: 'hpv_testing_ordered', name: 'HPV Testing Ordered', color: 'blue', severity: 2 }]
-    },
-    {
-      id: 'S26-4451',
-      patient: 'Rogers, Nadine',
-      protocol: 'Skin Excision',
-      specimen: 'Ear SCC Wide Excision',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 90,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Marcus Webb'
-    },
-    {
-      id: 'S26-4452',
-      patient: 'Reed, Douglas',
-      protocol: 'Breast Invasive Carcinoma',
-      specimen: 'Right Breast Mastectomy',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      specimenFlags: [{ id: 'sentinel_node_submit', name: 'Sentinel Node Submitted', color: 'orange', severity: 4 }]
-    },
-    {
-      id: 'S26-4453',
-      patient: 'Cook, Patricia',
-      protocol: 'Gallbladder',
-      specimen: 'Cholecystectomy',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 98,
-      time: '11h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/22/2026',
-      submittingPhysician: 'Dr. Derek Osei'
-    },
-    {
-      id: 'S26-4454',
-      patient: 'Morgan, Elliott',
-      protocol: 'Kidney Resection',
-      specimen: 'Right Radical Nephrectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 87,
-      time: '4h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. James Nguyen'
-    },
-    {
-      id: 'S26-4455',
-      patient: 'Bell, Adrienne',
-      protocol: 'Lymphoma Biopsy',
-      specimen: 'Mediastinal Core Biopsy',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 76,
-      time: '20m ago',
-      priority: 'STAT',
-      isCritical: true,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Anika Sharma',
-      caseFlags: [
-        { id: 'stat___rush_processi', name: 'STAT — Rush Processing', color: 'red', severity: 5 },
-        { id: 'heme_oncology_notifi', name: 'Heme Oncology Notified', color: 'purple', severity: 3 }
-      ],
-      specimenFlags: [{ id: 'flow_cytometry_order', name: 'Flow Cytometry Ordered', color: 'green', severity: 2 }]
-    },
-    {
-      id: 'S26-4456',
-      patient: 'Murphy, Cecilia',
-      protocol: 'Cervical LEEP',
-      specimen: 'LEEP Cone + ECC',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 94,
-      time: '2h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Sarah Chen'
-    },
-    {
-      id: 'S26-4457',
-      patient: 'Bailey, Wendell',
-      protocol: 'Prostatectomy',
-      specimen: 'Robot-Assisted Radical Prostatectomy',
-      status: 'Awaiting Micro',
-      aiStatus: 'Staged',
-      confidence: 0,
-      time: '1h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. Marcus Webb'
-    },
-    {
-      id: 'S26-4458',
-      patient: 'Rivera, Camila',
-      protocol: 'Ovarian Mass',
-      specimen: 'Right Oophorectomy',
-      status: 'Grossed',
-      aiStatus: 'Draft Ready',
-      confidence: 91,
-      time: '3h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/24/2026',
-      submittingPhysician: 'Dr. Lisa Patel',
-      caseFlags: [{ id: 'ca_125_correlation', name: 'CA-125 Correlation', color: 'yellow', severity: 3 }]
-    },
-    {
-      id: 'S26-4459',
-      patient: 'Cooper, Bernard',
-      protocol: 'Skin Excision',
-      specimen: 'Scalp Melanoma Re-Excision',
-      status: 'Completed',
-      aiStatus: 'Finalized',
-      confidence: 96,
-      time: '12h ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/21/2026',
-      submittingPhysician: 'Dr. Derek Osei'
-    },
-    {
-      id: 'S26-4460',
-      patient: 'Richardson, Loretta',
-      protocol: 'Breast Biopsy',
-      specimen: 'Stereotactic Biopsy x6',
-      status: 'Finalizing',
-      aiStatus: 'Syncing Micro...',
-      confidence: 89,
-      time: '40m ago',
-      priority: 'Routine',
-      isCritical: false,
-      accessionDate: '02/25/2026',
-      submittingPhysician: 'Dr. James Nguyen',
-      specimenFlags: [{ id: 'calcifications_noted', name: 'Calcifications Noted', color: 'orange', severity: 4 }]
-    }
-  ];
-
   const navigate = useNavigate();
   const location  = useLocation();
 
@@ -900,7 +85,17 @@ const WorklistPage: React.FC = () => {
   // When navigating back from a synoptic report, advance to the next case
   // in the table's actual display order (respects active sort).
   // displayOrder is populated by WorklistTable via onDisplayOrder before this runs.
-  const fromCaseId = (location.state as any)?.fromCaseId as string | undefined;
+  const fromCaseId    = (location.state as any)?.fromCaseId    as string | undefined;
+  const restoreFilter = (location.state as any)?.restoreFilter as string | undefined;
+
+  // Restore filter when navigating back from report page
+  useEffect(() => {
+    if (restoreFilter) {
+      setActiveFilter(restoreFilter as any);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // once on mount
+
   useEffect(() => {
     if (!fromCaseId || displayOrder.length === 0) return;
     const viewedIdx = displayOrder.indexOf(fromCaseId);
@@ -912,15 +107,16 @@ const WorklistPage: React.FC = () => {
   }, [displayOrder]); // fires once displayOrder arrives from the table
 
 
-  const filteredCases = allCases.filter(c => {
+  const filteredCases = realCases.filter(c => {
     if (activeFilter === 'pool')       return (c as any).status === 'pool';
     if (activeFilter === 'all')        return (c as any).status !== 'pool';
-    if (activeFilter === 'review')     return c.aiStatus === 'Draft Ready';
-    if (activeFilter === 'completed')  return c.status === 'Completed';
-    if (activeFilter === 'urgent')     return c.priority === 'STAT' || c.isCritical === true;
+    if (activeFilter === 'review')     return c.status === 'pending-review';
+    if (activeFilter === 'completed')  return c.status === 'finalized';
+    if (activeFilter === 'urgent')     return c.order?.priority === 'STAT';
     if (activeFilter === 'draft')      return c.status === 'draft';
-    if (activeFilter === 'finalizing') return c.status === 'finalizing';
-    if (activeFilter === 'physician')  return (c.submittingPhysician ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
+    if (activeFilter === 'inprogress') return c.status === 'in-progress';
+    if (activeFilter === 'amended')    return c.status === 'amended';
+    if (activeFilter === 'physician')  return (c.order?.requestingProvider ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
     return true;
   });
 
@@ -981,11 +177,11 @@ const WorklistPage: React.FC = () => {
 
     // Read flags for the focused row
     const readFlags = () => {
-      const focused = allCases.find(c => c.id === selectedCaseId);
+      const focused = realCases.find(c => c.id === selectedCaseId);
       if (!focused) { speak('No case selected.'); return; }
       const flags = [
-        ...(focused.caseFlags    ?? []).map((f: any) => f.name),
-        ...(focused.specimenFlags ?? []).map((f: any) => f.name),
+        ...((focused as any).caseFlags    ?? []).map((f: any) => f.name),
+        ...((focused as any).specimenFlags ?? []).map((f: any) => f.name),
       ];
       if (flags.length === 0) {
         speak(`${focused.id} has no flags.`);
@@ -996,9 +192,10 @@ const WorklistPage: React.FC = () => {
 
     // Read specimen type for the focused row
     const readSpecimen = () => {
-      const focused = allCases.find(c => c.id === selectedCaseId);
+      const focused = realCases.find(c => c.id === selectedCaseId);
       if (!focused) { speak('No case selected.'); return; }
-      speak(`${focused.id}: ${focused.specimen}.`);
+      const spec = focused.specimens?.[0];
+      speak(`${focused.id}: ${spec ? spec.description : 'no specimen description'}.`);
     };
 
     // Filter by physician name — extracted from transcript
@@ -1008,7 +205,7 @@ const WorklistPage: React.FC = () => {
       if (!name) return;
 
       // Find all unique physicians in the worklist
-      const physicians = [...new Set(allCases.map(c => c.submittingPhysician ?? '').filter(Boolean))];
+      const physicians = [...new Set(realCases.map(c => c.order?.requestingProvider ?? '').filter(Boolean))];
       const matches = physicians.filter(p => p.toLowerCase().includes(name));
 
       if (matches.length === 0) {
@@ -1146,9 +343,9 @@ const WorklistPage: React.FC = () => {
           <CaseSearchBar />
         </div>
 
-        {/* Main — fills remaining height, no overflow */}
-        <main style={{ flex: 1, minHeight: 0, padding: '12px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {/* Main — fills remaining height */}
+        <main style={{ flex: 1, minHeight: 0, padding: '12px 20px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
             {/* Header row — title LEFT, tiles RIGHT, fixed height */}
             <div data-capture-hide="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexShrink: 0 }}>
@@ -1157,8 +354,10 @@ const WorklistPage: React.FC = () => {
               <div style={{ flexShrink: 0 }}>
                 <h1 style={{ fontSize: '28px', fontWeight: 900, margin: 0, letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>Active Cases</h1>
                 <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0', whiteSpace: 'nowrap' }}>
-                  Managing {realCases.length} case{realCases.length !== 1 ? 's' : ''}
-                  {activeFilter !== 'all' && <span style={{ color: '#0891B2', marginLeft: '6px' }}>· filtered</span>}
+                  {activeFilter === 'pool'
+                    ? <span style={{ color: '#6366f1' }}>Viewing pool queue — {stats.pool} case{stats.pool !== 1 ? 's' : ''}</span>
+                    : <>Managing {stats.total} case{stats.total !== 1 ? 's' : ''}{activeFilter !== 'all' && <span style={{ color: '#0891B2', marginLeft: '6px' }}>· filtered</span>}</>
+                  }
                 </p>
               </div>
 
@@ -1204,7 +403,7 @@ const WorklistPage: React.FC = () => {
 
                 {/* ── Filter tiles group ── */}
                 {([
-                  { key: 'pool',       label: 'Pool Cases',      count: stats.pool,           color: '#6366f1', bg: 'rgba(99,102,241,0.05)',  border: 'rgba(99,102,241,0.18)',  activeBg: 'rgba(99,102,241,0.18)',  activeBorder: '#6366f1',               glow: '0 0 12px rgba(99,102,241,0.4)' },
+                  { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#6366f1', bg: 'rgba(99,102,241,0.05)',  border: 'rgba(99,102,241,0.18)',  activeBg: 'rgba(99,102,241,0.18)',  activeBorder: '#6366f1',               glow: '0 0 12px rgba(99,102,241,0.4)' },
                   { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
                   { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
                   { key: 'inprogress', label: 'In Progress',     count: stats.inProgress,     color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
@@ -1262,11 +461,23 @@ const WorklistPage: React.FC = () => {
               </div>
             )}
 
-            {/* Worklist table — takes all remaining vertical space, scrolls internally */}
-            <div data-capture-hide="true" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Worklist table — height measured from viewport top offset */}
+            <div
+              ref={wrapperRef}
+              data-capture-hide="true"
+            >
               <WorklistTable
                 cases={realCases}
                 activeFilter={activeFilter}
+                tableHeight={tableHeight}
+                onPoolCaseClick={(caseId, summary) => {
+                  const c = realCases.find(c => c.id === caseId);
+                  setClaimModal({
+                    caseId,
+                    summary,
+                    poolName: c?.originHospitalId ?? 'MFT Pool',
+                  });
+                }}
                 selectedIndex={selectedIndex}
                 selectedCaseId={selectedCaseId}
                 onRowSelect={(idx: number, id: string) => { setSelectedIndex(idx); setSelectedCaseId(id); }}
@@ -1301,9 +512,10 @@ const WorklistPage: React.FC = () => {
         poolName={claimModal?.poolName}
         currentUserId={CURRENT_USER_ID}
         currentUserName={CURRENT_USER_NAME}
+        fromFilter="pool"
         onAccepted={() => {
           setClaimModal(null);
-          mockCaseService.listCasesForUser('current').then(setRealCases).catch(() => {});
+          mockCaseService.listCasesForUser(user?.id ?? 'current').then(setRealCases).catch(() => {});
         }}
         onPassed={() => setClaimModal(null)}
         onClose={() => setClaimModal(null)}

@@ -1,6 +1,9 @@
 // src/pages/SynopticReportPage/components/LeftReportPanel.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Case } from '@/types/case/Case';
+import { useAuth } from '@/contexts/AuthContext';
+import InternalNotesDrawer from '@/components/InternalNotes/InternalNotesDrawer';
+import { internalNoteService } from '@/services';
 
 interface LeftReportPanelProps {
   caseData: Case | null;
@@ -39,7 +42,23 @@ const HighlightedText: React.FC<{
 };
 
 const LeftReportPanel: React.FC<LeftReportPanelProps> = ({ caseData, highlightText }) => {
+  const { user } = useAuth();
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const [unreadNoteCount, setUnreadNoteCount] = React.useState(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Count shared notes by other authors — proxy for "unread colleague notes"
+  useEffect(() => {
+    if (!caseData) return;
+    const accession = caseData.accession?.fullAccession ?? caseData.accession?.accessionNumber ?? '';
+    if (!accession) return;
+    internalNoteService.getForCase(accession, user?.id ?? 'u1').then(result => {
+      if (result.ok) {
+        const count = result.data.filter(n => n.authorId !== (user?.id ?? 'u1') && n.visibility === 'shared').length;
+        setUnreadNoteCount(count);
+      }
+    }).catch(() => {});
+  }, [caseData, user?.id]);
   const markRef   = React.useRef<HTMLElement | null>(null);
 
   const sections = caseData ? [
@@ -104,9 +123,44 @@ const LeftReportPanel: React.FC<LeftReportPanelProps> = ({ caseData, highlightTe
           100% { background: rgba(251,191,36,0.45); box-shadow: 0 0 0 2px rgba(251,191,36,0.5); }
         }
       `}</style>
-      <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', margin: '0 0 10px', borderBottom: '1px solid rgba(8,145,178,0.4)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        📋 Full Patient Report
-      </h3>
+
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', borderBottom: '1px solid rgba(8,145,178,0.4)', paddingBottom: '8px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          📋 Full Patient Report
+        </h3>
+        {caseData && (
+          <button
+            onClick={() => setNotesOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', background: 'rgba(8,145,178,0.12)', border: '1px solid rgba(8,145,178,0.3)', borderRadius: '6px', color: '#0891B2', fontSize: '11px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.15s', position: 'relative' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(8,145,178,0.22)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(8,145,178,0.12)'}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            Internal Notes
+            {unreadNoteCount > 0 && (
+              <span style={{ background: '#F59E0B', color: '#000', borderRadius: '50%', width: 16, height: 16, fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {unreadNoteCount}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Internal Notes Drawer */}
+      {notesOpen && caseData && (
+        <InternalNotesDrawer
+          accession={caseData.accession?.fullAccession ?? caseData.accession?.accessionNumber ?? caseData.id ?? ''}
+          userId={user?.id ?? 'u1'}
+          userName={user?.name ?? 'Unknown'}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', background: 'rgba(8,145,178,0.08)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: '6px', marginBottom: '16px', fontSize: '11px', color: '#38bdf8' }}>
         🔒 <span>Received from LIS — <strong>read-only</strong>.</span>

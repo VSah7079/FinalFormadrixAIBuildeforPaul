@@ -4,6 +4,7 @@
 import React from 'react';
 import type { Case } from '@/types/case/Case';
 import { getOrchestratorMode } from '@/components/Config/NarrativeTemplates';
+import { getOrganisationByHospitalId } from '@/services/organisation/organisationService';
 import '@/pathscribe.css';
 
 interface HeaderBarProps {
@@ -44,6 +45,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ caseData, onSignOut, onNavigate, 
   const mrn       = caseData?.patient?.mrn ?? '—';
   const sex       = caseData?.patient?.sex ?? '—';
   const status    = caseData?.status ?? 'draft';
+  const hospital  = getOrganisationByHospitalId(caseData?.originHospitalId);
   const meta      = CASE_STATE_META[status] ?? CASE_STATE_META['draft'];
 
   // ── Mode-aware final step label ───────────────────────────────────────────
@@ -78,6 +80,11 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ caseData, onSignOut, onNavigate, 
           <div className="ps-hb-accession">
             <div className="ps-hb-field-label">Accession</div>
             <div className="ps-hb-accession-number">{accession}</div>
+            {hospital && (
+              <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginTop: 2, marginBottom: 3 }}>
+                {hospital.shortName} · {hospital.country === 'UK' ? 'NHS' : hospital.country}
+              </div>
+            )}
             <div className="ps-hb-status-pill" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
               <div className="ps-hb-status-dot" style={{ background: meta.dot }} />
               <span className="ps-hb-status-text" style={{ color: meta.color }}>{status}</span>

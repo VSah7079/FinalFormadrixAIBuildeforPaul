@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import '../../pathscribe.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMessaging } from '../../contexts/MessagingContext';
@@ -143,7 +144,7 @@ const SystemInfoModal: React.FC<SystemInfoModalProps> = ({ onClose }) => {
               <span className="fm-active-badge">v0.9.0</span>
             </div>
           </div>
-          <button className="ps-close-btn" onClick={onClose} style={{ fontSize: 22 }}>×</button>
+          <button className="ps-close-btn" onClick={onClose} aria-label="Close" style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, background:"transparent", border:"none", borderRadius:6, color:"#64748b", cursor:"pointer", padding:0, flexShrink:0, appearance:"none", WebkitAppearance:"none" }}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>
         </div>
 
         {/* Body */}
@@ -322,10 +323,10 @@ const NavBar: React.FC<NavBarProps> = ({ onLogoClick, onLogout, onProfileClick, 
         </div>
       </nav>
 
-      {/* System Info Modal */}
+      {/* System Info Modal — portalled to document.body, outside nav context */}
       {sysInfoOpen && <SystemInfoModal onClose={() => setSysInfoOpen(false)} />}
 
-      {/* Clinical Links Modal */}
+      {/* Clinical Links Modal — portalled to document.body, outside nav context */}
       {linksOpen && (
         <div className="fm-overlay" onClick={() => setLinksOpen(false)}>
           <div className="ps-research-modal" style={{ width: 360 }} onClick={e => e.stopPropagation()}>
@@ -334,7 +335,7 @@ const NavBar: React.FC<NavBarProps> = ({ onLogoClick, onLogout, onProfileClick, 
                 <div className="fm-eyebrow">External Resources</div>
                 <h2 className="fm-title">Clinical Links</h2>
               </div>
-              <button className="ps-close-btn" onClick={() => setLinksOpen(false)} style={{ fontSize: 22 }}>×</button>
+              <button className="ps-close-btn" onClick={() => setLinksOpen(false)} aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></button>
             </div>
             <div style={{ padding: '8px 0' }}>
               {EXTERNAL_LINKS.map(link => (

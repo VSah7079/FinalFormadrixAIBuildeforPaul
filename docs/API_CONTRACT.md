@@ -746,3 +746,204 @@ When the backend is ready, swap these files:
 | `AuthContext.tsx` mock login | `AuthContext.tsx` calling `POST /auth/login` |
 
 All mock services implement the same TypeScript interfaces as the real services — zero component changes required on migration.
+
+---
+
+## 10. Organisation & Site Management
+
+### Data Model
+
+```
+Organisation (contracting entity)
+  └── Sites[] (physical locations)
+        └── Labs[] (pathology departments)
+```
+
+PathScribe is deployed per **Organisation**. Cases carry `originSiteId` identifying which physical location sent the specimen. The processing lab may be at a different site (centralised reporting model — common in NHS).
+
+---
+
+### Entities
+
+#### Organisation
+```typescript
+interface Organisation {
+  id:            string;           // e.g. "ORG-MFT"
+  name:          string;           // "Manchester University NHS Foundation Trust"
+  shortName:     string;           // "MFT"
+  type:          OrganisationType; // see below
+  country:       'UK' | 'US' | 'AU' | 'CA';
+  locale:        string;           // "en-GB"
+  timezone:      string;           // "Europe/London"
+  contractStart: string;           // ISO date
+  contractTier:  'starter' | 'professional' | 'enterprise';
+  active:        boolean;
+}
+
+type OrganisationType =
+  | 'nhs_trust'
+  | 'nhs_foundation_trust'
+  | 'nhs_integrated_care_board'
+  | 'private_hospital'
+  | 'health_system'           // US
+  | 'independent_lab';
+```
+
+#### Site
+```typescript
+interface Site {
+  id:                      string;   // e.g. "SITE-MRI"
+  organisationId:          string;   // parent organisation
+  name:                    string;   // "Manchester Royal Infirmary"
+  shortName:               string;   // "MRI"
+  siteCode:                string;   // accession prefix e.g. "MFT"
+  address:                 string;
+  active:                  boolean;
+
+  // LIS Integration
+  lisType:                 'WinPath' | 'Telepath' | 'Epic' | 'CoPath' | 'Beaker' | 'Other';
+  lisEndpoint:             string;   // HL7 endpoint
+  lisVersion?:             string;
+
+  // PathScribe Configuration
+  defaultTemplateStandard: 'CAP' | 'RCPath';
+  defaultLocale:           string;
+  defaultWorkflowMode:     'copilot' | 'orchestration';
+  secureEmailGateway?:     'Paubox' | 'Virtru' | 'Zix';
+}
+```
+
+#### Lab
+```typescript
+interface Lab {
+  id:               string;          // e.g. "LAB-MFT-CELL"
+  siteId:           string;          // parent site
+  organisationId:   string;          // parent organisation
+  name:             string;          // "Cellular Pathology"
+  subspecialties:   string[];        // ["GI", "Breast", "GU", "Neuro"]
+  pathologistIds:   string[];        // pathologists assigned to this lab
+  poolIds:          string[];        // workgroup pools in this lab
+}
+```
+
+---
+
+### Case Field Changes
+
+The `Case` type should be updated to carry site-level identifiers:
+
+```typescript
+// Current (replace)
+originHospitalId:   string;  // → originSiteId
+originEnterpriseId: string;  // → originOrganisationId
+
+// Add
+processingLabId:    string;  // lab reporting the case (may differ from origin site)
+```
+
+---
+
+### API Endpoints
+
+### GET /organisations
+List all organisations (admin only).
+
+**Response 200:**
+```json
+{
+  "organisations": [ /* Organisation[] */ ],
+  "total": 3
+}
+```
+
+---
+
+### GET /organisations/:id
+Get a single organisation with its sites and labs.
+
+**Response 200:**
+```json
+{
+  "id": "ORG-MFT",
+  "name": "Manchester University NHS Foundation Trust",
+  "shortName": "MFT",
+  "type": "nhs_foundation_trust",
+  "country": "UK",
+  "locale": "en-GB",
+  "timezone": "Europe/London",
+  "contractTier": "enterprise",
+  "active": true,
+  "sites": [
+    {
+      "id": "SITE-MRI",
+      "name": "Manchester Royal Infirmary",
+      "shortName": "MRI",
+      "siteCode": "MFT",
+      "lisType": "WinPath",
+      "defaultTemplateStandard": "RCPath",
+      "defaultLocale": "en-GB",
+      "defaultWorkflowMode": "copilot"
+    }
+  ],
+  "labs": [
+    {
+      "id": "LAB-MFT-CELL",
+      "name": "Cellular Pathology",
+      "subspecialties": ["GI", "Breast", "GU", "Uropathology", "Neuropathology"]
+    }
+  ]
+}
+```
+
+---
+
+### GET /organisations/:id/sites
+List all sites for an organisation.
+
+---
+
+### GET /sites/:id/config
+Get the full configuration for a site. Used by PathScribe on login to configure locale, template standard, LIS endpoint, and workflow mode.
+
+**Response 200:** Full `Site` object.
+
+---
+
+### PATCH /sites/:id/config
+Update site configuration. Admin only.
+
+**Request:**
+```json
+{
+  "defaultTemplateStandard": "RCPath",
+  "defaultLocale": "en-GB",
+  "defaultWorkflowMode": "copilot",
+  "lisEndpoint": "hl7://lis.mft.nhs.uk:2575"
+}
+```
+
+---
+
+### GET /organisations/current
+Get the organisation for the currently authenticated user. Called on login to configure the PathScribe session.
+
+**Response 200:** Organisation with sites and labs.
+
+**Used to set:**
+- UI locale (`en-GB` vs `en-US`)
+- Default template standard (CAP vs RCPath)
+- LIS endpoint for HL7 outbound
+- Accession prefix for case display
+- Secure email gateway
+
+---
+
+### Notes for Backend Team
+
+1. **Every case must carry `originSiteId` and `processingLabId`** — these drive billing, audit, and reporting
+2. **Site config is loaded on login** — cache aggressively, invalidate on `PATCH /sites/:id/config`
+3. **Accession prefix comes from `Site.siteCode`** — the LIS sets this, PathScribe reads it from the HL7 `ORC` segment
+4. **Multi-site billing** — RVUs and TAT metrics are aggregated at organisation level but reported at lab level
+5. **NHS-specific** — CHI numbers (Scotland) vs NHS numbers (England/Wales) are site-level config
+6. **Pathologist pools are lab-scoped** — a pathologist in the GI pool at MRI cannot see the GI pool at Wythenshawe unless explicitly added
+

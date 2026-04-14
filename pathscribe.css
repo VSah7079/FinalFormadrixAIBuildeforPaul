@@ -833,12 +833,15 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #475569;
-  background: #0b1120; 
+  background: #0b1120;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   cursor: default;
   position: sticky;
-  top: 0;  
-  z-index: 2; 
+  top: 0;
+  z-index: 2;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 /* Flag chip in table */
@@ -1806,13 +1809,16 @@
 /* ── Worklist internal scroll ───────────────────────────── */
 .wl-scroll {
   overflow-y: auto;
+  overflow-x: auto;
   flex: 1;
   min-height: 0;
+  padding-bottom: 80px;
   /* Custom scrollbar — subtle on dark bg */
   scrollbar-width: thin;
   scrollbar-color: rgba(100,116,139,0.4) transparent;
 }
-.wl-scroll::-webkit-scrollbar { width: 6px; }
+.wl-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.wl-scroll::-webkit-scrollbar-corner { background: transparent; }
 .wl-scroll::-webkit-scrollbar-track { background: transparent; }
 .wl-scroll::-webkit-scrollbar-thumb {
   background: rgba(100,116,139,0.4);
@@ -5194,4 +5200,28 @@
 
 .ps-hb-confidence-bar-fill--low {
   background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+/* ── Close button — high specificity to override UA button styles ─────────── */
+button.ps-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+button.ps-close-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
 }

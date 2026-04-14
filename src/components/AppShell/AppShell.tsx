@@ -18,6 +18,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLogout } from '../../hooks/useLogout';
@@ -527,6 +528,165 @@ const ThreadPanel: React.FC<ThreadPanelProps> = ({ message, userId, inputText, o
   );
 };
 
+// ── SecureEmailModal ──────────────────────────────────────────────────────────
+// Compose and send a secure external email via NHSMail (demo: simulated send)
+
+interface SecureEmailModalProps {
+  isOpen:        boolean;
+  fromName:      string;
+  fromEmail:     string;
+  prefillTo?:    string;
+  prefillSubject?: string;
+  prefillBody?:  string;
+  onClose:       () => void;
+}
+
+const SecureEmailModal: React.FC<SecureEmailModalProps> = ({
+  isOpen, fromName, fromEmail, prefillTo = '', prefillSubject = '', prefillBody = '', onClose,
+}) => {
+  const [to,      setTo]      = React.useState(prefillTo);
+  const [subject, setSubject] = React.useState(prefillSubject);
+  const [body,    setBody]    = React.useState(prefillBody);
+  const [status,  setStatus]  = React.useState<'compose' | 'sending' | 'sent'>('compose');
+
+  // Reset form when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setTo(prefillTo); setSubject(prefillSubject); setBody(prefillBody); setStatus('compose');
+    }
+  }, [isOpen]);
+
+  const canSend = to.includes('@') && subject.trim() && body.trim();
+
+  const handleSend = async () => {
+    if (!canSend) return;
+    setStatus('sending');
+    // Simulate NHSMail SMTP handshake delay
+    await new Promise(r => setTimeout(r, 1800));
+    setStatus('sent');
+  };
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      onClick={onClose}
+      style={{ position:'fixed', inset:0, background:'rgba(4,10,18,0.82)', backdropFilter:'blur(6px)', zIndex:20000, display:'flex', alignItems:'center', justifyContent:'center' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: 560, background:'#0b1120', border:'1px solid rgba(148,163,184,0.3)', borderRadius:18, boxShadow:'0 24px 60px rgba(0,0,0,0.6)', display:'flex', flexDirection:'column', overflow:'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ padding:'18px 24px 14px', borderBottom:'1px solid rgba(51,65,85,0.9)', background:'radial-gradient(circle at top left, rgba(56,189,248,0.08), transparent 55%), #0b1120', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', color:'#64748b', marginBottom:4 }}>
+              🔒 NHSMail · Secure External Email
+            </div>
+            <div style={{ fontSize:18, fontWeight:700, color:'#e2e8f0' }}>New Secure Message</div>
+          </div>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#64748b', cursor:'pointer', fontSize:20, padding:4, lineHeight:1 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        {status === 'sent' ? (
+          /* ── Sent confirmation ── */
+          <div style={{ padding:'48px 24px', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+            <div style={{ width:56, height:56, borderRadius:'50%', background:'rgba(16,185,129,0.15)', border:'2px solid #10B981', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize:16, fontWeight:700, color:'#e2e8f0', marginBottom:6 }}>Message sent securely</div>
+              <div style={{ fontSize:13, color:'#64748b' }}>Delivered to <strong style={{ color:'#94a3b8' }}>{to}</strong> via NHSMail secure relay.</div>
+              <div style={{ fontSize:11, color:'#475569', marginTop:8 }}>End-to-end encrypted · NHS DSPT compliant · Audit logged</div>
+            </div>
+            <button onClick={onClose} style={{ marginTop:8, padding:'8px 24px', background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.4)', borderRadius:8, color:'#10B981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              Close
+            </button>
+          </div>
+        ) : (
+          /* ── Compose form ── */
+          <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:14 }}>
+
+            {/* From (read-only) */}
+            <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+              <span style={{ fontSize:11, color:'#475569', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', width:56, flexShrink:0 }}>From</span>
+              <div style={{ flex:1, padding:'8px 12px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, fontSize:13, color:'#64748b' }}>
+                {fromName} &lt;{fromEmail}&gt;
+              </div>
+            </div>
+
+            {/* To */}
+            <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+              <span style={{ fontSize:11, color:'#475569', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', width:56, flexShrink:0 }}>To</span>
+              <input
+                type="email"
+                placeholder="recipient@nhs.net or external email…"
+                value={to}
+                onChange={e => setTo(e.target.value)}
+                style={{ flex:1, padding:'8px 12px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none' }}
+              />
+            </div>
+
+            {/* Subject */}
+            <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+              <span style={{ fontSize:11, color:'#475569', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', width:56, flexShrink:0 }}>Subject</span>
+              <input
+                type="text"
+                placeholder="Subject…"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                style={{ flex:1, padding:'8px 12px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none' }}
+              />
+            </div>
+
+            {/* Body */}
+            <textarea
+              placeholder="Message body…"
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              rows={7}
+              style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, color:'#e2e8f0', fontSize:13, outline:'none', resize:'vertical', fontFamily:'inherit' }}
+            />
+
+            {/* Security notice */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(56,189,248,0.05)', border:'1px solid rgba(56,189,248,0.15)', borderRadius:8 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span style={{ fontSize:11, color:'#38bdf8' }}>This message will be sent via NHSMail secure relay · End-to-end encrypted · DSPT compliant</span>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, paddingTop:4 }}>
+              <button onClick={onClose} style={{ padding:'8px 16px', background:'transparent', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, color:'#64748b', fontSize:13, cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={!canSend || status === 'sending'}
+                style={{ padding:'8px 20px', background: canSend ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.04)', border:`1px solid ${canSend ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius:8, color: canSend ? '#38bdf8' : '#475569', fontSize:13, fontWeight:600, cursor: canSend ? 'pointer' : 'default', display:'flex', alignItems:'center', gap:8 }}
+              >
+                {status === 'sending' ? (
+                  <>
+                    <div style={{ width:12, height:12, border:'2px solid rgba(56,189,248,0.2)', borderTopColor:'#38bdf8', borderRadius:'50%', animation:'wl-spin 0.8s linear infinite' }} />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Send Securely
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const AppShell: React.FC = () => {
   const navigate = useNavigate();
 
@@ -571,6 +731,7 @@ const AppShell: React.FC = () => {
   const [toDropdownOpen,   setToDropdownOpen]   = useState(false);
   const [toHighlightIdx,   setToHighlightIdx]   = useState(0);
   const [secureEmailToast, setSecureEmailToast] = useState<string | null>(null);
+  const [secureEmailOpen,  setSecureEmailOpen]  = useState(false);
   const toInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Edit / selection ───────────────────────────────────────────────────────
@@ -683,10 +844,7 @@ const AppShell: React.FC = () => {
   };
 
   const handleSecureEmail = () => {
-    const names = newRecipients.map(r => r.name).join(', ') || 'recipient';
-    setSecureEmailToast(`Secure email queued for ${names}`);
-    setTimeout(() => setSecureEmailToast(null), 3200);
-    console.info('[Pathscribe] Secure email dispatch to:', newRecipients);
+    setSecureEmailOpen(true);
   };
 
   const handleBulkDelete = async () => {
@@ -1159,13 +1317,23 @@ const AppShell: React.FC = () => {
           </div>
         </>
       )}
-{/* Secure email toast */}
+{/* Secure email toast — kept for voice trigger fallback */}
       {secureEmailToast && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#0f1d2e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#d0daea', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 5000, whiteSpace: 'nowrap' }}>
           <span style={{ color: '#38bdf8', fontSize: 16 }}>🔒</span>
           {secureEmailToast}
         </div>
       )}
+
+      {/* Secure Email Modal */}
+      <SecureEmailModal
+        isOpen={secureEmailOpen}
+        fromName={user?.name ?? 'Dr. Paul Carter'}
+        fromEmail={user?.id === 'PATH-UK-001' ? 'paul.carter@mft.nhs.uk' : 'pathscribe@hospital.org'}
+        prefillSubject={newSubject}
+        prefillBody={newBody}
+        onClose={() => setSecureEmailOpen(false)}
+      />
       {/* User search modal for compose To: field */}
       {showUserSearch && (
         <div className="ps-user-search-overlay">

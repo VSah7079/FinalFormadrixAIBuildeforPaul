@@ -816,6 +816,7 @@ Proceed with sign-out?`)) return;
             setShowCodesModal(false);
           }}
           onClose={() => setShowCodesModal(false)}
+          originHospitalId={caseData?.originHospitalId}
         />
       )}
 

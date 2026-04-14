@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Case } from '@/types/case/Case';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import RequestReviewModal from '@/components/RequestReview/RequestReviewModal';
+import { PoolClaimModal } from '@/components/Worklist/PoolClaimModal';
+import { mockCaseService } from '@/services/cases/mockCaseService';
 
 interface BottomActionBarProps {
   caseData: Case | null;
@@ -75,9 +80,14 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   onNextCase,
   onPreviousCase,
 }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [claimOpen,  setClaimOpen]  = useState(false);
   const emrWindowRef = useRef<Window | null>(null);
   const status = caseData?.status ?? 'draft';
   const isFinalized = status === 'finalized';
+  const isPool = status === 'pool';
   
   // Logic to auto-close EMR window when patient changes
   useEffect(() => {
@@ -125,6 +135,7 @@ useEffect(() => {
     caseData!.synopticReports!.every(r => r.status === 'finalized');
 
   return (
+    <>
     <div style={{
       background: '#0d1829', padding: '10px 24px', borderTop: '1px solid rgba(255,255,255,0.08)',
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, gap: '8px',
@@ -139,14 +150,26 @@ useEffect(() => {
           🌐 Launch EMR
         </ActionButton>
 
-        <ActionButton onClick={() => onDelegate?.()} variant="outline" color="#7c3aed" title="Delegate case">👥 Delegate</ActionButton>
-        <ActionButton onClick={() => onHistory?.()} variant="outline" color="#0891B2">📋 History</ActionButton>
-        <ActionButton onClick={() => onFlags?.()} variant="outline" color="#f59e0b">🚩 Flags</ActionButton>
-        <ActionButton onClick={() => onCodes?.()} variant="outline" color={codesColor}># Codes</ActionButton>
+        {/* Hide delegate/review/flags/codes for pool cases — not yet assigned */}
+        {!isPool && <>
+          <ActionButton onClick={() => onDelegate?.()} variant="outline" color="#7c3aed" title="Delegate case">👥 Delegate</ActionButton>
+          <ActionButton onClick={() => setReviewOpen(true)} variant="outline" color="#8B5CF6" title="Request informal peer review">🔍 Request Review</ActionButton>
+          <ActionButton onClick={() => onHistory?.()} variant="outline" color="#0891B2">📋 History</ActionButton>
+          <ActionButton onClick={() => onFlags?.()} variant="outline" color="#f59e0b">🚩 Flags</ActionButton>
+          <ActionButton onClick={() => onCodes?.()} variant="outline" color={codesColor}># Codes</ActionButton>
+        </>}
       </div>
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-        {!isFinalized && (
+        {/* Pool case — show Claim button only */}
+        {isPool && (
+          <ActionButton onClick={() => setClaimOpen(true)} variant="solid" color="#6366f1" hoverColor="#4f46e5">
+            ✋ Claim This Case
+          </ActionButton>
+        )}
+
+        {/* Normal reporting actions — hidden for pool cases */}
+        {!isPool && !isFinalized && (
           <>
             <ActionButton onClick={onSaveDraft} variant="outline" color={isDirty ? '#0891B2' : '#334155'}>💾 Save Draft</ActionButton>
             <ActionButton onClick={onSaveAndNext} variant="outline" color={isDirty ? '#0891B2' : '#334155'}>💾 Save &amp; Next</ActionButton>
@@ -155,11 +178,37 @@ useEffect(() => {
             <ActionButton onClick={onFinalizeAndNext} variant="solid" color="#0891B2" hoverColor="#0E7490">🔒 Finalize &amp; Next</ActionButton>
           </>
         )}
-        {(allFinalized || isFinalized) && status !== 'finalized' && (
+        {!isPool && (allFinalized || isFinalized) && status !== 'finalized' && (
           <ActionButton onClick={onSignOut} variant="solid" color="#047857" hoverColor="#065f46">✍️ Sign Out Case</ActionButton>
         )}
       </div>
     </div>
+
+    <RequestReviewModal
+      isOpen={reviewOpen}
+      caseId={caseData?.id ?? ''}
+      caseLabel={caseData ? `${caseData.patient?.lastName}, ${caseData.patient?.firstName}` : undefined}
+      fromUserId={user?.id ?? 'u1'}
+      fromUserName={user?.name ?? 'Unknown'}
+      onClose={() => setReviewOpen(false)}
+    />
+
+    <PoolClaimModal
+      isOpen={claimOpen && isPool}
+      caseId={caseData?.id ?? null}
+      caseSummary={caseData ? `${caseData.patient?.lastName}, ${caseData.patient?.firstName} — ${caseData.specimens?.[0]?.description ?? ''}` : undefined}
+      poolName={`${(caseData as any)?.originHospitalId ?? 'MFT'} Pool`}
+      currentUserId={user?.id ?? 'u1'}
+      currentUserName={user?.name ?? 'Unknown'}
+      continueToReport={true}
+      onAccepted={() => setClaimOpen(false)}
+      onPassed={() => {
+        setClaimOpen(false);
+        navigate('/worklist');
+      }}
+      onClose={() => setClaimOpen(false)}
+    />
+    </>
   );
 };
 
