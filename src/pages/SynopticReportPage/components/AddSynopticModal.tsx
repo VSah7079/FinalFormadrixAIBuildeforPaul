@@ -125,7 +125,7 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
     <div className="fm-overlay" onClick={onClose}>
       <div
         className="ps-research-modal"
-        style={{ width: 980, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        style={{ width: 980, height: '80vh', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -139,7 +139,11 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
               )}
             </div>
           </div>
-          <button className="ps-close-btn" onClick={onClose} style={{ fontSize: 22 }}>×</button>
+          <button onClick={onClose} aria-label="Close"
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 20, cursor: 'pointer', padding: '2px 8px', lineHeight: 1, flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+          >✕</button>
         </div>
 
         {/* ── Two-panel body ── */}

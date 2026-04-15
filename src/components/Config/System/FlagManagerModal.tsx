@@ -445,7 +445,11 @@ const FlagManagerModal: React.FC<Props> = ({
                 )}
               </div>
             </div>
-            <button onClick={handleCancel} className="ps-close-btn" aria-label="Close">✕</button>
+            <button onClick={handleCancel} aria-label="Close"
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', padding: '2px 8px', lineHeight: 1, flexShrink: 0 }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+            >✕</button>
           </div>
 
           {/* ── BODY ── */}

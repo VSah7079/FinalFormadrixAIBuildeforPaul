@@ -19,6 +19,9 @@ import { DirtyStateProvider } from './contexts/DirtyStateProvider';
 // Voice Integration
 import { VoiceProvider } from "./contexts/VoiceProvider";
 
+// Scanner Integration (barcode/QR scanner support)
+import { ScannerProvider } from "./contexts/ScannerProvider";
+
 // Standard Wrappers
 import ProtectedRoute from "./ProtectedRoute";
 import AppShell from "./components/AppShell/AppShell";
@@ -103,9 +106,9 @@ const App: React.FC = () => (
                       {/* Public Route */}
                       <Route path="/login" element={<Login />} />
 
-                      {/* Protected Routes */}
+                      {/* Protected Routes — ScannerProvider only active when authenticated */}
                       <Route element={<ProtectedRoute />}>
-                        <Route element={<AppShell />}>
+                        <Route element={<ScannerProvider><AppShell /></ScannerProvider>}>
                           <Route path="/" element={<Home />} />
                           <Route path="/worklist" element={<WorklistPage />} />
                           <Route path="/search" element={<SearchPage />} />
@@ -120,23 +123,20 @@ const App: React.FC = () => (
                           />
                         </Route>
 
-                        {/* Clinical Routes — full-screen, no AppShell */}
+                        {/* Clinical Routes — full-screen, no AppShell, but still need scanner */}
                         <Route
                           path="/case/:caseId/synoptic"
-                          element={<SynopticReportPage />}
+                          element={<ScannerProvider><SynopticReportPage /></ScannerProvider>}
                           loader={synopticLoader}
                         />
-
                         <Route
                           path="/report/:accession"
-                          element={<FullReportPage />}
+                          element={<ScannerProvider><FullReportPage /></ScannerProvider>}
                         />
                         <Route
                           path="/case/:accession"
                           element={<PatientReportPage />}
                         />
-
-                        {/* Synoptic Report Editor */}
                         <Route
                           path="/template-editor/new"
                           element={<SynopticEditor />}
@@ -145,8 +145,6 @@ const App: React.FC = () => (
                           path="/template-editor/:templateId"
                           element={<SynopticEditor />}
                         />
-
-                        {/* Admin / Config Routes */}
                         <Route
                           path="/configuration/protocols/:protocolId"
                           element={<ProtocolEditor />}

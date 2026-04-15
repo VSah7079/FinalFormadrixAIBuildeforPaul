@@ -110,9 +110,12 @@ const WorklistPage: React.FC = () => {
   const filteredCases = realCases.filter(c => {
     if (activeFilter === 'pool')       return (c as any).status === 'pool';
     if (activeFilter === 'all')        return (c as any).status !== 'pool';
+    // Urgent shows pool cases too — they appear grouped as pool in the list
+    if (activeFilter === 'urgent')     return c.order?.priority === 'STAT';
+    // All other filters exclude pool cases
+    if ((c as any).status === 'pool')  return false;
     if (activeFilter === 'review')     return c.status === 'pending-review';
     if (activeFilter === 'completed')  return c.status === 'finalized';
-    if (activeFilter === 'urgent')     return c.order?.priority === 'STAT';
     if (activeFilter === 'draft')      return c.status === 'draft';
     if (activeFilter === 'inprogress') return c.status === 'in-progress';
     if (activeFilter === 'amended')    return c.status === 'amended';
@@ -120,16 +123,17 @@ const WorklistPage: React.FC = () => {
     return true;
   });
 
+  const nonPoolCases = realCases.filter(c => (c as any).status !== 'pool');
   const stats = {
-    total:          realCases.filter(c => (c as any).status !== 'pool').length,
+    total:          nonPoolCases.length,
     pool:           realCases.filter(c => (c as any).status === 'pool').length,
-    inProgress:     realCases.filter(c => c.status === 'in-progress').length,
-    needsReview:    realCases.filter(c => c.status === 'pending-review').length,
-    urgent:         realCases.filter(c => c.order?.priority === 'STAT').length,
-    amended:        realCases.filter(c => c.status === 'amended').length,
-    draft:          realCases.filter(c => c.status === 'draft').length,
-    finalizing:     realCases.filter(c => c.status === 'finalizing').length,
-    completedToday: realCases.filter(c => {
+    inProgress:     nonPoolCases.filter(c => c.status === 'in-progress').length,
+    needsReview:    nonPoolCases.filter(c => c.status === 'pending-review').length,
+    urgent:         nonPoolCases.filter(c => c.order?.priority === 'STAT').length,
+    amended:        nonPoolCases.filter(c => c.status === 'amended').length,
+    draft:          nonPoolCases.filter(c => c.status === 'draft').length,
+    finalizing:     nonPoolCases.filter(c => c.status === 'finalizing').length,
+    completedToday: nonPoolCases.filter(c => {
       if (c.status !== 'finalized') return false;
       if (!c.updatedAt) return false;
       const u = new Date(c.updatedAt), t = new Date();
@@ -355,7 +359,7 @@ const WorklistPage: React.FC = () => {
                 <h1 style={{ fontSize: '28px', fontWeight: 900, margin: 0, letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>Active Cases</h1>
                 <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0', whiteSpace: 'nowrap' }}>
                   {activeFilter === 'pool'
-                    ? <span style={{ color: '#6366f1' }}>Viewing pool queue — {stats.pool} case{stats.pool !== 1 ? 's' : ''}</span>
+                    ? <span style={{ color: '#F97316' }}>Viewing pool queue — {stats.pool} case{stats.pool !== 1 ? 's' : ''}</span>
                     : <>Managing {stats.total} case{stats.total !== 1 ? 's' : ''}{activeFilter !== 'all' && <span style={{ color: '#0891B2', marginLeft: '6px' }}>· filtered</span>}</>
                   }
                 </p>
@@ -403,7 +407,7 @@ const WorklistPage: React.FC = () => {
 
                 {/* ── Filter tiles group ── */}
                 {([
-                  { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#6366f1', bg: 'rgba(99,102,241,0.05)',  border: 'rgba(99,102,241,0.18)',  activeBg: 'rgba(99,102,241,0.18)',  activeBorder: '#6366f1',               glow: '0 0 12px rgba(99,102,241,0.4)' },
+                  { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#F97316', bg: 'rgba(249,115,22,0.05)',  border: 'rgba(249,115,22,0.18)',  activeBg: 'rgba(249,115,22,0.18)',  activeBorder: '#F97316',               glow: '0 0 12px rgba(249,115,22,0.4)' },
                   { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
                   { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
                   { key: 'inprogress', label: 'In Progress',     count: stats.inProgress,     color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
@@ -411,7 +415,7 @@ const WorklistPage: React.FC = () => {
                   { key: 'amended',    label: 'Amended',         count: stats.amended,        color: '#8B5CF6', bg: 'rgba(139,92,246,0.05)',  border: 'rgba(139,92,246,0.18)',  activeBg: 'rgba(139,92,246,0.18)',  activeBorder: '#8B5CF6',               glow: '0 0 12px rgba(139,92,246,0.4)' },
                   { key: 'completed',  label: 'Completed Today', count: stats.completedToday, color: '#10B981', bg: 'rgba(16,185,129,0.05)',  border: 'rgba(16,185,129,0.18)',  activeBg: 'rgba(16,185,129,0.18)',  activeBorder: '#10B981',               glow: '0 0 12px rgba(16,185,129,0.4)' },
                   { key: 'draft',      label: 'Draft',           count: stats.draft,          color: '#94a3b8', bg: 'rgba(148,163,184,0.05)', border: 'rgba(148,163,184,0.18)', activeBg: 'rgba(148,163,184,0.18)', activeBorder: '#94a3b8',               glow: '0 0 12px rgba(148,163,184,0.3)' },
-                  { key: 'finalizing', label: 'Finalizing',      count: stats.finalizing,     color: '#34d399', bg: 'rgba(52,211,153,0.05)',  border: 'rgba(52,211,153,0.18)',  activeBg: 'rgba(52,211,153,0.18)',  activeBorder: '#34d399',               glow: '0 0 12px rgba(52,211,153,0.4)' },
+                  { key: 'finalizing', label: 'Finalizing',      count: stats.finalizing,     color: '#EC4899', bg: 'rgba(236,72,153,0.05)',  border: 'rgba(236,72,153,0.18)',  activeBg: 'rgba(236,72,153,0.18)',  activeBorder: '#EC4899',               glow: '0 0 12px rgba(236,72,153,0.4)' },
                 ] as const).map(tile => {
                   const isActive = activeFilter === tile.key;
                   return (

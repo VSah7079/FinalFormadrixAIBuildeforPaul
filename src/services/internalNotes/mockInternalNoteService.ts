@@ -15,6 +15,7 @@ const audit = (
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 
 const SEED_NOTES: InternalNote[] = [
+  // ── US cases (existing) ───────────────────────────────────────────────────
   {
     id: 'cn1',
     accession: 'S26-4401',
@@ -57,6 +58,90 @@ const SEED_NOTES: InternalNote[] = [
     visibility: 'private',
     timestamp: new Date(Date.now() - 1000 * 60 * 20),
   },
+
+  // ── MFT UK cases — Paul Carter (PATH-UK-001) ──────────────────────────────
+  // Notes authored by colleagues (not PATH-UK-001) will trigger the amber badge
+
+  // MFT26-8801-CR-RES — Hartley, William — Anterior resection
+  {
+    id: 'mft-cn1',
+    accession: 'MFT26-8801-CR-RES',
+    authorId: 'mft-qasystem',
+    authorName: 'PathScribe QA',
+    type: 'informal_review',
+    body: 'QA review requested prior to Wednesday colorectal MDT. Please confirm: (1) pTNM staging, (2) CRM distance, (3) tumour regression score, (4) MMR/KRAS results documented. Target sign-off before 12:00 Wednesday.',
+    visibility: 'shared',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+  },
+  {
+    id: 'mft-cn2',
+    accession: 'MFT26-8801-CR-RES',
+    authorId: 'PATH-UK-001',
+    authorName: 'Paul Carter',
+    type: 'other',
+    body: 'Personal note: discuss KRAS G12V result implications with Dr. Marsden before MDT. Anti-EGFR therapy not indicated.',
+    visibility: 'private',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+  },
+
+  // MFT26-8802-PR-BX — Barrowclough, Geoffrey — Prostate biopsy
+  {
+    id: 'mft-cn3',
+    accession: 'MFT26-8802-PR-BX',
+    authorId: 'uk-whitmore',
+    authorName: 'Mr. David Whitmore',
+    type: 'clinical_observation',
+    body: 'Urology note: PSMA PET positive, right posterior zone. Biopsy result critical for treatment planning — patient being considered for PSMA-targeted therapy. Please confirm Grade Group and core involvement percentage for Friday MDT.',
+    visibility: 'shared',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+  },
+
+  // MFT26-8803-CR-LOC — Ashworth, Margaret — TEMS excision
+  {
+    id: 'mft-cn4',
+    accession: 'MFT26-8803-CR-LOC',
+    authorId: 'uk-okafor',
+    authorName: 'Dr. Sarah Okafor',
+    type: 'consultation',
+    body: 'Second opinion requested on the deep margin. I have reviewed the H&E sections on slide A3. The area of concern at the deep aspect shows glandular irregularity — in my view this is most consistent with tangential sectioning of high grade dysplastic glands rather than frank pT1 invasion. The glands lack the desmoplastic stroma I would expect with true invasion. I would report as HGD, deep margin close but clear. Happy to discuss.',
+    visibility: 'shared',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90),
+  },
+
+  // MFT26-8804-PR-RP — Pemberton, Thomas — Radical prostatectomy
+  {
+    id: 'mft-cn5',
+    accession: 'MFT26-8804-PR-RP',
+    authorId: 'uk-whitmore',
+    authorName: 'Mr. David Whitmore',
+    type: 'clinical_observation',
+    body: 'Urology: patient and family counselled re positive margin. Adjuvant radiotherapy being discussed at Friday MDT. Please ensure positive margin extent (mm) and location are clearly stated in the final report — this is critical for RT planning. Also confirm whether extraprostatic extension is confirmed histologically.',
+    visibility: 'shared',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
+  },
+  {
+    id: 'mft-cn6',
+    accession: 'MFT26-8804-PR-RP',
+    authorId: 'PATH-UK-001',
+    authorName: 'Paul Carter',
+    type: 'other',
+    body: 'Reminder: include pT3a staging explicitly and note EPE at right posterolateral apex. RT planning team needs exact margin location.',
+    visibility: 'private',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+  },
+
+  // MFT26-8805-CR-FIN — Hollingsworth, Patricia — Right hemicolectomy (peer review)
+  {
+    id: 'mft-cn7',
+    accession: 'MFT26-8805-CR-FIN',
+    authorId: 'uk-okafor',
+    authorName: 'Dr. Sarah Okafor',
+    type: 'informal_review',
+    body: 'Paul — I have reviewed the right hemicolectomy for Mrs Hollingsworth as requested. Overall I agree with your reporting. One point worth flagging: the apical lymph node (Node 14 in your submission) shows a focus of extranodal extension that I feel should be explicitly mentioned in the final report text, not just captured in the synoptic fields. This may have implications for adjuvant chemotherapy discussion at MDT. The morphology is otherwise consistent with your diagnosis — moderately differentiated adenocarcinoma pT3 N2a. Happy to discuss before you sign off.',
+    visibility: 'shared',
+    messageThreadId: 'uk-m7',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90),
+  },
 ];
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
@@ -66,7 +151,7 @@ const SEED_NOTES: InternalNote[] = [
 //     report exports, PDF generation, or LIS transmissions. Do not expose
 //     this collection through any patient-facing API or report template.
 
-const STORAGE_KEY = 'pathscribe_internal_notes';
+const STORAGE_KEY = 'pathscribe_internal_notes_v2'; // bumped — forces seed data refresh
 const load    = () => storageGet<InternalNote[]>(STORAGE_KEY, SEED_NOTES);
 const persist = (data: InternalNote[]) => storageSet(STORAGE_KEY, data);
 

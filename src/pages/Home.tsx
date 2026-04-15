@@ -3,10 +3,8 @@ import '../pathscribe.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "@contexts/AuthContext";
 import { useLogout } from '@hooks/useLogout';
-import { SunIcon, MoonIcon, HelpIcon, LogOutIcon, MonitorIcon, WarningIcon } from '../components/Icons';
-import { Link } from 'react-router-dom';
+import { SunIcon, MoonIcon, HelpIcon, MonitorIcon, WarningIcon } from '../components/Icons';
 import CaseSearchBar from '../components/Search/CaseSearchBar';
-import { ContributionTile } from "../components/home/ContributionTile";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -20,7 +18,6 @@ export default function Home() {
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-  const hasUnsavedData = true; 
 
   // --- Theme State ---
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'auto'>('dark');
@@ -789,24 +786,6 @@ const cards = [
   );
 }
 
-// Global Styles - Standardized Ghost Teal & Caution Orange
-const ghostTealAvatarStyle = { 
-    width: '42px', height: '42px', borderRadius: '50%', 
-    backgroundColor: 'transparent', border: '2px solid #0891B2', 
-    display: 'flex', alignItems: 'center', justifyContent: 'center', 
-    color: '#0891B2', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s ease' 
-};
-
-const ghostTealIconStyle = { 
-    width: '42px', height: '42px', borderRadius: '8px', 
-    background: 'transparent', border: '2px solid #0891B2', 
-    color: '#0891B2', display: 'flex', alignItems: 'center', 
-    justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease' 
-};
-
-const dropdownStyle = { width: '220px', backgroundColor: '#111', borderRadius: '12px', padding: '16px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' };
-const labelStyle = { color: '#64748b', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' as const, marginBottom: '10px' };
-const themeBtnStyle = { background: 'rgba(255,255,255,0.05)', border: '1px solid transparent', borderRadius: '8px', color: '#fff', padding: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const menuLinkStyle = { width: '100%', background: 'none', border: 'none', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '10px 0', fontSize: '14px', textAlign: 'left' as const };
+// Global Styles
 const overlayStyle = { position: 'fixed' as const, inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 };
 const warningCardStyle = { width: '400px', backgroundColor: '#111', padding: '40px', borderRadius: '28px', textAlign: 'center' as const, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' };

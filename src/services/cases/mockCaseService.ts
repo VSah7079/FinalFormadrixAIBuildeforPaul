@@ -135,7 +135,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4402-SP-1', label: 'A', description: 'Sigmoid colon resection', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
       { id: 'S26-4402-SP-2', label: 'B', description: 'Apical lymph node', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Michael Torres', clinicalIndication: 'Sigmoid colon adenocarcinoma diagnosed on colonoscopy biopsy. CT staging: T3N1M0. Proceeding to laparoscopic sigmoid resection.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-002' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Michael Torres', clinicalIndication: 'Sigmoid colon adenocarcinoma diagnosed on colonoscopy biopsy. CT staging: T3N1M0. Proceeding to laparoscopic sigmoid resection.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "sigmoid colon resection" is a segment of sigmoid colon measuring 22.0 cm in length. The serosal surface is smooth and glistening. A fungating, ulcerating tumor measuring 4.5 × 3.2 cm is present on the anterior wall, 9.0 cm from the distal margin and 11.0 cm from the proximal margin. The tumor invades through the muscularis propria into pericolorectal adipose tissue. The circumferential resection margin is 3 mm from the tumor.',
       microscopicDescription: 'Sections show moderately differentiated adenocarcinoma (low grade) infiltrating through the muscularis propria into pericolorectal adipose tissue (pT3). Perineural invasion is present. Lymphovascular invasion is not identified. All surgical margins (proximal, distal, radial) are uninvolved; the closest margin (radial) is 3 mm. 18 lymph nodes identified in the pericolorectal fat; 3 of 18 are positive for metastatic carcinoma, all without extranodal extension (pN1b).',
@@ -305,7 +305,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4404-SP-5', label: 'E', description: 'Prostate biopsy — left mid', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
       { id: 'S26-4404-SP-6', label: 'F', description: 'Prostate biopsy — left base', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 8.4 ng/mL, rising from 5.2 ng/mL 12 months prior. Abnormal DRE: firm nodule right lobe. MRI prostate: PI-RADS 4 lesion right mid-gland. Proceeding to systematic + targeted biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-003' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 8.4 ng/mL, rising from 5.2 ng/mL 12 months prior. Abnormal DRE: firm nodule right lobe. MRI prostate: PI-RADS 4 lesion right mid-gland. Proceeding to systematic + targeted biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin are six containers labeled A through F, each containing prostate needle biopsy cores. Specimen A (right apex): 2 cores, 1.4 and 1.2 cm. Specimen B (right mid): 2 cores, 1.6 and 1.5 cm. Specimen C (right base): 2 cores, 1.8 and 1.6 cm. Specimens D–F (left apex, mid, base): 2 cores each, 1.3–1.7 cm. All cores are grey-white and rubbery.',
       microscopicDescription: 'Specimens A, B, C (right apex, mid, base): Acinar adenocarcinoma (usual type), Gleason score 3+4=7 (Grade Group 2). 4 of 6 cores involved. Maximum % core involvement: 70% (right mid). Perineural invasion present (right mid, right apex). Specimens D, E, F (left apex, mid, base): Benign prostatic tissue with mild chronic inflammation. No carcinoma identified.',
@@ -444,7 +444,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4406-SP-1', label: 'A', description: 'Left breast core needle biopsy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Patricia Moore', clinicalIndication: 'Palpable mass left breast 2 o\'clock. Ultrasound: 1.8 cm hypoechoic irregular mass. BIRADS 5. Proceeding to ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-002' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Patricia Moore', clinicalIndication: 'Palpable mass left breast 2 o\'clock. Ultrasound: 1.8 cm hypoechoic irregular mass. BIRADS 5. Proceeding to ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin labeled "left breast core needle biopsy" are 3 cores measuring 1.3, 1.4, and 1.5 cm, grey-white and firm.',
       microscopicDescription: 'Pending.',
@@ -489,7 +489,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4407-SP-1', label: 'A', description: 'Anterior resection — rectum', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
       { id: 'S26-4407-SP-2', label: 'B', description: 'Mesorectal lymph nodes', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. James Nguyen', clinicalIndication: 'Rectal adenocarcinoma, 8 cm from anal verge. MRI: mrT3N2. Completed neoadjuvant chemoradiotherapy (FOLFOX × 6 + long-course RT). Restaging MRI: good response. Proceeding to low anterior resection.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-003' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. James Nguyen', clinicalIndication: 'Rectal adenocarcinoma, 8 cm from anal verge. MRI: mrT3N2. Completed neoadjuvant chemoradiotherapy (FOLFOX × 6 + long-course RT). Restaging MRI: good response. Proceeding to low anterior resection.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "anterior resection" is a segment of rectum measuring 18.0 cm in length with attached mesorectum. The mesorectal fascia is intact (complete TME). An ulcerating tumor measuring 2.5 × 2.0 cm is present on the posterior wall, 8.0 cm from the distal margin. The tumor appears to penetrate through the muscularis propria. The circumferential resection margin is 4 mm.',
       microscopicDescription: 'Post-treatment rectal adenocarcinoma with moderate treatment response (Ryan score 2, <5% residual viable carcinoma). Residual carcinoma invades through muscularis propria into pericolorectal adipose tissue (ypT3). Perineural invasion not identified. Lymphovascular invasion not identified. Proximal and distal margins negative. CRM: 4 mm (negative). 14 of 16 lymph nodes show treatment effect only; 2 lymph nodes contain viable metastatic carcinoma (ypN1b).',
@@ -746,7 +746,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4410-SP-1', label: 'A', description: 'Products of conception', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clinicalIndication: 'Elective termination of pregnancy at 9 weeks gestation. Products of conception submitted for histological evaluation.', receivedDate: isoDaysAgo(0), assignedTo: 'PATH-002' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clinicalIndication: 'Elective termination of pregnancy at 9 weeks gestation. Products of conception submitted for histological evaluation.', receivedDate: isoDaysAgo(0), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin labeled "products of conception" is a 12g aggregate of pale grey-white, friable tissue measuring in aggregate 4.0 × 3.0 × 1.5 cm. Chorionic villi are identified grossly.',
       microscopicDescription: 'Pending.',
@@ -841,7 +841,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4412-SP-1', label: 'A', description: 'Prostate needle biopsy — right mid', receivedAt: isoDaysAgo(5), collectedAt: isoDaysAgo(6), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 7.2, PI-RADS 4. Targeted biopsy right mid-gland. Original report amended to update Gleason grade following second opinion review.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-003' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 7.2, PI-RADS 4. Targeted biopsy right mid-gland. Original report amended to update Gleason grade following second opinion review.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Two cores, 1.4 and 1.6 cm.',
       microscopicDescription: 'AMENDED: Acinar adenocarcinoma, Gleason score 3+4=7, Grade Group 2. Original report issued as Gleason 3+3=6 — amended following MDT review.',
@@ -1528,7 +1528,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '6'; // bumped: UK cases added, listCasesForUser now filters by user
+const MOCK_VERSION = '7'; // bumped: US prior pathology + SNOMED matching added
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);
@@ -1934,151 +1934,218 @@ export interface PatientHistoryCase {
   _grade?: number;
   _erPositive?: boolean;
   _her2Positive?: boolean;
+  _snomedMorphology?: string[];  // SNOMED CT concept IDs for morphology matching
 }
 
 export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
-  // ── MFT UK patients — Paul Carter's cases ────────────────────────────────────
+  // ── US patients ───────────────────────────────────────────────────────────
 
-  // Hartley, William — MRN 200001 — Rectal adenocarcinoma (current: anterior resection)
-  '200001': [
+  // Robert Jackson — MRN 100002 — Colorectal (current: sigmoid resection)
+  '100002': [
     {
-      id: 'MFT24-3301',
-      date: 'Sep 12, 2024',
-      diagnosis: 'Rectal adenocarcinoma, moderately differentiated — staging biopsy',
-      site: 'Rectum, posterior wall, 7 cm from anal verge',
-      procedure: 'Flexible sigmoidoscopy biopsy',
-      physician: 'Dr. Paul Carter',
-      receptors: 'N/A',
-      ki67: '45%',
-      margins: 'N/A (biopsy)',
-      nodes: 'Not sampled',
-      gross: 'Five fragments of colonic mucosa and submucosa each 0.3–0.5 cm. Submitted entirely in one cassette.',
-      microscopic: 'Sections show moderately differentiated adenocarcinoma with irregular gland formation infiltrating the submucosa. Lymphovascular invasion not identified in the biopsy. No treatment effect.',
-      comment: 'Moderately differentiated rectal adenocarcinoma confirmed. Staging biopsy prior to MRI and MDT discussion. Patient proceeded to long-course chemoradiotherapy.',
-      tags: ['Rectal adenocarcinoma', 'Grade 2', 'Staging biopsy', 'Pre-treatment', 'Colorectal MDT'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 2, _erPositive: false, _her2Positive: false,
-    },
-    {
-      id: 'MFT22-0914',
-      date: 'Mar 4, 2022',
+      id: 'S23-09812',
+      date: 'Jun 18, 2023',
       diagnosis: 'Tubular adenoma with low grade dysplasia — surveillance colonoscopy',
       site: 'Sigmoid colon',
       procedure: 'Colonoscopic polypectomy',
-      physician: 'Dr. H. Marsden',
-      receptors: 'N/A',
-      ki67: '< 10%',
-      margins: 'Clear (diathermy margin)',
-      nodes: 'Not sampled',
-      gross: 'Single polypectomy specimen 1.2 cm. Tan-pink pedunculated polyp.',
-      microscopic: 'Sections show tubular adenoma with low grade dysplasia. Stalk margin clear. No high grade dysplasia or invasive carcinoma.',
-      comment: 'Tubular adenoma, completely excised. 3-year surveillance interval recommended per BSG guidelines.',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '< 15%', margins: 'Clear', nodes: 'Not sampled',
+      gross: 'Single pedunculated polyp 1.4 cm. Pink-tan mucosal surface.',
+      microscopic: 'Tubular adenoma with low grade dysplasia. No high grade dysplasia or invasive carcinoma. Stalk margin clear.',
+      comment: 'Tubular adenoma completely excised. 3-year colonoscopic surveillance recommended.',
       tags: ['Adenoma', 'Low grade dysplasia', 'Polypectomy', 'Complete excision'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'colon_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000', '363346000'],
     },
   ],
 
-  // Barrowclough, Geoffrey — MRN 200002 — Prostate biopsy (current: TRUS biopsy)
-  '200002': [
+  // Helen Williams — MRN 100003 — Lung (current: VATS right upper lobectomy)
+  '100003': [
     {
-      id: 'MFT23-7712',
-      date: 'Nov 8, 2023',
-      diagnosis: 'Prostatic adenocarcinoma, Gleason 3+3=6 (Grade Group 1) — 2/12 cores',
-      site: 'Prostate — right mid and right apex',
-      procedure: 'TRUS-guided 12-core prostate biopsy',
-      physician: 'Dr. Paul Carter',
-      receptors: 'N/A',
-      ki67: '12%',
-      margins: 'N/A (biopsy)',
-      nodes: 'Not sampled',
-      gross: '12 individually labelled core biopsies, each 1.2–1.8 cm. Submitted by anatomical site.',
-      microscopic: 'Tumour in 2 of 12 cores: right mid (15% involvement) and right apex (10% involvement). Gleason pattern 3 only (well-formed glands). Maximum core involvement 3 mm. No perineural invasion.',
-      comment: 'Low-volume Gleason Grade Group 1 prostate adenocarcinoma. Patient enrolled on active surveillance protocol. PSA 6.2 ng/mL at time of biopsy.',
-      tags: ['Prostate adenocarcinoma', 'Gleason 3+3', 'Grade Group 1', 'Active surveillance', 'Low volume'],
-      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      id: 'S24-11203',
+      date: 'Aug 29, 2024',
+      diagnosis: 'Adenocarcinoma of lung — CT-guided core biopsy, acinar predominant',
+      site: 'Right upper lobe, subpleural nodule',
+      procedure: 'CT-guided core needle biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '32%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Two core biopsies each 1.4 cm × 2 mm. Submitted entirely.',
+      microscopic: 'Moderately differentiated adenocarcinoma, acinar predominant pattern. TTF-1 positive.',
+      comment: 'Pulmonary adenocarcinoma confirmed. EGFR/ALK/ROS1 negative. Referral to thoracic surgery for VATS resection.',
+      tags: ['Lung adenocarcinoma', 'Acinar', 'EGFR−', 'ALK−', 'Pre-surgical biopsy'],
+      _templateId: 'lung_resection', _grade: 2, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['254637007', '413448000'],
     },
+  ],
+
+  // David Martinez — MRN 100004 — Prostate (current: TRUS biopsy)
+  '100004': [
     {
-      id: 'MFT21-4456',
-      date: 'Jun 17, 2021',
-      diagnosis: 'Benign prostatic tissue — no malignancy',
-      site: 'Prostate',
-      procedure: 'TRUS-guided 12-core prostate biopsy',
-      physician: 'Dr. R. Patel',
-      receptors: 'N/A',
-      ki67: '< 2%',
-      margins: 'N/A',
-      nodes: 'Not sampled',
-      gross: '12 core biopsies submitted. No macroscopically suspicious areas.',
-      microscopic: 'Sections show benign prostatic glands with focal chronic inflammation. High-grade PIN in 1 core. No invasive carcinoma identified.',
-      comment: 'No malignancy. HGPIN in 1 core — rebiopsy recommended within 12 months. PSA 4.8 ng/mL.',
+      id: 'S22-08871',
+      date: 'Apr 12, 2022',
+      diagnosis: 'Benign prostatic tissue — no malignancy. HGPIN in 1 core.',
+      site: 'Prostate, bilateral',
+      procedure: 'TRUS-guided 12-core biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '< 2%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: '12 core biopsies submitted by anatomical site.',
+      microscopic: 'Benign prostatic glands with focal chronic prostatitis. High-grade PIN in 1 core. No invasive carcinoma.',
+      comment: 'No malignancy. HGPIN in 1 core — rebiopsy recommended. PSA 5.1 ng/mL.',
       tags: ['Benign', 'HGPIN', 'No malignancy', 'Surveillance'],
-      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['399068003'],
     },
   ],
 
-  // Pemberton, Thomas — MRN 200004 — Radical prostatectomy (current)
-  '200004': [
+  // Susan Taylor — MRN 100005 — Breast DCIS (current: wire-localised lumpectomy)
+  '100005': [
     {
-      id: 'MFT25-1143',
-      date: 'Apr 22, 2025',
-      diagnosis: 'Prostatic adenocarcinoma, Gleason 4+3=7 (Grade Group 3) — 6/12 cores',
-      site: 'Prostate — bilateral, posterior zones predominant',
-      procedure: 'TRUS-guided 12-core prostate biopsy',
-      physician: 'Dr. Paul Carter',
-      receptors: 'N/A',
-      ki67: '28%',
-      margins: 'N/A (biopsy)',
-      nodes: 'Not sampled',
-      gross: '12 individually labelled core biopsies submitted by anatomical site.',
-      microscopic: 'Tumour identified in 6 of 12 cores. Gleason pattern 4 predominant (poorly formed/fused glands). Right posterior zone most extensively involved (70% of core). No perineural invasion at biopsy margin.',
-      comment: 'Intermediate-high risk prostate adenocarcinoma (Grade Group 3). PSA 14.2 ng/mL. Discussed at urology MDT — recommendation for robotic radical prostatectomy with bilateral pelvic lymph node dissection.',
-      tags: ['Prostate adenocarcinoma', 'Gleason 4+3', 'Grade Group 3', 'Intermediate-high risk', 'Pre-surgical biopsy'],
-      _templateId: 'rcpath_prostate_radical_prostatectomy', _grade: 3, _erPositive: false, _her2Positive: false,
+      id: 'S23-31102',
+      date: 'Nov 14, 2023',
+      diagnosis: 'DCIS — intermediate nuclear grade, cribriform pattern — stereotactic biopsy',
+      site: 'Right breast, upper outer quadrant — microcalcifications',
+      procedure: 'Stereotactic vacuum-assisted biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'ER+ (85%), PR+ (60%), HER2−', ki67: '12%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Multiple vacuum-assisted biopsy cores aggregating 2.8 cm.',
+      microscopic: 'DCIS, intermediate nuclear grade, cribriform and micropapillary patterns, with calcifications. No invasive carcinoma.',
+      comment: 'DCIS confirmed. ER/PR positive. Wire-localised excision recommended.',
+      tags: ['DCIS', 'Intermediate grade', 'ER+', 'Cribriform', 'Pre-excision biopsy'],
+      _templateId: 'breast_dcis_resection', _grade: 2, _erPositive: true, _her2Positive: false,
+      _snomedMorphology: ['413448000', '397201007'],
     },
   ],
 
-  // Hollingsworth, Patricia — MRN 200005 — Right hemicolectomy (current: finalising)
-  '200005': [
+  // Carol Davis — MRN 100008 — Breast bilateral mastectomy (BRCA1)
+  '100008': [
     {
-      id: 'MFT25-6630',
-      date: 'Jan 9, 2025',
-      diagnosis: 'Moderately differentiated adenocarcinoma of ascending colon — staging biopsy',
-      site: 'Ascending colon / hepatic flexure',
-      procedure: 'Colonoscopic biopsy',
-      physician: 'Dr. Paul Carter',
-      receptors: 'N/A',
-      ki67: '52%',
-      margins: 'N/A (biopsy)',
-      nodes: 'Not sampled',
-      gross: 'Four fragments of colonic mucosa 0.3–0.8 cm submitted entirely.',
-      microscopic: 'Moderately differentiated adenocarcinoma with irregular gland formation infiltrating the lamina propria and muscularis mucosae. No lymphovascular invasion in the biopsy.',
-      comment: 'Colorectal adenocarcinoma confirmed. CT staging: T3N1M0. Patient discussed at colorectal MDT — laparoscopic right hemicolectomy planned.',
-      tags: ['Colorectal adenocarcinoma', 'Grade 2', 'Staging biopsy', 'Colorectal MDT'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 2, _erPositive: false, _her2Positive: false,
+      id: 'S24-19034',
+      date: 'Jan 22, 2024',
+      diagnosis: 'Invasive NST carcinoma, Grade III, right breast — core biopsy',
+      site: 'Right breast, 10 o\'clock, 2.1 cm mass',
+      procedure: 'Ultrasound-guided core needle biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'ER− PR− HER2 2+ (equivocal)', ki67: '68%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Four core biopsies each 1.6 cm.',
+      microscopic: 'High grade invasive carcinoma of no special type. Marked nuclear pleomorphism, frequent mitoses. Nottingham grade 3.',
+      comment: 'High grade triple-negative-like breast carcinoma. BRCA1 germline testing recommended.',
+      tags: ['Grade III', 'ER−', 'HER2 equivocal', 'BRCA1 testing', 'High Ki-67'],
+      _templateId: 'breast_invasive', _grade: 3, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000', '254838004'],
     },
   ],
 
-  // Ashworth, Margaret — MRN 200003 — TEMS excision / second opinion
-  '200003': [
+  // Ruth Anderson — MRN 100006 — Breast core biopsy
+  '100006': [
     {
-      id: 'MFT24-9918',
-      date: 'Dec 3, 2024',
-      diagnosis: 'Rectal polyp — tubulovillous adenoma with focal high grade dysplasia',
-      site: 'Rectum, anterior wall',
+      id: 'S24-22341',
+      date: 'Sep 5, 2024',
+      diagnosis: 'Fibrocystic changes with apocrine metaplasia — no atypia',
+      site: 'Left breast, 9 o\'clock position',
+      procedure: 'Ultrasound-guided core needle biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '< 3%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Three core biopsies each 1.2 cm. Submitted entirely.',
+      microscopic: 'Fibrocystic changes with apocrine metaplasia and mild adenosis. No atypia. No malignancy.',
+      comment: 'Benign fibrocystic changes. Clinical and imaging follow-up recommended.',
+      tags: ['Benign', 'Fibrocystic', 'No atypia', 'Surveillance'],
+      _templateId: 'breast_invasive', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000'],
+    },
+  ],
+
+  // Michael Chen — MRN 100007 — Colorectal (current: anterior resection)
+  '100007': [
+    {
+      id: 'S24-16782',
+      date: 'Jul 14, 2024',
+      diagnosis: 'Rectal adenocarcinoma — staging biopsy, moderately differentiated',
+      site: 'Rectum, 8 cm from anal verge',
       procedure: 'Flexible sigmoidoscopy biopsy',
-      physician: 'Dr. Paul Carter',
-      receptors: 'N/A',
-      ki67: '35%',
-      margins: 'N/A (biopsy)',
-      nodes: 'Not sampled',
-      gross: 'Three polypoid fragments 0.5–1.2 cm submitted entirely.',
-      microscopic: 'Tubulovillous adenoma with focal high grade dysplasia. No definitive invasive carcinoma identified in the biopsy material. Margin assessment not possible.',
-      comment: 'High grade dysplasia confirmed. Patient referred for transanal endoscopic microsurgery (TEMS) for complete excision and definitive staging.',
-      tags: ['Tubulovillous adenoma', 'High grade dysplasia', 'Pre-TEMS biopsy', 'Rectal polyp'],
-      _templateId: 'rcpath_colorectal_local_excision', _grade: 2, _erPositive: false, _her2Positive: false,
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '48%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Four fragments of rectal mucosa 0.3–0.6 cm. Submitted entirely.',
+      microscopic: 'Moderately differentiated adenocarcinoma infiltrating the submucosa. No lymphovascular invasion in the biopsy.',
+      comment: 'Rectal adenocarcinoma confirmed. CT staging: mrT3N1. Referred for neoadjuvant chemoradiotherapy.',
+      tags: ['Rectal adenocarcinoma', 'Grade 2', 'Staging biopsy', 'Pre-treatment'],
+      _templateId: 'colon_resection', _grade: 2, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['363346000', '413448000'],
+    },
+    {
+      id: 'S21-09234',
+      date: 'Mar 22, 2021',
+      diagnosis: 'Tubulovillous adenoma with low grade dysplasia',
+      site: 'Sigmoid colon',
+      procedure: 'Colonoscopic polypectomy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '< 20%', margins: 'Clear', nodes: 'Not sampled',
+      gross: 'Pedunculated polyp 1.8 cm. Submitted entirely.',
+      microscopic: 'Tubulovillous adenoma (villous component 25%) with low grade dysplasia. Stalk margin clear.',
+      comment: 'Completely excised. 3-year surveillance recommended.',
+      tags: ['Tubulovillous adenoma', 'Low grade', 'Complete excision'],
+      _templateId: 'colon_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448009'],
     },
   ],
 
-  // ── US patients (existing) ───────────────────────────────────────────────────
+  // Beatrice Holloway — MRN 100009 — Breast lumpectomy
+  '100009': [
+    {
+      id: 'S25-41102',
+      date: 'Feb 8, 2025',
+      diagnosis: 'Invasive lobular carcinoma, Grade I — core biopsy',
+      site: 'Left breast, upper outer quadrant',
+      procedure: 'Ultrasound-guided core needle biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'ER+ (100%), PR+ (85%), HER2−', ki67: '6%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Three core biopsies each 1.3 cm. Submitted entirely.',
+      microscopic: 'Invasive lobular carcinoma, classic type, single file pattern. Nottingham grade 1. E-cadherin negative.',
+      comment: 'ER/PR strongly positive, HER2 negative. Low Ki-67. Excellent hormone receptor profile. Wire-localised lumpectomy planned.',
+      tags: ['Invasive lobular', 'Grade I', 'ER+', 'PR+', 'HER2−', 'Low Ki-67'],
+      _templateId: 'breast_invasive', _grade: 1, _erPositive: true, _her2Positive: false,
+      _snomedMorphology: ['413448002', '254838004'],
+    },
+  ],
+
+  // Margaret Foster — MRN 100011 — Breast core biopsy
+  '100011': [
+    {
+      id: 'S25-38871',
+      date: 'Dec 3, 2025',
+      diagnosis: 'Invasive ductal carcinoma, Grade III — core biopsy',
+      site: 'Right breast, upper inner quadrant',
+      procedure: 'Ultrasound-guided core needle biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'ER− PR− HER2 3+ (positive)', ki67: '72%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: 'Four core biopsies each 1.5 cm. Submitted entirely.',
+      microscopic: 'High grade invasive ductal carcinoma, Nottingham grade 3. Marked pleomorphism, brisk mitotic activity.',
+      comment: 'HER2-positive, hormone receptor-negative. HER2 FISH confirmed amplified. Anti-HER2 therapy eligible.',
+      tags: ['Grade III', 'ER−', 'HER2+', 'High Ki-67', 'Anti-HER2 eligible'],
+      _templateId: 'breast_invasive', _grade: 3, _erPositive: false, _her2Positive: true,
+      _snomedMorphology: ['413448000', '254838004'],
+    },
+  ],
+
+  // Harold Bennett — MRN 100012 — Prostate biopsy
+  '100012': [
+    {
+      id: 'S20-14432',
+      date: 'Aug 19, 2020',
+      diagnosis: 'Benign prostatic tissue — no malignancy',
+      site: 'Prostate, bilateral',
+      procedure: 'TRUS-guided 12-core biopsy',
+      physician: 'Dr. S. Johnson',
+      receptors: 'N/A', ki67: '< 1%', margins: 'N/A (biopsy)', nodes: 'Not sampled',
+      gross: '12 core biopsies submitted by anatomical site.',
+      microscopic: 'Benign prostatic glands with focal benign prostatic hyperplasia. No PIN. No invasive carcinoma.',
+      comment: 'No malignancy. PSA 4.2 ng/mL. Annual PSA surveillance recommended.',
+      tags: ['Benign', 'BPH', 'No malignancy', 'Surveillance'],
+      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['399068003'],
+    },
+  ],
+
+  // ── Grace Thompson — MRN 100001 (existing entry) ──────────────────────────
   '100001': [
     {
       id: 'S24-04821',
@@ -2096,6 +2163,7 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
       comment: 'Morphology and IHC profile consistent with invasive ductal carcinoma, Grade II (Nottingham score 6). Recommend correlation with clinical and imaging findings.',
       tags: ['ER+', 'PR+', 'HER2−', 'Grade II', 'Core biopsy'],
       _templateId: 'breast_invasive', _grade: 2, _erPositive: true, _her2Positive: false,
+      _snomedMorphology: ['413448000', '254838004'],
     },
     {
       id: 'S23-17340',
@@ -2196,23 +2264,41 @@ function scoreCaseAgainstHistory(
   const reports = c.synopticReports ?? [];
   if (reports.length === 0) return 0;
 
-  // Use the first synoptic report as representative
   const report = reports[0];
   const answers = report.answers ?? {};
+  const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+  const micro = (c.diagnostic?.microscopicDescription ?? '').toLowerCase();
 
   let score = 0;
 
-  // 1. Template / organ system match (30 pts)
-  if (anchor._templateId && report.templateId === anchor._templateId) {
-    score += 30;
+  // 1. SNOMED morphology match (35 pts) — most clinically specific signal
+  const caseSnomedCodes = (c as any).coding?.snomed ?? [];
+  if (anchor._snomedMorphology && anchor._snomedMorphology.length > 0 && caseSnomedCodes.length > 0) {
+    const overlap = anchor._snomedMorphology.filter((code: string) =>
+      caseSnomedCodes.includes(code)
+    );
+    if (overlap.length > 0) {
+      score += 35; // exact morphology match
+    } else {
+      // Check if same organ system via templateId as fallback
+      if (anchor._templateId && report.templateId === anchor._templateId) score += 10;
+    }
+  } else if (anchor._templateId && report.templateId === anchor._templateId) {
+    score += 20; // no SNOMED — fall back to template match
   } else if (
     anchor._templateId?.startsWith('breast') &&
     report.templateId?.startsWith('breast')
   ) {
-    score += 18; // partial — same organ, different template
+    score += 12;
   }
 
-  // 2. Grade match (25 pts)
+  // 2. Template / organ system (25 pts when SNOMED unavailable)
+  if (!(anchor._snomedMorphology && anchor._snomedMorphology.length > 0)) {
+    if (anchor._templateId && report.templateId === anchor._templateId) score += 25;
+    else if (anchor._templateId?.startsWith('breast') && report.templateId?.startsWith('breast')) score += 15;
+  }
+
+  // 3. Grade match (20 pts)
   const rawGrade = answers['histologic_grade'] as string | undefined;
   let caseGrade: number | null = null;
   if (rawGrade) {
@@ -2221,39 +2307,34 @@ function scoreCaseAgainstHistory(
     else if (rawGrade.includes('3') || rawGrade === 'g3') caseGrade = 3;
   }
   if (anchor._grade && caseGrade !== null) {
-    if (caseGrade === anchor._grade) score += 25;
-    else if (Math.abs(caseGrade - anchor._grade) === 1) score += 12;
+    if (caseGrade === anchor._grade) score += 20;
+    else if (Math.abs(caseGrade - anchor._grade) === 1) score += 10;
   }
 
-  // 3. ER status (20 pts) — inferred from ancillary text or answers
-  const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
-  const micro = (c.diagnostic?.microscopicDescription ?? '').toLowerCase();
+  // 4. ER status (10 pts)
   const erPositive =
-    ancillary.includes('er: positive') ||
-    ancillary.includes('er+') ||
+    ancillary.includes('er: positive') || ancillary.includes('er+') ||
     micro.includes('er+') ||
     String(answers['receptor_status'] ?? '').includes('er_positive');
   if (anchor._erPositive !== undefined) {
-    if (erPositive === anchor._erPositive) score += 20;
-    else score += 5; // partial — different profile, still informative
+    if (erPositive === anchor._erPositive) score += 10;
+    else score += 2;
   }
 
-  // 4. HER2 status (15 pts)
+  // 5. HER2 status (5 pts)
   const her2Positive =
-    ancillary.includes('her2 3+') ||
-    ancillary.includes('her2: positive') ||
-    ancillary.includes('her2+') ||
-    ancillary.includes('ish: amplified');
+    ancillary.includes('her2 3+') || ancillary.includes('her2: positive') ||
+    ancillary.includes('her2+') || ancillary.includes('ish: amplified');
   if (anchor._her2Positive !== undefined) {
-    if (her2Positive === anchor._her2Positive) score += 15;
-    else score += 4;
+    if (her2Positive === anchor._her2Positive) score += 5;
+    else score += 1;
   }
 
-  // 5. Site / laterality overlap (10 pts)
+  // 6. Site / laterality (5 pts)
   const laterality = String(answers['specimen_laterality'] ?? '').toLowerCase();
   const anchorSite = anchor.site.toLowerCase();
-  if (laterality && anchorSite.includes(laterality)) score += 10;
-  else if (laterality === 'left' || laterality === 'right') score += 4; // breast, different side
+  if (laterality && anchorSite.includes(laterality)) score += 5;
+  else if (laterality === 'left' || laterality === 'right') score += 2;
 
   return Math.min(score, 100);
 }
@@ -2263,6 +2344,15 @@ function buildMatchReason(c: Case, anchor: PatientHistoryCase): string {
   const reports = c.synopticReports ?? [];
   const answers = reports[0]?.answers ?? {};
   const ancillary = (c.diagnostic?.ancillaryStudies ?? '').toLowerCase();
+
+  // SNOMED morphology match — strongest signal
+  const caseSnomedCodes = (c as any).coding?.snomed ?? [];
+  if (anchor._snomedMorphology && anchor._snomedMorphology.length > 0) {
+    const overlap = anchor._snomedMorphology.filter((code: string) =>
+      caseSnomedCodes.includes(code)
+    );
+    if (overlap.length > 0) reasons.push('Matching SNOMED morphology');
+  }
 
   if (reports[0]?.templateId === anchor._templateId) reasons.push('Same histologic type');
   else if (reports[0]?.templateId?.startsWith('breast') && anchor._templateId?.startsWith('breast')) {

@@ -35,7 +35,7 @@ const MessagingContext = createContext<MessagingContextType | undefined>(undefin
 
 export function MessagingProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const userId   = user?.id ?? 'u1';
+  const userId   = user?.id ?? '';
 
   const [messages,    setMessages]    = useState<Message[]>([]);
   const [portalOpen,  setPortalOpenRaw] = useState(
@@ -52,6 +52,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   };
 
   const reloadInbox = useCallback(async () => {
+    if (!userId) return;
     const result = await messageService.getInbox(userId);
     if (result.ok) setMessages(result.data);
   }, [userId]);

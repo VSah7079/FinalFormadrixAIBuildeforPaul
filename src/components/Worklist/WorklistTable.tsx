@@ -65,7 +65,7 @@ const FLAG_PALETTE: Record<string, { bg: string; border: string; dot: string }> 
   blue:   { bg: 'rgba(59,130,246,0.15)',  border: 'rgba(59,130,246,0.4)',  dot: '#3B82F6' },
   green:  { bg: 'rgba(16,185,129,0.15)',  border: 'rgba(16,185,129,0.4)',  dot: '#10B981' },
   orange: { bg: 'rgba(249,115,22,0.15)',  border: 'rgba(249,115,22,0.4)',  dot: '#F97316' },
-  purple: { bg: 'rgba(168,85,247,0.15)',  border: 'rgba(168,85,247,0.4)',  dot: '#A855F7' },
+  purple: { bg: 'rgba(249,115,22,0.15)',  border: 'rgba(249,115,22,0.4)',  dot: '#F97316' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -186,15 +186,19 @@ const getSortValue = (c: Case, key: string): any => {
 const getStatusStyle = (status: string) => {
   switch (status) {
     case 'draft':
-      return { bg: 'rgba(148,163,184,0.15)', color: '#64748b', border: 'rgba(148,163,184,0.4)' };
+      return { bg: 'rgba(148,163,184,0.15)', color: '#94a3b8', border: 'rgba(148,163,184,0.4)' }; // slate  — matches Draft tile
     case 'in-progress':
-      return { bg: 'rgba(8,145,178,0.15)',   color: '#0891B2', border: 'rgba(8,145,178,0.3)'   };
+      return { bg: 'rgba(8,145,178,0.15)',   color: '#0891B2', border: 'rgba(8,145,178,0.3)'   }; // teal   — matches In Progress tile
     case 'pending-review':
-      return { bg: 'rgba(245,158,11,0.15)',  color: '#F59E0B', border: 'rgba(245,158,11,0.3)'  };
+      return { bg: 'rgba(245,158,11,0.15)',  color: '#F59E0B', border: 'rgba(245,158,11,0.3)'  }; // amber  — matches Needs Review tile
     case 'finalized':
-      return { bg: 'rgba(16,185,129,0.15)',  color: '#10B981', border: 'rgba(16,185,129,0.3)'  };
+      return { bg: 'rgba(16,185,129,0.15)',  color: '#10B981', border: 'rgba(16,185,129,0.3)'  }; // green  — matches Completed tile
     case 'amended':
-      return { bg: 'rgba(129,140,248,0.15)', color: '#818CF8', border: 'rgba(129,140,248,0.3)' };
+      return { bg: 'rgba(139,92,246,0.15)',  color: '#8B5CF6', border: 'rgba(139,92,246,0.3)'  }; // violet — matches Amended tile
+    case 'finalizing':
+      return { bg: 'rgba(236,72,153,0.15)',  color: '#EC4899', border: 'rgba(236,72,153,0.3)'  }; // pink — matches Finalizing tile
+    case 'pool':
+      return { bg: 'rgba(249,115,22,0.15)',  color: '#F97316', border: 'rgba(249,115,22,0.3)'  }; // orange — matches Pool tile
     default:
       return { bg: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: 'rgba(255,255,255,0.1)' };
   }
@@ -981,8 +985,8 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                     onMouseEnter={() => setHoveredRow(c.id)}
                     onMouseLeave={() => setHoveredRow(null)}
                     style={{
-                      background: isSelected ? 'rgba(8,145,178,0.18)' : isHovered && isPool ? 'rgba(99,102,241,0.10)' : isHovered ? 'rgba(8,145,178,0.10)' : 'transparent',
-                      borderLeft: `2px solid ${isSelected ? '#0891B2' : isPool ? 'rgba(99,102,241,0.5)' : isUrgent ? 'rgba(239,68,68,0.5)' : 'transparent'}`,
+                      background: isSelected ? 'rgba(8,145,178,0.18)' : isHovered && isPool ? 'rgba(249,115,22,0.10)' : isHovered ? 'rgba(8,145,178,0.10)' : 'transparent',
+                      borderLeft: `2px solid ${isSelected ? '#0891B2' : isPool ? 'rgba(249,115,22,0.7)' : isUrgent ? 'rgba(239,68,68,0.5)' : 'transparent'}`,
                       borderBottom: '1px solid rgba(255,255,255,0.05)',
                       cursor: 'pointer',
                       transition: 'background 0.15s ease',
@@ -1003,7 +1007,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                           {getOrganisationShortName(c.originHospitalId)}
                         </div>
                       )}
-                      <div style={{ fontWeight: 600, color: isUrgent ? '#f87171' : isPool ? '#818cf8' : '#0891b2', fontSize: '13px' }}>
+                      <div style={{ fontWeight: 600, color: isUrgent ? '#f87171' : isPool ? '#F97316' : '#0891b2', fontSize: '13px' }}>
                         {c.id}
                       </div>
                     </td>
