@@ -143,6 +143,22 @@ const FieldRow: React.FC<{
         >{field.label}</span>
         {field.required && <span style={{ color: '#f87171', fontSize: 10 }}>*</span>}
 
+        {/* Awaiting microscopy — field flagged as micro-dependent */}
+        {(ai as any)?.awaitingMicroscopy && !hasValue && (
+          <span
+            title="This field requires microscopic examination — will be updated when micro is reported."
+            style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+              background: 'rgba(251,191,36,0.1)',
+              border: '1px dashed rgba(251,191,36,0.4)',
+              color: '#fbbf24',
+              cursor: 'default',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            <span style={{ fontSize: 11 }}>⏳</span> Awaiting microscopy
+          </span>
+        )}
         {/* AI not found — attempted but no suggestion */}
         {!ai && aiAttempted && !hasValue && (
           <span
@@ -178,7 +194,7 @@ const FieldRow: React.FC<{
         )}
 
         {/* AI confidence + verification */}
-        {ai && (
+        {ai && !(ai as any).awaitingMicroscopy && (
           <>
             <span
               style={{ ...confBadgeStyle, cursor: 'default' }}
@@ -956,8 +972,8 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
             value={answers[f.id] ?? ''}
             onChange={setAnswer}
             aiSuggestion={
-              // Only pass suggestion if it meets the confidence threshold
-              aiSuggestions[f.id]?.confidence >= confidenceThreshold
+              // Pass suggestion if it meets confidence threshold OR is flagged awaitingMicroscopy
+              aiSuggestions[f.id]?.confidence >= confidenceThreshold || (aiSuggestions[f.id] as any)?.awaitingMicroscopy
                 ? aiSuggestions[f.id]
                 : undefined
             }
@@ -1020,6 +1036,10 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
             {(() => {
               const inst = caseData?.synopticReports?.find(r => r.instanceId === activeReportInstanceId) as any;
               const isDeferred = inst?.status === 'deferred';
+              // Only show Mark Deferred on cases that are mature enough to warrant it
+              const caseStatus = (caseData as any)?.status ?? '';
+              const showDeferButton = isDeferred || ['pending-review', 'finalizing', 'in-progress'].includes(caseStatus);
+              if (!showDeferButton) return null;
               return (
                 <button
                   title={isDeferred ? 'Marked as deferred — click to unmark' : 'Mark this synoptic as deferred (ancillary results pending)'}

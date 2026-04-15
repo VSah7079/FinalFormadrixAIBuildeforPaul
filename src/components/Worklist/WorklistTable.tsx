@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getOrganisationByHospitalId, getOrganisationShortName } from '../../services/organisation/organisationService';
 import '../../pathscribe.css';
 import { Case } from "../../types/case/Case";
+import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil } from '@/utils/formatDate';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -72,27 +73,9 @@ const FLAG_PALETTE: Record<string, { bg: string; border: string; dot: string }> 
 // DATE & TIME HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const formatDate = (iso?: string): string => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${mm}/${dd}/${yyyy}`;
-};
+const formatDate = (iso?: string): string => formatDateUtil(iso, 'en-GB');
 
-const formatDateTime = (iso?: string): string => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  const mm   = String(d.getMonth() + 1).padStart(2, '0');
-  const dd   = String(d.getDate()).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  const hh   = String(d.getHours()).padStart(2, '0');
-  const min  = String(d.getMinutes()).padStart(2, '0');
-  return `${mm}/${dd}/${yyyy} ${hh}:${min}`;
-};
+const formatDateTime = (iso?: string): string => formatDateTimeUtil(iso, 'en-GB');
 
 const getAgeLabel = (dobStr: string): string => {
   const dob = new Date(dobStr);

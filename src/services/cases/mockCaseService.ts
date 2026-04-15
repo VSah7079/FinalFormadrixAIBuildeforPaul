@@ -457,7 +457,62 @@ const MOCK_CASES: Case[] = [
         templateId: 'breast_invasive',
         templateName: 'CAP Breast Invasive Carcinoma — Resection',
         status: 'draft',
-        answers: {},
+        // Gross-phase only — microscopy and ancillaries pending
+        answers: {
+          procedure:           'core_needle_biopsy',
+          specimen_laterality: 'left',
+          tumor_site:          ['unknown_quadrant'],
+        },
+        aiSuggestions: {
+          procedure: {
+            value: 'core_needle_biopsy',
+            confidence: 96,
+            source: 'Gross: "left breast core needle biopsy … 3 cores"',
+            verification: 'unverified',
+          },
+          specimen_laterality: {
+            value: 'left',
+            confidence: 99,
+            source: 'Gross: "left breast core needle biopsy"',
+            verification: 'unverified',
+          },
+          tumor_site: {
+            value: ['unknown_quadrant'],
+            confidence: 65,
+            source: 'Order: "2 oclock position" — quadrant not yet confirmed on micro',
+            verification: 'unverified',
+          },
+          // Microscopy-dependent fields — awaiting processing
+          histologic_type: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          histologic_grade: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          tumor_size: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          lvi: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          margin_status_invasive: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          regional_ln_status: {
+            value: '', confidence: 0, source: '', verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          // Receptor status — ordered but awaiting IHC results
+          receptor_status: {
+            value: '', confidence: 0, source: 'ER/PR/HER2 IHC ordered — results pending',
+            verification: 'unverified', awaitingMicroscopy: true,
+          },
+        },
         createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(1),
       },
     ],
@@ -466,6 +521,7 @@ const MOCK_CASES: Case[] = [
     caseFlags: [
       { id: 'stat_rush',           name: 'STAT — Rush Processing',   color: 'red',    severity: 5 },
       { id: 'frozen_section',      name: 'Frozen Section Pending',   color: 'orange', severity: 4 },
+      { id: 'awaiting_micro',      name: 'Awaiting Microscopy',      color: 'yellow', severity: 3 },
     ],
     specimenFlags: [
       { id: 'er_pr_her2_ordered',  name: 'ER/PR/HER2 Ordered',       color: 'blue',   severity: 2 },
@@ -1351,16 +1407,158 @@ const MOCK_CASES: Case[] = [
       microscopicDescription: 'Pending processing.',
       ancillaryStudies: 'Pending.',
     },
-    synopticReports: [],
+    synopticReports: [
+      {
+        instanceId: 'MFT26-8806-SP-1_rcpath_colorectal_resection_001',
+        specimenId: 'MFT26-8806-SP-1',
+        templateId: 'rcpath_colorectal_resection',
+        templateName: 'RCPath Colorectal Carcinoma — Resection (Appendix F)',
+        status: 'draft',
+        // ── Gross-phase answers ───────────────────────────────────────────────
+        // Auto-assigned from specimen type + gross description on case receipt.
+        // Microscopy-dependent fields are intentionally absent — they will be
+        // populated when micro is reported in the LIS and PathScribe re-runs
+        // AI suggestions. Fields marked awaitingMicroscopy: true will render
+        // with an "Awaiting microscopy" placeholder in the synoptic UI.
+        answers: {
+          specimen_type:            'hartmanns_procedure',
+          tumour_site:              'sigmoid_colon',
+          maximum_tumour_diameter_mm: '65',
+          tumour_perforation:       'perforation_yes',
+          relation_to_peritoneal_reflection: 'above_reflection',
+          // Microscopy fields — not yet answerable:
+          // tumour_type, differentiation, local_invasion, venous_invasion,
+          // lymphatic_invasion, perineural_invasion, number_of_lymph_nodes,
+          // number_of_positive_lymph_nodes, circumferential_margin,
+          // pt_category, pn_category, resection_status
+        },
+        // ── Gross-phase AI suggestions ────────────────────────────────────────
+        // High confidence on gross-derivable fields.
+        // Microscopy fields flagged as awaitingMicroscopy so the UI can render
+        // them distinctly rather than leaving them blank.
+        aiSuggestions: {
+          specimen_type: {
+            value: 'hartmanns_procedure',
+            confidence: 94,
+            source: 'Order: "emergency Hartmanns procedure"',
+            verification: 'unverified',
+          },
+          tumour_site: {
+            value: 'sigmoid_colon',
+            confidence: 97,
+            source: 'Gross: "sigmoid colectomy … anterior wall"',
+            verification: 'unverified',
+          },
+          maximum_tumour_diameter_mm: {
+            value: '65',
+            confidence: 92,
+            source: 'Gross: "6.5 × 5.2 cm"',
+            verification: 'unverified',
+          },
+          tumour_perforation: {
+            value: 'perforation_yes',
+            confidence: 98,
+            source: 'Gross: "Perforation site 8 mm in diameter"',
+            verification: 'unverified',
+          },
+          relation_to_peritoneal_reflection: {
+            value: 'above_reflection',
+            confidence: 78,
+            source: 'Gross: sigmoid colon — typically above peritoneal reflection',
+            verification: 'unverified',
+          },
+          // Microscopy-dependent fields — awaiting LIS micro report
+          tumour_type: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          differentiation: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          local_invasion: {
+            value: '',
+            confidence: 0,
+            source: 'CT: "tumour invades through full bowel wall — likely pT4a"',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          venous_invasion: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          lymphatic_invasion: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          perineural_invasion: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          number_of_lymph_nodes_examined: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          circumferential_margin_involvement: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          pt_category: {
+            value: 'pT4a',
+            confidence: 55,
+            source: 'CT + gross: "invades through full bowel wall thickness" — awaiting micro confirmation',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          pn_category: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+          resection_status: {
+            value: '',
+            confidence: 0,
+            source: '',
+            verification: 'unverified',
+            awaitingMicroscopy: true,
+          },
+        },
+        createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+      },
+    ],
     status: 'draft' as CaseStatus,
     createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
     caseFlags: [
       { id: 'stat_flag', name: 'STAT — Rush Processing', color: 'red', severity: 3 },
       { id: 'perforation', name: 'Tumour Perforation — pT4', color: 'red', severity: 3 },
+      { id: 'awaiting_micro', name: 'Awaiting Microscopy', color: 'yellow', severity: 3 },
     ],
     specimenFlags: [],
     reportingMode: 'pathscribe',
-    coding: { icd10: ['C18.7'], snomed: [] },
+    coding: { icd10: ['C18.7'], snomed: ['363346000'] },
   },
 
   // ── UK Pool Cases — Manchester University NHS Foundation Trust ───────────────
@@ -1528,7 +1726,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '8'; // bumped: UK patient prior pathology added
+const MOCK_VERSION = '10'; // bumped: Ruth Anderson gross-phase synoptic added
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);

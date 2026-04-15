@@ -137,7 +137,7 @@ const cards = [
                   border: hoveredCard === index 
                     ? `2px solid ${card.color}` 
                     : '1px solid var(--border-color)', 
-                  background: 'rgba(255,255,255,0.02)',
+                  background: 'rgba(255,255,255,0.06)',
                   boxShadow: hoveredCard === index 
                     ? `0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px ${card.color}40` 
                     : '0 2px 8px rgba(0,0,0,0.1)'
@@ -151,7 +151,7 @@ const cards = [
                     backgroundImage: `url(${card.image})`, 
                     backgroundSize: 'cover', 
                     backgroundPosition: 'center', 
-                    opacity: 0.25,
+                    opacity: 0.5,
                     transition: 'opacity 0.3s ease',
                     imageRendering: '-webkit-optimize-contrast'
                   } as React.CSSProperties} />
@@ -161,7 +161,7 @@ const cards = [
                 <div style={{ 
                   position: 'absolute', 
                   inset: 0, 
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0.05))',
                   transition: 'background 0.3s ease'
                 }} />
                 
