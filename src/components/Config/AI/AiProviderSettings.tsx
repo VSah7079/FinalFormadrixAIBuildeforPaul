@@ -59,7 +59,13 @@ const AiProviderSettings: React.FC<AiProviderSettingsProps> = ({
   isAdmin = false,
   onSaved,
 }) => {
-  const current = resolveAiConfig();
+  const rawConfig = resolveAiConfig();
+  // Guard: if the stored providerId isn't a known key (e.g. after a host
+  // migration corrupted / cleared localStorage), fall back to 'anthropic'
+  // so PROVIDER_MODELS[providerId] is never undefined.
+  const current = PROVIDER_MODELS[rawConfig.providerId]
+    ? rawConfig
+    : { ...rawConfig, providerId: 'anthropic' as AiProviderId, modelId: PROVIDER_MODELS['anthropic'][0].id };
 
   const [providerId,    setProviderId]    = useState<AiProviderId>(current.providerId);
   const [modelId,       setModelId]       = useState(current.modelId);
@@ -173,7 +179,7 @@ const AiProviderSettings: React.FC<AiProviderSettingsProps> = ({
       <div style={{ marginBottom: 20 }}>
         <label style={labelStyle}>Model</label>
         <select value={modelId} onChange={e => setModelId(e.target.value)} style={inputStyle}>
-          {PROVIDER_MODELS[providerId].map(m => (
+          {(PROVIDER_MODELS[providerId] ?? PROVIDER_MODELS['anthropic']).map(m => (
             <option key={m.id} value={m.id}>{m.label}</option>
           ))}
         </select>

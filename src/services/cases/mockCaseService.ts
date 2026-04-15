@@ -1528,7 +1528,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '7'; // bumped: US prior pathology + SNOMED matching added
+const MOCK_VERSION = '8'; // bumped: UK patient prior pathology added
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);
@@ -2145,6 +2145,137 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
     },
   ],
 
+
+  // ── UK patients — Paul Carter's cases ────────────────────────────────────
+
+  // William Hartley — MRN 200001 (active case MFT26-8801, anterior resection)
+  '200001': [
+    {
+      id: 'MFT24-1142',
+      date: 'Mar 2024',
+      diagnosis: 'Tubular adenoma, low-grade dysplasia (×2 sites)',
+      site: 'Sigmoid and ascending colon',
+      procedure: 'Colonoscopic biopsy',
+      physician: 'Dr. A. Patel',
+      receptors: 'N/A', ki67: 'N/A', margins: 'Complete excision', nodes: 'Not sampled',
+      gross: 'Two fragments of tan-pink mucosal tissue, 0.4 cm and 0.6 cm (A). Single polypoid mucosal fragment, 1.1 cm, with lobulated surface (B).',
+      microscopic: 'A: Tubular adenoma with low-grade dysplasia. No high-grade dysplasia or invasive carcinoma. B: Tubulovillous adenoma with low-grade dysplasia. Excision appears complete.',
+      comment: 'Recommend surveillance colonoscopy in 3 years per BSG guidelines given low-risk adenoma.',
+      tags: ['Adenoma', 'Low-grade dysplasia', 'Surveillance', 'BSG guidelines'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000', '363346000'],
+    },
+  ],
+
+  // Geoffrey Barrowclough — MRN 200002 (active case MFT26-8802, prostate biopsy)
+  '200002': [
+    {
+      id: 'MFT23-5503',
+      date: 'Jul 2023',
+      diagnosis: 'Benign prostatic hyperplasia. No evidence of malignancy.',
+      site: 'Prostate',
+      procedure: 'TURP chippings',
+      physician: 'Mr. C. Whitfield',
+      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
+      gross: '18 g of tan-white prostatic tissue fragments. Representative sections in 4 cassettes.',
+      microscopic: 'Benign prostatic glandular and stromal hyperplasia. Occasional foci of chronic inflammation. No PIN or adenocarcinoma identified.',
+      comment: 'Benign TURP. PSA surveillance recommended. Re-biopsy if PSA rises further.',
+      tags: ['BPH', 'Benign', 'TURP', 'No malignancy'],
+      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['399068003'],
+    },
+  ],
+
+  // Margaret Ashworth — MRN 200003 (active case MFT26-8803, TEMS excision)
+  '200003': [
+    {
+      id: 'MFT25-0771',
+      date: 'May 2025',
+      diagnosis: 'Tubulovillous adenoma, high-grade dysplasia.',
+      site: 'Upper rectum',
+      procedure: 'Rectal biopsy',
+      physician: 'Dr. S. Okonkwo',
+      receptors: 'N/A', ki67: 'N/A', margins: 'Biopsy — margins not assessable', nodes: 'Not sampled',
+      gross: 'Three fragments of tan-pink tissue, 0.8–1.2 cm.',
+      microscopic: 'Tubulovillous adenoma with focal high-grade dysplasia. No invasive adenocarcinoma. Muscularis mucosae intact.',
+      comment: 'High-grade dysplasia — discussed at MDT. TEMS excision recommended. Referred to colorectal surgery.',
+      tags: ['Tubulovillous adenoma', 'High-grade dysplasia', 'MDT', 'TEMS planned'],
+      _templateId: 'rcpath_colorectal_local_excision', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000', '363346000'],
+    },
+  ],
+
+  // Thomas Pemberton — MRN 200004 (active case MFT26-8804, radical prostatectomy)
+  '200004': [
+    {
+      id: 'MFT25-1109',
+      date: 'Feb 2025',
+      diagnosis: 'Prostatic adenocarcinoma, Gleason 3+4=7, Grade Group 2. Perineural invasion present.',
+      site: 'Prostate — right peripheral zone',
+      procedure: 'Transperineal prostate biopsy ×12 cores',
+      physician: 'Mr. H. Al-Rashid',
+      receptors: 'N/A', ki67: 'N/A', margins: 'Biopsy — not applicable', nodes: 'Not sampled',
+      gross: 'Twelve separately submitted biopsy cores, 1.0–1.8 cm each.',
+      microscopic: 'Cores A, C, D: prostatic adenocarcinoma, Gleason 3+4=7. Perineural invasion in core A. Cores B, E, F: benign. Cores G–L: benign with focal chronic prostatitis.',
+      comment: 'Gleason 3+4 right-sided disease. Robotic radical prostatectomy recommended at MDT.',
+      tags: ['Adenocarcinoma', 'Gleason 3+4', 'Grade Group 2', 'MDT', 'RARP planned'],
+      _templateId: 'rcpath_prostate_radical_prostatectomy', _grade: 2, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['399068003'],
+    },
+  ],
+
+  // Patricia Hollingsworth — MRN 200005 (active case MFT26-8805, right hemicolectomy)
+  '200005': [
+    {
+      id: 'MFT24-3318',
+      date: 'Jan 2024',
+      diagnosis: 'Hyperplastic polyp. No adenomatous change.',
+      site: 'Sigmoid colon',
+      procedure: 'Colonoscopic biopsy',
+      physician: 'Dr. R. Kapoor',
+      receptors: 'N/A', ki67: 'N/A', margins: 'Complete excision', nodes: 'Not sampled',
+      gross: 'Single fragment of tan-pink mucosal tissue, 0.5 cm.',
+      microscopic: 'Hyperplastic (metaplastic) polyp. No adenomatous change or dysplasia. No serrated adenoma.',
+      comment: 'Benign hyperplastic polyp. Continue standard surveillance given family history of CRC.',
+      tags: ['Hyperplastic polyp', 'Benign', 'Surveillance', 'Family history CRC'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['413448000', '363346000'],
+    },
+    {
+      id: 'MFT22-8801',
+      date: 'Sep 2022',
+      diagnosis: 'Colonic mucosa within normal limits. No polyps.',
+      site: 'Colon — multiple sites',
+      procedure: 'Surveillance colonoscopy biopsies',
+      physician: 'Dr. R. Kapoor',
+      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
+      gross: 'Multiple small mucosal fragments from right colon, transverse colon, and sigmoid.',
+      microscopic: 'Colonic mucosa with normal crypt architecture. No dysplasia, adenoma, or carcinoma.',
+      comment: 'Normal surveillance result. Repeat in 5 years.',
+      tags: ['Normal', 'Surveillance', 'No polyps'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: [],
+    },
+  ],
+
+  // Edward Blackwood — MRN 200006 (active case MFT26-8806, emergency sigmoid)
+  '200006': [
+    {
+      id: 'MFT26-0441',
+      date: 'Jan 2026',
+      diagnosis: 'Colonic mucosa with moderate active inflammation. No dysplasia or malignancy.',
+      site: 'Sigmoid colon',
+      procedure: 'Colonoscopic biopsy — change in bowel habit',
+      physician: 'Dr. T. Mensah',
+      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
+      gross: 'Two fragments of pink mucosal tissue, 0.4 and 0.5 cm.',
+      microscopic: 'Colonic mucosa with moderate active cryptitis and focal crypt abscess formation. No granulomas. No dysplasia or carcinoma.',
+      comment: 'Inflammatory changes, no malignancy. CT colonography requested. Urgent follow-up arranged.',
+      tags: ['Inflammation', 'Active cryptitis', 'No malignancy', 'CT colonography planned'],
+      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
+      _snomedMorphology: ['363346000'],
+    },
+  ],
   // ── Grace Thompson — MRN 100001 (existing entry) ──────────────────────────
   '100001': [
     {
@@ -2444,7 +2575,7 @@ export async function findSimilarCases(
 
     results.push({
       caseId: c.id,
-      accession: c.accession.fullAccession,
+      accession: typeof c.accession === 'string' ? c.accession : c.accession.fullAccession,
       patientInitials,
       date: new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       diagnosis: primaryReport?.templateName?.replace('CAP ', '').replace(' — Resection', '').replace(' — Needle Biopsy', '') ?? 'Unknown',
