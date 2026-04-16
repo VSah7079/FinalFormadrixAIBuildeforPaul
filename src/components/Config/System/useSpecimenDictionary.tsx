@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SpecimenEntry } from './specimenTypes';
-import starterData from '../../../../scripts/terminology-sources/specimens-starter.json';
+import starterData from '@/data/specimens-starter.json';
 
 // ─── Starter data seed ────────────────────────────────────────────────────────
 // Cast the imported JSON to SpecimenEntry[] — the shape matches exactly.

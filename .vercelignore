@@ -5,7 +5,6 @@ MIGRATION_GUIDE.md
 HANDOFF.md
 PROJECT_STRUCTURE.md
 docs/
-scripts/
 node_modules/
 .env.local
 .env.*.local

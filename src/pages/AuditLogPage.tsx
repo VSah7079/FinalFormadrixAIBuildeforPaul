@@ -89,7 +89,7 @@ const AuditLogPage: React.FC = () => {
   const [auditLogs,       setAuditLogs]       = useState<AuditLog[]>([]);
   const [errorLogs,       setErrorLogs]       = useState<ErrorLog[]>([]);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
-  const [activeTab,       setActiveTab]       = useState<ActiveTab>('audit');
+    const [activeTab,       setActiveTab]       = useState<'audit' | 'error'>('audit');
 
   // Audit filters
   const [typeFilter,  setTypeFilter]  = useState<'all' | 'ai' | 'user' | 'system'>('all');

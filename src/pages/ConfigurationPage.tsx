@@ -15,7 +15,7 @@ import AITab         from '../components/Config/AI/index';
 import ModelsTab     from '../components/Config/Models/index';
 import ProtocolsTab  from '../components/Config/Protocols/index';
 import StaffTab      from '../components/Config/Users/index';
-import SystemTab     from '../components/Config/System/index';
+import SystemTab     from '../components/Config/System/Index';
 import MacrosTab     from '../components/Config/Macros/index';
 import VoiceSettings from '../components/Voice/VoiceSettings';
 import { ActionsTab } from '../components/Config/Actions/ActionsTab';
