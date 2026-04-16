@@ -947,3 +947,155 @@ Get the organisation for the currently authenticated user. Called on login to co
 5. **NHS-specific** — CHI numbers (Scotland) vs NHS numbers (England/Wales) are site-level config
 6. **Pathologist pools are lab-scoped** — a pathologist in the GI pool at MRI cannot see the GI pool at Wythenshawe unless explicitly added
 
+
+---
+
+## 11. LIS Integration Strategy — Microscopy Status Updates
+
+### Background
+
+PathScribe needs to know when a pathologist has saved microscopic findings in the LIS so it can:
+1. Re-run AI suggestions on the complete gross + micro text
+2. Populate `awaitingMicroscopy` fields in the synoptic
+3. Surface a "New AI suggestions available" notification to the pathologist
+
+This section documents the recommended integration approach and the reasoning behind it.
+
+---
+
+### Recommended Approach: Polling (Option 2) with Webhook Readiness (Option 1)
+
+#### Why Not Webhooks First (Option 1)
+
+Having the LIS push a webhook to PathScribe when microscopy is saved is architecturally ideal but practically difficult:
+
+- Most established LIS vendors (CoPath, Soft, WinPath, Beaker/Epic) require formal change management to enable outbound HTTP calls to third parties
+- Security/IT approval for new outbound connections typically takes 3–6 months at NHS trusts and US hospital systems
+- Some older LIS platforms do not support outbound webhooks at all
+- Even where capability exists, vendor professional services fees apply
+
+**Conclusion:** Webhooks cannot be relied upon as the baseline integration method.
+
+#### Recommended Baseline: Polling (Option 2)
+
+PathScribe polls the LIS for microscopy updates on cases that are in `awaitingMicroscopy` state. This requires only **read access** to the LIS, which PathScribe already needs for case import — no additional LIS configuration or vendor engagement required.
+
+**Poll interval:** 60–90 seconds for active STAT cases, 5 minutes for routine cases.
+
+**What PathScribe polls for:**
+- Has `microscopicDescription` been updated since last check?
+- Has `ancillaryStudies` been updated (IHC, molecular results)?
+- Has case status changed in the LIS (e.g. signed out)?
+
+**How PathScribe accesses this:**
+- Preferred: HL7 v2 outbound feed — PathScribe listens as a passive receiver on the HL7 `ORU^R01` message type (result available). Most LIS systems broadcast these without requiring configuration changes.
+- Fallback: REST query to LIS API endpoint if available (Beaker/Epic, Cerner).
+- Last resort: Direct database read-only connection (requires DBA involvement, not recommended long-term).
+
+---
+
+### Implementation Design
+
+#### Polling Service
+
+```typescript
+// src/services/lis/lisPollingService.ts
+
+interface LisPollingConfig {
+  intervalMs: number;          // 60000 for routine, 15000 for STAT
+  lisEndpoint: string;         // from organisationService Site config
+  authToken: string;           // service account token
+}
+
+// Checks all cases with awaitingMicroscopy fields
+// Returns cases where micro has been updated since last poll
+async function pollForMicroscopyUpdates(
+  caseIds: string[],
+  config: LisPollingConfig
+): Promise<MicroscopyUpdate[]>
+
+interface MicroscopyUpdate {
+  caseId: string;
+  accessionNumber: string;
+  microscopicDescription: string;
+  ancillaryStudies?: string;
+  updatedAt: string;           // ISO timestamp from LIS
+}
+```
+
+#### On Update Received
+
+When `pollForMicroscopyUpdates` returns results:
+
+1. Update the case `diagnostic.microscopicDescription` in PathScribe
+2. Re-run `generateAiSuggestionsForReport` with full gross + micro text
+3. For each field previously flagged `awaitingMicroscopy: true`:
+   - If new AI suggestion available → update suggestion, clear `awaitingMicroscopy`
+   - If AI still cannot answer → clear `awaitingMicroscopy`, set `confidence: 0` (renders as "AI: not found")
+4. If any previously **confirmed** field now has a **conflicting** AI suggestion → flag as `verification: 'disputed'` and add to a `conflicts` array on the synoptic report
+5. Emit a UI notification: *"AI has updated N suggestions from microscopy — click to review"*
+
+#### Conflict Detection
+
+```typescript
+interface SynopticConflict {
+  fieldId: string;
+  fieldLabel: string;
+  previousValue: string | string[];   // what pathologist had confirmed
+  newAiValue: string | string[];      // what AI now suggests from micro
+  confidence: number;
+  source: string;
+}
+```
+
+Conflicts are stored on the `SynopticReportInstance` and drive the future **Review Updates** navigation bar (amber banner, field-to-field navigation — see UX backlog).
+
+---
+
+### Webhook Support (Future — Option 1)
+
+When a LIS vendor does support outbound webhooks, PathScribe exposes:
+
+```
+POST /api/lis/microscopy-update
+Authorization: Bearer <service-token>
+
+{
+  "accessionNumber": "MFT26-8801",
+  "microscopicDescription": "Sections show moderately differentiated adenocarcinoma...",
+  "ancillaryStudies": "MMR IHC: retained expression...",
+  "updatedAt": "2026-04-15T14:30:00Z",
+  "updatedBy": "Dr. Paul Carter",
+  "lisSystem": "WinPath",
+  "messageType": "ORU^R01"
+}
+```
+
+This endpoint triggers the same update pipeline as polling — so the internal logic is identical. Switching from polling to webhooks requires only pointing the LIS at this URL, with no PathScribe code changes.
+
+---
+
+### LIS Compatibility Notes
+
+| LIS System | Outbound HL7 Feed | REST API | Webhook Support | Notes |
+|---|---|---|---|---|
+| WinPath | ✓ ORU^R01 | Limited | ✗ | Common in NHS England — HL7 feed is the realistic path |
+| CoPath | ✓ ORU^R01 | ✓ | Possible with config | Common in US academic centres |
+| Soft (Clinisys) | ✓ ORU^R01 | ✓ | Possible | Used across NHS — integration team required |
+| Beaker (Epic) | ✓ | ✓ FHIR R4 | ✓ | Most capable — FHIR preferred over HL7 v2 |
+| Cerner PathNet | ✓ ORU^R01 | ✓ | Possible | Requires Cerner integration team |
+| iLab / LabVantage | ✓ | ✓ | ✗ | Research/biobank focus — less common in surgical path |
+
+**Recommendation for sales/implementation team:** Always ask the prospect which LIS they run and whether they have an active HL7 outbound feed. If yes, PathScribe can integrate in days. If no, polling against a REST API is the fallback. Pure webhook-only prospects should be flagged as requiring extended onboarding.
+
+---
+
+### Notes for Backend Team
+
+1. **Polling should be lab-scoped** — only poll cases belonging to the authenticated lab's LIS endpoint, never cross-site
+2. **STAT cases poll more frequently** — implement priority tiers based on `order.priority`
+3. **Polling stops when micro is received** — once `microscopicDescription` is populated and non-empty, remove the case from the poll queue
+4. **Audit every update** — log each LIS-sourced update to the audit trail with `source: 'LIS_POLL'` or `source: 'LIS_WEBHOOK'`
+5. **Never overwrite pathologist edits** — if a pathologist has manually typed into `microscopicDescription` in PathScribe, do not overwrite with LIS data. Flag the conflict instead.
+6. **Deduplication** — use `updatedAt` timestamp from LIS to avoid reprocessing the same update
+7. **Failure handling** — if LIS is unreachable, log and retry with exponential backoff. Never surface LIS connectivity errors to the pathologist UI.

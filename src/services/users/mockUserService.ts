@@ -13,13 +13,16 @@ const SEED_USERS: StaffUser[] = [
   { id: '7',  firstName: 'Thomas',  lastName: 'Nguyen',  email: 'tnguyen@hospital.org',  roles: ['Pathologist'], npi: '1234567895', license: 'MD-12350', phone: '555-0107', department: 'Surgical Pathology',   status: 'Active',   voiceProfile: 'EN-US' },
   { id: '8',  firstName: 'Lisa',    lastName: 'Hoffman', email: 'lhoffman@hospital.org', roles: ['Resident'],    npi: '1234567896', license: 'MD-12351', phone: '555-0108', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
   { id: '9',  firstName: 'Marcus',  lastName: 'Webb',    email: 'mwebb@hospital.org',    roles: ['Pathologist'], npi: '1234567897', license: 'MD-12352', phone: '555-0109', department: 'Hematopathology',      status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '10', firstName: 'Priya',   lastName: 'Sharma',  email: 'psharma@hospital.org',  roles: ['Resident'],    npi: '1234567898', license: 'MD-12353', phone: '555-0110', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '10', firstName: 'Priya',   lastName: 'Sharma',    email: 'psharma@hospital.org',        roles: ['Resident'],    npi: '1234567898', license: 'MD-12353',    phone: '555-0110',     department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  // ── UK Demo Staff — Manchester University NHS Foundation Trust ─────────────
+  { id: 'PATH-UK-001', firstName: 'Paul',   lastName: 'Carter',    email: 'paul.carter@mft.nhs.uk',      roles: ['Pathologist'], npi: '', gmcNumber: 'G4234567', license: 'GMC-4234567', phone: '0161 234 5000', department: 'Histopathology',       status: 'Active',   voiceProfile: 'EN-GB' },
+  { id: 'PATH-UK-002', firstName: 'Oliver', lastName: 'Pemberton', email: 'oliver.pemberton@mft.nhs.uk', roles: ['Resident'],    npi: '', gmcNumber: 'G7891234', license: 'GMC-7891234', phone: '0161 234 5001', department: 'Histopathology',       status: 'Active',   voiceProfile: 'EN-GB' },
 ];
 
 const load = () => {
   const data = storageGet<StaffUser[]>('pathscribe_users', SEED_USERS);
   // Migration: Ensure all loaded users have a default voice profile if missing
-  return data.map(u => ({ ...u, voiceProfile: u.voiceProfile || 'EN-US' }));
+  return data.map(u => ({ ...u, voiceProfile: u.voiceProfile || 'EN-US', gmcNumber: (u as any).gmcNumber || '' }));
 };
 
 const persist = (data: StaffUser[]) => storageSet('pathscribe_users', data);

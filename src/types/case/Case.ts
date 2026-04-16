@@ -121,6 +121,68 @@ export interface SynopticReportInstance {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Case Participant
+// Represents a staff member's involvement in a specific case.
+// A case can have many participants, each with a different
+// participation type (e.g. Primary, Consultant, Grossing).
+//
+// The participation type is looked up from the master list in
+// ParticipationTypesSection — stored here as an ID reference.
+//
+// One person can hold multiple participation types on the same
+// case (e.g. Grossing + Preliminary Report).
+// ─────────────────────────────────────────────────────────────
+export interface CaseParticipant {
+  // ── Identity ────────────────────────────────────────────────────────────────
+  /** PathScribe staff user ID — populated if matched in staff directory */
+  staffId?:              string;
+  /** Display name — always populated regardless of match status */
+  staffName:             string;
+
+  // ── External identifier (for HL7 / LIS matching) ─────────────────────────
+  /** NPI (US), GMC number (UK), or local LIS ID */
+  externalId?:           string;
+  /** Which identifier scheme is used */
+  externalIdType?:       'NPI' | 'GMC' | 'UPIN' | 'LOCAL';
+  /** Which system this identifier came from */
+  externalSystem?:       string;
+
+  // ── Source ──────────────────────────────────────────────────────────────────
+  /**
+   * How this participant was added:
+   *   hl7          — from standard HL7 segment (PV1-7, ORC-12 etc)
+   *   lis_api      — polled from LIS assignment data (grossing, screening etc)
+   *   ai_extracted — parsed from gross description text (fallback)
+   *   manual       — assigned by a user in PathScribe (always overrides)
+   */
+  source:                'manual' | 'hl7' | 'lis_api' | 'ai_extracted';
+  /** HL7 segment this came from e.g. 'PV1-7', 'ORC-12' — for audit */
+  hl7Segment?:           string;
+  /** Raw text fragment AI extracted from e.g. 'PC/jt' */
+  aiExtractedFrom?:      string;
+  /** AI confidence 0-100 — only set when source is ai_extracted */
+  aiConfidence?:         number;
+
+  // ── Participation ────────────────────────────────────────────────────────────
+  /** One or more participation type IDs from the master list */
+  participationTypeIds:  string[];
+  /** Optional — restricts to a specific specimen */
+  specimenId?:           string;
+  /** Optional — restricts to a specific synoptic instance */
+  synopticInstanceId?:   string;
+
+  // ── Audit ────────────────────────────────────────────────────────────────────
+  /** User ID of who added this participant (or 'system' for automated) */
+  addedBy:               string;
+  /** When they were added */
+  addedAt:               string;
+  /** Optional note */
+  note?:                 string;
+  /** Current status of this participant on the case */
+  status:                'active' | 'completed' | 'removed';
+}
+
+// ─────────────────────────────────────────────────────────────
 // Main Case model
 // ─────────────────────────────────────────────────────────────
 export interface Case {
@@ -144,6 +206,8 @@ export interface Case {
   patient: Patient;
   specimens: Specimen[];
   order: OrderMetadata;
+  /** All staff members associated to this case and their participation types */
+  participants?: CaseParticipant[];
   assignmentHistory?: AssignmentEvent[];
   diagnostic?: DiagnosticMetadata;
   coding?: CaseCoding;

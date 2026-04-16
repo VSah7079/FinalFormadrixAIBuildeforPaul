@@ -47,6 +47,7 @@ import type { Case } from '@/types/case/Case';
 import type { MissingRequiredField, ReviewField } from './components/RightSynopticPanel';
 import { AiReviewModal }  from './modals/AiReviewModal';
 import { DelegateModal }  from '../Synoptic/Delegate/DelegateModal';
+import CaseTeamModal     from './modals/CaseTeamModal';
 import { mockActionRegistryService } from '@/services/actionRegistry/mockActionRegistryService';
 
 // ─── Shared overlay style (passed to all modals) ──────────────
@@ -98,6 +99,8 @@ const SynopticReportPage: React.FC = () => {
   const [availableProtocols, setAvailableProtocols] = useState<{id:string;name:string}[]>([]);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showDelegateModal, setShowDelegateModal]   = useState(false);
+  const [delegateReturnTo,  setDelegateReturnTo]    = useState<'team' | null>(null);
+  const [showTeamModal,     setShowTeamModal]       = useState(false);
 
   useEffect(() => {
     if (!caseId) return;
@@ -597,6 +600,7 @@ Proceed with sign-out?`)) return;
           onHistory={() => setIsSimilarCasesOpen(true)}
           onFlags={() => openFlagManager(caseData)}
           onDelegate={() => setShowDelegateModal(true)}
+          onTeam={() => setShowTeamModal(true)}
           onCodes={() => setShowCodesModal(true)}
           onNextCase={() => { if (hasUnsavedData) { setPendingNavigation('next'); } else { navigateToCase('next'); } }}
           onPreviousCase={() => { if (hasUnsavedData) { setPendingNavigation('prev'); } else { navigateToCase('prev'); } }}
@@ -848,17 +852,37 @@ Proceed with sign-out?`)) return;
         />
       )}
 
+      {/* Case Team Modal */}
+      {showTeamModal && caseData && (
+        <CaseTeamModal
+          caseData={caseData}
+          onClose={() => setShowTeamModal(false)}
+          onUpdated={(updated) => { setCaseData(updated); }}
+          onDelegate={() => { setShowTeamModal(false); setDelegateReturnTo('team'); setShowDelegateModal(true); }}
+        />
+      )}
+
       {/* Delegate Modal */}
       {showDelegateModal && (
         <DelegateModal
           isOpen={showDelegateModal}
-          onClose={() => setShowDelegateModal(false)}
+          onClose={() => {
+            setShowDelegateModal(false);
+            if (delegateReturnTo === 'team') {
+              setShowTeamModal(true);
+              setDelegateReturnTo(null);
+            }
+          }}
           registry={mockActionRegistryService}
           caseId={caseId}
           currentUserId="PATH-001"
           onDelegated={() => {
             setShowDelegateModal(false);
             showToast('Case delegated successfully');
+            if (delegateReturnTo === 'team') {
+              setShowTeamModal(true);
+              setDelegateReturnTo(null);
+            }
           }}
           synopticInstances={(caseData?.synopticReports ?? []).map(r => ({
             instanceId: r.instanceId,

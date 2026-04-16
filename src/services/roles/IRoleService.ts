@@ -11,6 +11,8 @@ export interface Role {
   configAccess: boolean;
   permissions: PermissionSet;
   builtIn: boolean;
+  clientIds?: string[];        // undefined / empty = all clients
+  participationTypeIds: string[];  // IDs referencing ParticipationType master list in System tab
 }
 
 export interface IRoleService {
