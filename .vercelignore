@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+MIGRATION_GUIDE.md
+HANDOFF.md
+PROJECT_STRUCTURE.md
+docs/
+scripts/
+node_modules/
+.env.local
+.env.*.local
+*.log
+.DS_Store

@@ -1,0 +1,87 @@
+/* 1. The Main Drawer Container */
+.ps-message-portal {
+  position: fixed;
+  right: 0;
+  top: 70px; /* Offset for the NavBar */
+  bottom: 0;
+  width: 850px;
+  background: #0a1628; /* Deep midnight blue */
+  display: flex;
+  z-index: 2000;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Slide-in animation */
+  transform: translateX(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* 2. Sidebar Item Hover States */
+.ps-msg-list-item {
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.ps-msg-list-item:hover {
+  background: rgba(8, 145, 178, 0.05); /* Cyan glow */
+  cursor: pointer;
+}
+
+.ps-msg-list-item.active {
+  background: rgba(8, 145, 178, 0.1) !important;
+  border-left: 3px solid #0891B2;
+}
+
+/* 3. Message Bubbles */
+.ps-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+}
+
+.ps-bubble-me {
+  background: #0891B2;
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.ps-bubble-them {
+  background: #1e293b;
+  color: #f1f5f9;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+/* 4. Custom Scrollbar for the Thread */
+.ps-thread-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ps-thread-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ps-thread-content::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+
+.ps-thread-content::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* 5. Input Field Glow */
+.ps-message-input-container:focus-within {
+  border-color: #0891B2;
+  box-shadow: 0 0 0 1px #0891B2;
+}
