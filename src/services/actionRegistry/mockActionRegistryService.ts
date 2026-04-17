@@ -568,13 +568,13 @@ const SEED_ACTIONS: SystemAction[] = [
   {
     id: 'NEXT_FIELD', label: 'Next Field', category: VOICE_CONTEXT.REPORTING,
     shortcut: 'Tab', internalKey: ACTION_MAP['editor.nextField']?.internalKey ?? 'F16+PS001',
-    voiceTriggers: ['next field', 'tab forward', 'move to next field'],
+    voiceTriggers: ['next field', 'next question', 'go forward', 'forward', 'tab forward', 'move to next field', 'move forward', 'next item'],
     learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
   },
   {
     id: 'PREVIOUS_FIELD', label: 'Previous Field', category: VOICE_CONTEXT.REPORTING,
     shortcut: 'Shift+Tab', internalKey: ACTION_MAP['editor.previousField']?.internalKey ?? 'F16+PS002',
-    voiceTriggers: ['previous field', 'tab back', 'move to previous field', 'go back one field'],
+    voiceTriggers: ['previous field', 'previous question', 'go back', 'back', 'tab back', 'move to previous field', 'go back one field', 'back one', 'prior field'],
     learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
   },
 

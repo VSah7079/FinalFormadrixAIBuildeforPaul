@@ -1097,7 +1097,14 @@ const MOCK_CASES: Case[] = [
         templateName: 'RCPath Prostate — Needle Biopsy',
         status: 'draft',
         answers: {},
-        aiSuggestions: {},
+        aiSuggestions: {
+          procedure:                      { value: ['procedure_systematic_biopsy', 'procedure_targeted_biopsy'], confidence: 95, source: 'Gross: "systematic transperineal biopsy ... targeted cores"',  verification: 'unverified' },
+          positive_specimen_locations:    { value: ['positive_right'],             confidence: 97, source: 'Micro: "Specimens A, B, C (right) — carcinoma identified"',           verification: 'unverified' },
+          highest_gleason_score:          { value: 'gg3_4_3_7',                   confidence: 98, source: 'Micro: "Gleason score 4+3=7 (Grade Group 3)"',                        verification: 'unverified' },
+          intraductal_carcinoma:          { value: 'idc_not_identified',           confidence: 80, source: 'Micro: no intraductal carcinoma mentioned',                           verification: 'unverified' },
+          perineural_invasion:            { value: 'pni_present',                  confidence: 97, source: 'Micro: "Perineural invasion present"',                               verification: 'unverified' },
+          seminal_vesicle_invasion:       { value: 'svi_not_identified',           confidence: 90, source: 'Micro: "No seminal vesicle involvement identified on biopsy"',        verification: 'unverified' },
+        },
         createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
       },
     ],
@@ -1232,7 +1239,20 @@ const MOCK_CASES: Case[] = [
         templateName: 'RCPath Prostate — Radical Prostatectomy',
         status: 'draft',
         answers: {},
-        aiSuggestions: {},
+        aiSuggestions: {
+          histological_tumour_type:         { value: ['acinar_adenocarcinoma'],  confidence: 99, source: 'Micro: "acinar adenocarcinoma"',                                          verification: 'unverified' },
+          primary_gleason_grade:            { value: 'primary_4',               confidence: 98, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          secondary_gleason_grade:          { value: 'secondary_3',             confidence: 98, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          gleason_score_total:              { value: 'gleason_7',               confidence: 97, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          grade_group:                      { value: 'gg_3',                    confidence: 97, source: 'Micro: "Grade Group 3"',                                                  verification: 'unverified' },
+          extraprostatic_extension:         { value: 'epe_present',             confidence: 96, source: 'Micro: "Extraprostatic extension present at right posterolateral"',        verification: 'unverified' },
+          extraprostatic_extension_extent:  { value: 'epe_established',         confidence: 88, source: 'Micro: "spanning 2.1 mm"',                                               verification: 'unverified' },
+          seminal_vesicle_involvement:      { value: 'sv_not_involved',         confidence: 99, source: 'Micro: "No seminal vesicle invasion"',                                    verification: 'unverified' },
+          margin_status:                    { value: 'margin_involved',         confidence: 97, source: 'Micro: "Right posterolateral surgical margin positive over 1.2 mm"',      verification: 'unverified' },
+          lymphovascular_invasion:          { value: 'lvi_not_identified',      confidence: 96, source: 'Micro: "No lymphovascular invasion"',                                     verification: 'unverified' },
+          n_category:                       { value: 'pN0',                     confidence: 99, source: 'Micro: "0 of 8 positive ... 0 of 7 positive"',                            verification: 'unverified' },
+          t_category:                       { value: 'pT3a',                    confidence: 94, source: 'Micro: extraprostatic extension -> pT3a',                                 verification: 'unverified' },
+        },
         createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
       },
     ],
@@ -1797,7 +1817,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '13'; // bumped: AI option IDs corrected against template JSONs
+const MOCK_VERSION = '14'; // bumped: RCPath prostate biopsy + RP AI suggestions added
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);

@@ -78,10 +78,13 @@ const FieldRow: React.FC<{
   onLabelClick?: () => void;
   isActive?: boolean;
   aiAttempted?: boolean;
+  belowThreshold?: boolean;
+  belowThresholdConf?: number;
+  belowThresholdSource?: string;
   isPulsing?: boolean;
   fieldRef?: (el: HTMLDivElement | null) => void;
   onFieldFocus?: (fieldId: string) => void;
-}> = ({ field, value, onChange, aiSuggestion, onVerify, onLabelClick, isActive = false, aiAttempted = false, isPulsing = false, fieldRef, onFieldFocus }) => {
+}> = ({ field, value, onChange, aiSuggestion, onVerify, onLabelClick, isActive = false, aiAttempted = false, belowThreshold = false, belowThresholdConf, belowThresholdSource, isPulsing = false, fieldRef, onFieldFocus }) => {
   const strVal = (value ?? '') as string;
   const arrVal = Array.isArray(value) ? value as string[] : [];
   const ai = aiSuggestion;
@@ -143,24 +146,26 @@ const FieldRow: React.FC<{
         >{field.label}</span>
         {field.required && <span style={{ color: '#f87171', fontSize: 10 }}>*</span>}
 
-        {/* Awaiting microscopy — field flagged as micro-dependent */}
-        {(ai as any)?.awaitingMicroscopy && !hasValue && (
+        {/* Below threshold — AI found something but confidence below threshold */}
+        {!ai && belowThreshold && !hasValue && (
           <span
-            title="This field requires microscopic examination — will be updated when micro is reported."
+            onClick={() => { onLabelClick?.(); }}
+            title={`AI extracted a value (${belowThresholdConf}% confidence) but this is below the quality threshold. Click to highlight the relevant section in the report.`}
             style={{
               fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
-              background: 'rgba(251,191,36,0.1)',
+              background: 'rgba(251,191,36,0.08)',
               border: '1px dashed rgba(251,191,36,0.4)',
-              color: '#fbbf24',
-              cursor: 'default',
+              color: '#b45309',
+              cursor: belowThresholdSource ? 'pointer' : 'default',
               display: 'inline-flex', alignItems: 'center', gap: 4,
             }}
           >
-            <span style={{ fontSize: 11 }}>⏳</span> Awaiting microscopy
+            <span style={{ fontSize: 11 }}>⚠</span> AI: low confidence ({belowThresholdConf}%)
           </span>
         )}
-        {/* AI not found — attempted but no suggestion */}
-        {!ai && aiAttempted && !hasValue && (
+
+        {/* AI not found — genuinely no evidence found in the text */}
+        {!ai && !belowThreshold && aiAttempted && !hasValue && (
           <span
             title="AI analysed the report text but could not find evidence for this field. Fill in manually."
             style={{
@@ -194,7 +199,7 @@ const FieldRow: React.FC<{
         )}
 
         {/* AI confidence + verification */}
-        {ai && !(ai as any).awaitingMicroscopy && (
+        {ai && (
           <>
             <span
               style={{ ...confBadgeStyle, cursor: 'default' }}
@@ -280,10 +285,17 @@ const FieldRow: React.FC<{
         </div>
       )}
 
-      {/* AI source citation */}
+      {/* AI source citation — high confidence */}
       {ai && vStatus === 'unverified' && (
         <div style={{ marginTop: 4, fontSize: 10, fontStyle: 'italic', color: '#64748b' }}>
           AI source: {ai.source}
+        </div>
+      )}
+
+      {/* Low confidence source — click badge above highlights this in the report */}
+      {!ai && belowThreshold && belowThresholdSource && !hasValue && (
+        <div style={{ marginTop: 4, fontSize: 10, fontStyle: 'italic', color: '#92400e', opacity: 0.85 }}>
+          Found in report (low confidence): {belowThresholdSource}
         </div>
       )}
     </div>
@@ -409,6 +421,9 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
   const [loading, setLoading]             = React.useState(true);
   const [error, setError]                 = React.useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = React.useState('');
+  const [viewMode, setViewMode]               = React.useState<'tabbed' | 'full'>(
+    () => (localStorage.getItem('ps_synoptic_view_mode') as 'tabbed' | 'full') ?? 'tabbed'
+  );
   const [aiSuggestions, setAiSuggestions] = React.useState<Record<string, AiSuggestion>>({});
   const [activeFieldId, setActiveFieldId] = React.useState<string | null>(null);
   const [pulsingFieldId, setPulsingFieldId] = React.useState<string | null>(null);
@@ -442,6 +457,30 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
 
   // ── Voice: next unanswered / next required ────────────────────────────────
   React.useEffect(() => {
+    // Sequential navigation — steps through ALL visible fields regardless of fill state
+    const handleNextField = () => {
+      if (!templateDetail) return;
+      const all: { fieldId: string; sectionId: string }[] = [];
+      for (const sec of templateDetail.template.sections.filter((s: any) => isVisible(s.visibleWhen, answers)))
+        for (const f of sec.fields)
+          if (isVisible(f.visibleWhen, answers)) all.push({ fieldId: f.id, sectionId: sec.id });
+      if (!all.length) return;
+      const cur = all.findIndex(x => x.fieldId === (activeFieldId || lastJumpedFieldId.current));
+      const next = all[cur >= 0 && cur < all.length - 1 ? cur + 1 : 0];
+      jumpToField(next.fieldId, next.sectionId);
+    };
+    const handlePreviousField = () => {
+      if (!templateDetail) return;
+      const all: { fieldId: string; sectionId: string }[] = [];
+      for (const sec of templateDetail.template.sections.filter((s: any) => isVisible(s.visibleWhen, answers)))
+        for (const f of sec.fields)
+          if (isVisible(f.visibleWhen, answers)) all.push({ fieldId: f.id, sectionId: sec.id });
+      if (!all.length) return;
+      const cur = all.findIndex(x => x.fieldId === (activeFieldId || lastJumpedFieldId.current));
+      const prev = cur > 0 ? all[cur - 1] : all[all.length - 1];
+      jumpToField(prev.fieldId, prev.sectionId);
+    };
+
     const handleNextUnanswered = () => {
       if (!templateDetail) return;
       const sections = templateDetail.template.sections.filter((s: any) => isVisible(s.visibleWhen, answers));
@@ -468,11 +507,26 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
       const next = all[cur >= 0 && cur < all.length - 1 ? cur + 1 : 0];
       jumpToField(next.fieldId, next.sectionId);
     };
-    window.addEventListener('PATHSCRIBE_NEXT_UNANSWERED', handleNextUnanswered);
-    window.addEventListener('PATHSCRIBE_NEXT_REQUIRED',   handleNextRequired);
+    const persistView = (mode: 'tabbed' | 'full') => {
+      localStorage.setItem('ps_synoptic_view_mode', mode);
+      setViewMode(mode);
+    };
+    const handleFullView   = () => persistView('full');
+    const handleTabbedView = () => persistView('tabbed');
+
+    window.addEventListener('PATHSCRIBE_NEXT_FIELD',        handleNextField);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_FIELD',    handlePreviousField);
+    window.addEventListener('PATHSCRIBE_NEXT_UNANSWERED',   handleNextUnanswered);
+    window.addEventListener('PATHSCRIBE_NEXT_REQUIRED',     handleNextRequired);
+    window.addEventListener('PATHSCRIBE_FULL_VIEW',         handleFullView);
+    window.addEventListener('PATHSCRIBE_TABBED_VIEW',       handleTabbedView);
     return () => {
-      window.removeEventListener('PATHSCRIBE_NEXT_UNANSWERED', handleNextUnanswered);
-      window.removeEventListener('PATHSCRIBE_NEXT_REQUIRED',   handleNextRequired);
+      window.removeEventListener('PATHSCRIBE_NEXT_FIELD',       handleNextField);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_FIELD',   handlePreviousField);
+      window.removeEventListener('PATHSCRIBE_NEXT_UNANSWERED',  handleNextUnanswered);
+      window.removeEventListener('PATHSCRIBE_NEXT_REQUIRED',    handleNextRequired);
+      window.removeEventListener('PATHSCRIBE_FULL_VIEW',        handleFullView);
+      window.removeEventListener('PATHSCRIBE_TABBED_VIEW',      handleTabbedView);
     };
   }, [templateDetail, answers, jumpToField]);
   const fieldRefs        = React.useRef<Record<string, HTMLDivElement | null>>({});
@@ -972,8 +1026,8 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
             value={answers[f.id] ?? ''}
             onChange={setAnswer}
             aiSuggestion={
-              // Pass suggestion if it meets confidence threshold OR is flagged awaitingMicroscopy
-              aiSuggestions[f.id]?.confidence >= confidenceThreshold || (aiSuggestions[f.id] as any)?.awaitingMicroscopy
+              // Only pass suggestion if it meets the confidence threshold
+              aiSuggestions[f.id]?.confidence >= confidenceThreshold
                 ? aiSuggestions[f.id]
                 : undefined
             }
@@ -989,6 +1043,21 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
                 !aiSuggestions[f.id] ||
                 aiSuggestions[f.id].confidence < confidenceThreshold
               )
+            }
+            belowThreshold={
+              Object.keys(aiSuggestions).length > 0 &&
+              !!aiSuggestions[f.id] &&
+              aiSuggestions[f.id].confidence < confidenceThreshold
+            }
+            belowThresholdConf={
+              (aiSuggestions[f.id] && aiSuggestions[f.id].confidence < confidenceThreshold)
+                ? aiSuggestions[f.id].confidence
+                : undefined
+            }
+            belowThresholdSource={
+              (aiSuggestions[f.id] && aiSuggestions[f.id].confidence < confidenceThreshold)
+                ? aiSuggestions[f.id].source
+                : undefined
             }
             onLabelClick={() => {
               setActiveFieldId(f.id);
@@ -1036,10 +1105,6 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
             {(() => {
               const inst = caseData?.synopticReports?.find(r => r.instanceId === activeReportInstanceId) as any;
               const isDeferred = inst?.status === 'deferred';
-              // Only show Mark Deferred on cases that are mature enough to warrant it
-              const caseStatus = (caseData as any)?.status ?? '';
-              const showDeferButton = isDeferred || ['pending-review', 'finalizing', 'in-progress'].includes(caseStatus);
-              if (!showDeferButton) return null;
               return (
                 <button
                   title={isDeferred ? 'Marked as deferred — click to unmark' : 'Mark this synoptic as deferred (ancillary results pending)'}
@@ -1127,8 +1192,8 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-          {visibleSections.map((sec: EditorSection) => {
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+          {viewMode === 'tabbed' && visibleSections.map((sec: EditorSection) => {
             const isActive = sec.id === (activeSectionId || visibleSections[0]?.id);
             const secAnswered = sec.fields.filter(f => isVisible(f.visibleWhen, answers) && answers[f.id]).length;
             const secTotal = sec.fields.filter(f => isVisible(f.visibleWhen, answers)).length;
@@ -1152,6 +1217,23 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
               </button>
             );
           })}
+          <button
+            onClick={() => { const next = viewMode === 'tabbed' ? 'full' : 'tabbed'; localStorage.setItem('ps_synoptic_view_mode', next); setViewMode(next); }}
+            title={viewMode === 'tabbed' ? 'Switch to single-page view' : 'Switch to tabbed view'}
+            style={{
+              marginLeft: 'auto', padding: '6px 12px', borderRadius: 6, fontSize: 11,
+              fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+              background: 'rgba(255,255,255,0.06)',
+              border: '2px solid rgba(148,163,184,0.2)',
+              color: '#94a3b8', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(8,145,178,0.12)'; e.currentTarget.style.borderColor = 'rgba(8,145,178,0.4)'; e.currentTarget.style.color = '#7dd3fc'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(148,163,184,0.2)'; e.currentTarget.style.color = '#94a3b8'; }}>
+            {viewMode === 'tabbed'
+              ? <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Single page</>
+              : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg> Tabbed</>
+            }
+          </button>
         </div>
       </div>
 
@@ -1163,6 +1245,20 @@ const RightSynopticPanel = forwardRef<RightSynopticPanelHandle, RightSynopticPan
           <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '0 24px 24px', overflowY: 'auto' }}>
             {activeSection && SectionFields(activeSection)}
           </div>
+        </div>
+      ) : viewMode === 'full' ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+          {visibleSections.map((sec: EditorSection) => (
+            <div key={sec.id} style={{ marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#0891B2', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ flex: 1 }}>{sec.title}</span>
+                <span style={{ fontSize: 10, fontWeight: 500, color: '#64748b', textTransform: 'none', letterSpacing: 0 }}>
+                  {sec.fields.filter(f => isVisible(f.visibleWhen, answers) && answers[f.id]).length}/{sec.fields.filter(f => isVisible(f.visibleWhen, answers)).length}
+                </span>
+              </h4>
+              {SectionFields(sec)}
+            </div>
+          ))}
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
