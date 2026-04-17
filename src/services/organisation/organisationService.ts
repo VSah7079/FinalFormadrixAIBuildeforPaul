@@ -186,6 +186,88 @@ const MOCK_ORGANISATIONS: Organisation[] = [
       },
     ],
   },
+  {
+    id: 'ORG-MPA',
+    name: 'Midwest Pathology Associates',
+    shortName: 'MPA',
+    type: 'independent_lab',
+    country: 'US',
+    locale: 'en-US',
+    timezone: 'America/Chicago',
+    contractStart: '2026-04-01',
+    contractTier: 'professional',
+    active: true,
+    sites: [
+      {
+        id: 'SITE-MPA-MAIN',
+        organisationId: 'ORG-MPA',
+        name: 'Midwest Pathology Associates — Chicago',
+        shortName: 'MPA',
+        siteCode: 'MPA',
+        address: '200 E Illinois St, Chicago, IL 60611',
+        active: true,
+        lisType: 'CoPath',
+        lisEndpoint: 'hl7://lis.midwestpath.com:2575',
+        defaultTemplateStandard: 'CAP',
+        defaultLocale: 'en-US',
+        defaultWorkflowMode: 'copilot',
+        codingSystems: ['SNOMED', 'ICD10', 'ICDO', 'LOINC', 'CPT'],
+        secureEmailGateway: 'Paubox',
+      },
+    ],
+    labs: [
+      {
+        id: 'LAB-MPA-PATH',
+        siteId: 'SITE-MPA-MAIN',
+        organisationId: 'ORG-MPA',
+        name: 'Surgical Pathology',
+        subspecialties: ['Breast', 'GI', 'GU', 'Gynecologic', 'Lung'],
+        pathologistIds: ['PATH-US-001'],
+        poolIds: ['POOL-GYN-MPA'],
+      },
+    ],
+  },
+  {
+    id: 'ORG-HFHS',
+    name: 'Henry Ford Health System',
+    shortName: 'HFHS',
+    type: 'health_system',
+    country: 'US',
+    locale: 'en-US',
+    timezone: 'America/Detroit',
+    contractStart: '2026-04-01',
+    contractTier: 'enterprise',
+    active: true,
+    sites: [
+      {
+        id: 'SITE-HFHS-MAIN',
+        organisationId: 'ORG-HFHS',
+        name: 'Henry Ford Hospital — Main Campus',
+        shortName: 'HFH',
+        siteCode: 'HFHS',
+        address: '2799 W Grand Blvd, Detroit, MI 48202',
+        active: true,
+        lisType: 'CoPath',
+        lisEndpoint: 'hl7://lis.henryford.org:2575',
+        defaultTemplateStandard: 'CAP',
+        defaultLocale: 'en-US',
+        defaultWorkflowMode: 'copilot',
+        codingSystems: ['SNOMED', 'ICD10', 'ICDO', 'LOINC', 'CPT'],
+        secureEmailGateway: 'Paubox',
+      },
+    ],
+    labs: [
+      {
+        id: 'LAB-HFHS-PATH',
+        siteId: 'SITE-HFHS-MAIN',
+        organisationId: 'ORG-HFHS',
+        name: 'Department of Pathology',
+        subspecialties: ['Breast', 'GI', 'GU', 'Lung', 'Gynecologic', 'Neuropathology', 'Hematopathology'],
+        pathologistIds: ['PATH-US-001', 'PATH-US-002'],
+        poolIds: ['POOL-GYN-US'],
+      },
+    ],
+  },
 ];
 
 // ─── In-memory lookup ─────────────────────────────────────────
@@ -239,8 +321,10 @@ export function getSiteBySiteCode(siteCode: string): Site | null {
 export function getOrganisationByHospitalId(hospitalId: string): Organisation | null {
   // Legacy field mapping — hospitalId maps to organisationId in new model
   const legacyMap: Record<string, string> = {
-    'HOSP-001': 'ORG-DVMC',
-    'HOSP-MFT': 'ORG-MFT',
+    'HOSP-001':  'ORG-DVMC',
+    'HOSP-MFT':  'ORG-MFT',
+    'HOSP-MPA':  'ORG-MPA',
+    'HOSP-HFHS': 'ORG-HFHS',
   };
   const orgId = legacyMap[hospitalId];
   return orgId ? (ORG_BY_ID.get(orgId) ?? null) : null;

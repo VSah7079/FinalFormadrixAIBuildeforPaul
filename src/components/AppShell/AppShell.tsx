@@ -909,12 +909,18 @@ const AppShell: React.FC = () => {
     const goForward              = () => navigate(1);
     const nextCase               = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_NEXT_CASE'));
     const previousCase           = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_PREVIOUS_CASE'));
+    const tableRefineSearch      = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_REFINE_SEARCH_EXECUTE'));
+    const aiReviewNext           = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_AI_REVIEW_NEXT_EXECUTE'));
 
     // ── Home page actions ────────────────────────────────────────────────────
-    const openEnhancementRequest = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST'));
-    const openTestingFeedback    = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK'));
+    const openEnhancementRequest = () => {
+      window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST'));
+    };
+    const openTestingFeedback = () => {
+      window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK'));
+    };
     const viewHelp               = () => window.open('/help/documentation.pdf', '_blank');
-    const openResources          = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_PAGE_OPEN_RESOURCES'));
+    const openResources = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_PAGE_OPEN_RESOURCES'));
     const systemLogout           = () => handleLogout();
 
     // ── Messages: navigation ─────────────────────────────────────────────────
@@ -999,6 +1005,8 @@ const AppShell: React.FC = () => {
     window.addEventListener('PATHSCRIBE_GO_FORWARD',              goForward);
     window.addEventListener('PATHSCRIBE_NEXT_CASE',               nextCase);
     window.addEventListener('PATHSCRIBE_PREVIOUS_CASE',           previousCase);
+    window.addEventListener('PATHSCRIBE_TABLE_REFINE_SEARCH',     tableRefineSearch);
+    window.addEventListener('PATHSCRIBE_AI_REVIEW_NEXT',          aiReviewNext);
     window.addEventListener('PATHSCRIBE_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
     window.addEventListener('PATHSCRIBE_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
     window.addEventListener('PATHSCRIBE_VIEW_HELP',               viewHelp);
@@ -1027,6 +1035,7 @@ const AppShell: React.FC = () => {
     window.addEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
     window.addEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
     window.addEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
+    window.addEventListener('PATHSCRIBE_MSG_MARK_URGENT',         msgUrgent);  // alias
     window.addEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
 
     return () => {
@@ -1069,6 +1078,7 @@ const AppShell: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
       window.removeEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
       window.removeEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
+      window.removeEventListener('PATHSCRIBE_MSG_MARK_URGENT',         msgUrgent);
       window.removeEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
     };
   }, [

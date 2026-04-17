@@ -45,8 +45,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ caseData, onSignOut, onNavigate, 
   const mrn       = caseData?.patient?.mrn ?? '—';
   const sex       = caseData?.patient?.sex ?? '—';
   const status    = caseData?.status ?? 'draft';
-  const hospital  = getOrganisationByHospitalId(caseData?.originHospitalId);
-  const meta      = CASE_STATE_META[status] ?? CASE_STATE_META['draft'];
+  const hospital    = getOrganisationByHospitalId(caseData?.originHospitalId);
+  const clientName  = caseData?.order?.clientName ?? null;
+  const meta        = CASE_STATE_META[status] ?? CASE_STATE_META['draft'];
 
   // ── Mode-aware final step label ───────────────────────────────────────────
   const finalStepLabel = isOrchestration ? 'Sign Out' : 'Finalise';
@@ -111,6 +112,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ caseData, onSignOut, onNavigate, 
               <div className="ps-hb-field-label">MRN</div>
               <div className="ps-hb-field-value">{mrn}</div>
             </div>
+            {clientName && (
+              <div className="ps-hb-field">
+                <div className="ps-hb-field-label">Referring</div>
+                <div className="ps-hb-field-value">{clientName}</div>
+              </div>
+            )}
           </div>
         </div>
 

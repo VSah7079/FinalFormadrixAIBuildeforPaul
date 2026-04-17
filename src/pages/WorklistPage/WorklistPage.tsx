@@ -227,10 +227,13 @@ const WorklistPage: React.FC = () => {
     };
 
     // Filter commands — reset selection when filter changes
-    const filterUrgent    = () => { setActiveFilter('urgent');    setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterCompleted = () => { setActiveFilter('completed'); setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterReview    = () => { setActiveFilter('review');    setSelectedIndex(-1); setSelectedCaseId(null); };
-    const clearFilter     = () => { setActiveFilter('all');       setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterUrgent        = () => { setActiveFilter('urgent');       setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterCompleted     = () => { setActiveFilter('completed');    setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterReview        = () => { setActiveFilter('review');       setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterParticipating = () => { setActiveFilter('participating'); setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterCountersign   = () => { setActiveFilter('countersign');  setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterPool          = () => { setActiveFilter('pool');         setSelectedIndex(-1); setSelectedCaseId(null); };
+    const clearFilter         = () => { setActiveFilter('all');          setSelectedIndex(-1); setSelectedCaseId(null); };
 
     // Sort commands — forward to WorklistTable's internal sort system via custom events
     const sortDate     = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'accessionDate', dir: 'desc' } }));
@@ -281,10 +284,13 @@ const WorklistPage: React.FC = () => {
     window.addEventListener('PATHSCRIBE_TABLE_LAST',             last);
     window.addEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
     window.addEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
-    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',          filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING',    filterParticipating);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',      filterCountersign);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_POOL',             filterPool);
+    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',            clearFilter);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',           filterUrgent);
     window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
     window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
     window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
@@ -308,13 +314,16 @@ const WorklistPage: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_TABLE_LAST',             last);
       window.removeEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
       window.removeEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
-      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',          filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING',    filterParticipating);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',      filterCountersign);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_POOL',             filterPool);
+      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',            clearFilter);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',           filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',           filterReview);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',        filterPhysician);
       window.removeEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
       window.removeEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
       window.removeEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);

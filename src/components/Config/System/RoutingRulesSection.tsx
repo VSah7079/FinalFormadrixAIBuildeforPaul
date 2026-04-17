@@ -239,10 +239,10 @@ const RoutingRulesSection: React.FC = () => {
   const chevron = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto', paddingRight: 16 }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Routing Rules</h1>
           <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
@@ -257,8 +257,8 @@ const RoutingRulesSection: React.FC = () => {
       </div>
 
       {/* Test specimen description */}
-      <div style={{ marginBottom: 20, padding: '16px 20px', background: 'rgba(138,180,248,0.04)', border: '1px solid rgba(138,180,248,0.12)', borderRadius: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#8AB4F8', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(138,180,248,0.04)', border: '1px solid rgba(138,180,248,0.12)', borderRadius: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8AB4F8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Test Routing
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -295,7 +295,7 @@ const RoutingRulesSection: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
         <input type="text" placeholder="Search keywords or notes…" value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, padding: '9px 16px', fontSize: 13, color: '#d1d5db', background: '#0f0f0f', border: '1px solid #1f2937', borderRadius: 8, outline: 'none' }} />
         <select value={filter} onChange={e => setFilter(e.target.value as any)}
@@ -309,7 +309,7 @@ const RoutingRulesSection: React.FC = () => {
 
       {/* Rules table */}
       <div style={{ border: '1px solid #1f2937', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto' }}>
+        <div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#0a0a0a', borderBottom: '1px solid #1f2937', position: 'sticky', top: 0, zIndex: 1 }}>

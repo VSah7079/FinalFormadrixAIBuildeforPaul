@@ -68,6 +68,14 @@ const CUSTOM_EVENT_ACTIONS = new Set([
   'AI_REVIEW_CONFIRM', 'AI_REVIEW_OVERRIDE', 'AI_REVIEW_SKIP', 'AI_REVIEW_NEXT', 'AI_REVIEW_CANCEL',
   // Pool Case actions
   'POOL_ACCEPT_CASE', 'POOL_PASS_CASE',
+  // Case Team actions
+  'OPEN_CASE_TEAM', 'CASE_TEAM_ADD', 'CASE_TEAM_ASSIGN',
+  // Previously missing
+  'AI_REVIEW_NEXT', 'MSG_MARK_URGENT', 'TABLE_REFINE_SEARCH',
+  // Worklist participation filters
+  'TABLE_FILTER_PARTICIPATING', 'TABLE_FILTER_COUNTERSIGN', 'TABLE_FILTER_POOL',
+  // Config navigation
+  'OPEN_ROUTING_RULES', 'TEST_ROUTING', 'OPEN_PARTICIPATION_TYPES',
   // Search page
   'SEARCH_EXECUTE', 'SEARCH_CLEAR', 'SEARCH_LOAD_SAVED',
   // Flag manager
@@ -97,7 +105,7 @@ const CUSTOM_EVENT_ACTIONS = new Set([
 // The AppShell listener checks filterType/isEditing to route correctly.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MOCK_ACTIONS: SystemAction[] = [
+const SEED_ACTIONS: SystemAction[] = [
 
 // ── DELEGATION — Case Hand-off & Review ────────────────────────────────────
   {
@@ -197,6 +205,17 @@ const MOCK_ACTIONS: SystemAction[] = [
     shortcut: 'Escape',
     internalKey: 'F13+PS163',
     voiceTriggers: ['cancel review', 'exit review', 'stop review', 'go back'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'AI_REVIEW_NEXT',
+    label: 'Next AI Finding',
+    category: 'SYNOPTIC',
+    shortcut: 'N',
+    internalKey: 'F13+PS164',
+    voiceTriggers: ['next finding', 'ai next', 'next ai finding', 'move to next finding'],
     learnedTriggers: [],
     requiredRole: 'Pathologist',
     isActive: true,
@@ -501,6 +520,12 @@ const MOCK_ACTIONS: SystemAction[] = [
     id: 'TABLE_CLEAR_SEARCH', label: 'Clear Search', category: VOICE_CONTEXT.WORKLIST,
     shortcut: '', internalKey: ACTION_MAP['table.clearSearch']?.internalKey ?? 'F15+PS018',
     voiceTriggers: ['clear search', 'clear the search', 'remove search', 'reset search'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
+  {
+    id: 'TABLE_REFINE_SEARCH', label: 'Refine Search', category: VOICE_CONTEXT.WORKLIST,
+    shortcut: '', internalKey: ACTION_MAP['table.clearSearch']?.internalKey ?? 'F15+PS018a',
+    voiceTriggers: ['refine search', 'narrow search', 'add filter', 'refine results', 'narrow results'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
@@ -945,6 +970,13 @@ const MOCK_ACTIONS: SystemAction[] = [
     voiceTriggers: ['urgent', 'mark urgent', 'toggle urgent', 'set urgent', 'mark as urgent'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
+  {
+    // Alias for MSG_URGENT — same handler, explicit "mark" phrasing variant
+    id: 'MSG_MARK_URGENT', label: 'Mark as Urgent', category: VOICE_CONTEXT.MESSAGES,
+    shortcut: '', internalKey: ACTION_MAP['messages.markUrgent']?.internalKey ?? 'F18+PS006',
+    voiceTriggers: ['mark message urgent', 'flag as urgent', 'set message urgent'],
+    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
+  },
   // View and management
   {
     id: 'MSG_CLOSE', label: 'Close Messages', category: VOICE_CONTEXT.MESSAGES,
@@ -988,7 +1020,146 @@ const MOCK_ACTIONS: SystemAction[] = [
     voiceTriggers: ['delete all', 'delete all selected', 'delete all messages', 'empty deleted'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
+
+  // ── CASE TEAM ─────────────────────────────────────────────────────────────
+  {
+    id: 'OPEN_CASE_TEAM',
+    label: 'Open Case Team',
+    category: 'SYNOPTIC',
+    shortcut: 'Alt+T',
+    internalKey: 'F13+PS200',
+    voiceTriggers: ['open case team', 'case team', 'manage team', 'show team', 'team members'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'CASE_TEAM_ADD',
+    label: 'Add Team Member',
+    category: 'SYNOPTIC',
+    shortcut: '',
+    internalKey: 'F13+PS201',
+    voiceTriggers: ['add team member', 'add participant', 'add to team', 'assign participant'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'CASE_TEAM_ASSIGN',
+    label: 'Assign to Participation Type',
+    category: 'SYNOPTIC',
+    shortcut: '',
+    internalKey: 'F13+PS202',
+    voiceTriggers: ['assign as', 'assign to', 'set as primary', 'set as consultant', 'set as grossing'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+
+  // ── WORKLIST — participation filters ──────────────────────────────────────
+  {
+    id: 'TABLE_FILTER_PARTICIPATING',
+    label: 'Filter My Cases',
+    category: 'WORKLIST',
+    shortcut: '',
+    internalKey: 'F15+PS030',
+    voiceTriggers: ['my cases', 'cases i am on', 'my participating cases', 'filter my cases', 'show my cases'],
+    learnedTriggers: [],
+    requiredRole: 'All Staff',
+    isActive: true,
+  },
+  {
+    id: 'TABLE_FILTER_COUNTERSIGN',
+    label: 'Filter Awaiting Countersign',
+    category: 'WORKLIST',
+    shortcut: '',
+    internalKey: 'F15+PS031',
+    voiceTriggers: ['awaiting countersign', 'needs countersign', 'pending countersign', 'countersign cases'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+  {
+    id: 'TABLE_FILTER_POOL',
+    label: 'Filter Pool Cases',
+    category: 'WORKLIST',
+    shortcut: '',
+    internalKey: 'F15+PS032',
+    voiceTriggers: ['pool cases', 'show pool', 'unassigned cases', 'filter pool'],
+    learnedTriggers: [],
+    requiredRole: 'Pathologist',
+    isActive: true,
+  },
+
+  // ── ROUTING (Config context) ───────────────────────────────────────────────
+  {
+    id: 'OPEN_ROUTING_RULES',
+    label: 'Open Routing Rules',
+    category: 'SYSTEM',
+    shortcut: '',
+    internalKey: 'F13+PS210',
+    voiceTriggers: ['open routing rules', 'routing rules', 'case routing', 'open case routing'],
+    learnedTriggers: [],
+    requiredRole: 'All Staff',
+    isActive: true,
+  },
+  {
+    id: 'TEST_ROUTING',
+    label: 'Test Routing Rule',
+    category: 'SYSTEM',
+    shortcut: '',
+    internalKey: 'F13+PS211',
+    voiceTriggers: ['test routing', 'test rule', 'check routing', 'route this specimen'],
+    learnedTriggers: [],
+    requiredRole: 'All Staff',
+    isActive: true,
+  },
+
+  // ── PARTICIPATION TYPES (Config context) ──────────────────────────────────
+  {
+    id: 'OPEN_PARTICIPATION_TYPES',
+    label: 'Open Participation Types',
+    category: 'SYSTEM',
+    shortcut: '',
+    internalKey: 'F13+PS220',
+    voiceTriggers: ['participation types', 'open participation types', 'case participation', 'manage participation types'],
+    learnedTriggers: [],
+    requiredRole: 'All Staff',
+    isActive: true,
+  },
+
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action registry persistence
+// Admins edit shortcuts + voice triggers in the UI — these must survive deploys.
+// Pattern: seed from SEED_ACTIONS, load from localStorage, write back on updateAction.
+// New actions added to SEED_ACTIONS are merged in on load (migration guard).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACTIONS_STORAGE_KEY = 'ps_action_registry';
+
+function loadActions(): SystemAction[] {
+  try {
+    const raw = localStorage.getItem(ACTIONS_STORAGE_KEY);
+    if (!raw) return SEED_ACTIONS.map(a => ({ ...a }));
+    const stored: SystemAction[] = JSON.parse(raw);
+    const storedIds = new Set(stored.map(a => a.id));
+    // Migration: add any new seed actions not yet in storage
+    const newActions = SEED_ACTIONS.filter(a => !storedIds.has(a.id));
+    return [...stored, ...newActions];
+  } catch {
+    return SEED_ACTIONS.map(a => ({ ...a }));
+  }
+}
+
+function persistActions(actions: SystemAction[]) {
+  try {
+    localStorage.setItem(ACTIONS_STORAGE_KEY, JSON.stringify(actions));
+  } catch {
+    // localStorage unavailable — degrade gracefully
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Text helpers
@@ -1031,6 +1202,9 @@ function dispatchInternalKey(internalKey: string) {
 
 
 let currentAppContext: string = VOICE_CONTEXT.WORKLIST;
+
+// ─── Live registry — loaded from storage, mutated by updateAction ─────────────
+let LIVE_ACTIONS: SystemAction[] = loadActions();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Learning layer — persisted to localStorage so mappings survive page refresh
@@ -1089,10 +1263,10 @@ function saveMappings(mappings: LocalLearnedMapping[]) {
   }
 }
 
-// Sync learnedTriggers from storage into MOCK_ACTIONS so findActionByTrigger
+// Sync learnedTriggers from storage into LIVE_ACTIONS so findActionByTrigger
 // picks them up immediately on first load (e.g. after a page refresh).
 function syncLearnedTriggersToActions(mappings: LocalLearnedMapping[]) {
-  for (const action of MOCK_ACTIONS) {
+  for (const action of LIVE_ACTIONS) {
     action.learnedTriggers = mappings
       .filter(m => m.actionId === action.id)
       .map(m => m.transcript);
@@ -1110,13 +1284,16 @@ const pendingMisses: LocalPendingMiss[] = [];
 // ─────────────────────────────────────────────────────────────────────────────
 export const mockActionRegistryService: IActionRegistryService = {
 
-  getActions: () => MOCK_ACTIONS,
+  getActions: () => LIVE_ACTIONS,
 
-  getActionById: (id: string) => MOCK_ACTIONS.find(a => a.id === id),
+  getActionById: (id: string) => LIVE_ACTIONS.find(a => a.id === id),
 
   updateAction: async (id: string, updates: Partial<SystemAction>) => {
-    const index = MOCK_ACTIONS.findIndex(a => a.id === id);
-    if (index !== -1) MOCK_ACTIONS[index] = { ...MOCK_ACTIONS[index], ...updates };
+    const index = LIVE_ACTIONS.findIndex(a => a.id === id);
+    if (index !== -1) {
+      LIVE_ACTIONS[index] = { ...LIVE_ACTIONS[index], ...updates };
+      persistActions(LIVE_ACTIONS);
+    }
   },
 
   setCurrentContext: (c: string) => {
@@ -1130,7 +1307,7 @@ onAction: (callback: (actionId: string) => void) => {
     return () => window.removeEventListener('VOICE_ACTION_TRIGGERED', handler);
   },
   findActionByTrigger: (transcript: string): SystemAction | undefined => {
-    const eligible = MOCK_ACTIONS.filter(
+    const eligible = LIVE_ACTIONS.filter(
       a => a.isActive && (
         GLOBAL_CATEGORIES.has(a.category) ||
         a.category === currentAppContext
@@ -1217,7 +1394,7 @@ onAction: (callback: (actionId: string) => void) => {
     };
     pendingMisses.push(miss);
     // Compute candidates now so onMissRecorded subscribers receive them
-    const candidates = computeCandidates(transcript, MOCK_ACTIONS);
+    const candidates = computeCandidates(transcript, LIVE_ACTIONS);
     window.dispatchEvent(new CustomEvent('VOICE_COMMAND_NOT_FOUND', { detail: transcript }));
     window.dispatchEvent(new CustomEvent('VOICE_MISS_RECORDED', { detail: { miss, candidates } }));
     return miss;
@@ -1272,7 +1449,7 @@ onAction: (callback: (actionId: string) => void) => {
     saveMappings(learnedMappings);
 
     // Sync onto the live action so it works immediately (no reload needed)
-    const action = MOCK_ACTIONS.find(a => a.id === actionId);
+    const action = LIVE_ACTIONS.find(a => a.id === actionId);
     if (action) {
       action.learnedTriggers = [...(action.learnedTriggers ?? []), trigger];
     }
@@ -1298,7 +1475,7 @@ onAction: (callback: (actionId: string) => void) => {
     saveMappings(learnedMappings);
 
     // Remove from the live action's learnedTriggers
-    const action = MOCK_ACTIONS.find(a => a.id === actionId);
+    const action = LIVE_ACTIONS.find(a => a.id === actionId);
     if (action) {
       action.learnedTriggers = (action.learnedTriggers ?? []).filter(tr => tr !== t);
     }

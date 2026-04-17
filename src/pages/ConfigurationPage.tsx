@@ -83,11 +83,27 @@ const ConfigurationPage: React.FC = () => {
       });
     };
 
-    window.addEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
-    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
+    const openRoutingRules = () => {
+      navigate('/configuration?tab=system');
+      setActiveTab('system');
+      // Give the System tab time to mount, then dispatch sub-navigation
+      setTimeout(() => window.dispatchEvent(new CustomEvent('PATHSCRIBE_SYSTEM_NAVIGATE', { detail: { section: 'case_routing' } })), 100);
+    };
+    const openParticipationTypes = () => {
+      navigate('/configuration?tab=system');
+      setActiveTab('system');
+      setTimeout(() => window.dispatchEvent(new CustomEvent('PATHSCRIBE_SYSTEM_NAVIGATE', { detail: { section: 'participation_types' } })), 100);
+    };
+
+    window.addEventListener('PATHSCRIBE_NEXT_TAB',               nextTab);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB',           prevTab);
+    window.addEventListener('PATHSCRIBE_OPEN_ROUTING_RULES',     openRoutingRules);
+    window.addEventListener('PATHSCRIBE_OPEN_PARTICIPATION_TYPES', openParticipationTypes);
     return () => {
-      window.removeEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
-      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
+      window.removeEventListener('PATHSCRIBE_NEXT_TAB',               nextTab);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB',           prevTab);
+      window.removeEventListener('PATHSCRIBE_OPEN_ROUTING_RULES',     openRoutingRules);
+      window.removeEventListener('PATHSCRIBE_OPEN_PARTICIPATION_TYPES', openParticipationTypes);
     };
   }, [navigate, log]);
 

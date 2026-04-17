@@ -15,8 +15,11 @@ const SEED_USERS: StaffUser[] = [
   { id: '9',  firstName: 'Marcus',  lastName: 'Webb',    email: 'mwebb@hospital.org',    roles: ['Pathologist'], npi: '1234567897', license: 'MD-12352', phone: '555-0109', department: 'Hematopathology',      status: 'Active',   voiceProfile: 'EN-US' },
   { id: '10', firstName: 'Priya',   lastName: 'Sharma',    email: 'psharma@hospital.org',        roles: ['Resident'],    npi: '1234567898', license: 'MD-12353',    phone: '555-0110',     department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
   // ── UK Demo Staff — Manchester University NHS Foundation Trust ─────────────
-  { id: 'PATH-UK-001', firstName: 'Paul',   lastName: 'Carter',    email: 'paul.carter@mft.nhs.uk',      roles: ['Pathologist'], npi: '', gmcNumber: 'G4234567', license: 'GMC-4234567', phone: '0161 234 5000', department: 'Histopathology',       status: 'Active',   voiceProfile: 'EN-GB' },
-  { id: 'PATH-UK-002', firstName: 'Oliver', lastName: 'Pemberton', email: 'oliver.pemberton@mft.nhs.uk', roles: ['Resident'],    npi: '', gmcNumber: 'G7891234', license: 'GMC-7891234', phone: '0161 234 5001', department: 'Histopathology',       status: 'Active',   voiceProfile: 'EN-GB' },
+  { id: 'PATH-UK-001', firstName: 'Paul',   lastName: 'Carter',       email: 'paul.carter@mft.nhs.uk',              roles: ['Pathologist'], npi: '',           gmcNumber: 'G4234567', license: 'GMC-4234567', phone: '0161 234 5000', department: 'Histopathology',        status: 'Active', voiceProfile: 'EN-GB' },
+  { id: 'PATH-UK-002', firstName: 'Oliver', lastName: 'Pemberton',    email: 'oliver.pemberton@mft.nhs.uk',         roles: ['Resident'],    npi: '',           gmcNumber: 'G7891234', license: 'GMC-7891234', phone: '0161 234 5001', department: 'Histopathology',        status: 'Active', voiceProfile: 'EN-GB' },
+  // ── US Demo Staff ────────────────────────────────────────────────────────────
+  { id: 'PATH-US-001', firstName: 'Amber',  lastName: 'Fehrs-Battey', email: 'amber.fehrs@demo.pathscribe.ai',      roles: ['Pathologist'], npi: '1234567900', gmcNumber: '',         license: 'MD-US-001',  phone: '313-555-0200', department: 'Surgical Pathology',    status: 'Active', voiceProfile: 'EN-US' },
+  { id: 'PATH-US-002', firstName: 'Mark',   lastName: 'Tuthill',      email: 'mark.tuthill@hfhs-demo.pathscribe.ai', roles: ['Pathologist'], npi: '1234567901', gmcNumber: '',        license: 'MD-US-002',  phone: '313-555-0201', department: 'Pathology Informatics', status: 'Active', voiceProfile: 'EN-US' },
 ];
 
 const load = () => {

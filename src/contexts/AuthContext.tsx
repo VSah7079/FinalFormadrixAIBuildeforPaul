@@ -83,6 +83,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             voiceProfile: "EN-GB",
             locale: "en-GB",
           } as any;
+        } else if (email === import.meta.env.VITE_US_DEMO_EMAIL && password === import.meta.env.VITE_US_DEMO_PASS) {
+          // US Demo — Amber Fehrs-Battey, Professional Demo Specialist
+          authenticatedUser = {
+            id: "PATH-US-001",
+            name: "Amber Fehrs-Battey",
+            email: import.meta.env.VITE_US_DEMO_EMAIL,
+            role: "pathologist",
+            initials: "AF",
+            voiceProfile: "EN-US",
+          };
+        } else if (email === import.meta.env.VITE_TUTHILL_EMAIL && password === import.meta.env.VITE_TUTHILL_PASS) {
+          // US Demo — Dr. J. Mark Tuthill, Division Head Pathology Informatics, HFHS
+          authenticatedUser = {
+            id: "PATH-US-002",
+            name: "Dr. J. Mark Tuthill",
+            email: import.meta.env.VITE_TUTHILL_EMAIL,
+            role: "pathologist",
+            initials: "MT",
+            voiceProfile: "EN-US",
+          };
         }
 
         if (authenticatedUser) {

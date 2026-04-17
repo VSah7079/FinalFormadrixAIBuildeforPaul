@@ -183,6 +183,19 @@ const SynopticReportPage: React.FC = () => {
   }, [hasUnsavedData, navigate]);
 
   // ── Browser unload guard — warns on tab close / browser back ──
+  // ── Voice actions — Case Team ────────────────────────────────────────────
+  React.useEffect(() => {
+    const openTeam = () => setShowTeamModal(true);
+    window.addEventListener('PATHSCRIBE_OPEN_CASE_TEAM',   openTeam);
+    window.addEventListener('PATHSCRIBE_CASE_TEAM_ADD',    openTeam);
+    window.addEventListener('PATHSCRIBE_CASE_TEAM_ASSIGN', openTeam);
+    return () => {
+      window.removeEventListener('PATHSCRIBE_OPEN_CASE_TEAM',   openTeam);
+      window.removeEventListener('PATHSCRIBE_CASE_TEAM_ADD',    openTeam);
+      window.removeEventListener('PATHSCRIBE_CASE_TEAM_ASSIGN', openTeam);
+    };
+  }, []);
+
   React.useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (!hasUnsavedData) return;

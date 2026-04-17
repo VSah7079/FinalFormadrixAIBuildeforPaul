@@ -65,6 +65,16 @@ const SystemTab: React.FC = () => {
     }
   };
 
+  // ── Voice sub-navigation ─────────────────────────────────────────────────
+  React.useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      const section = e.detail?.section as SystemSection;
+      if (section) setActive(section);
+    };
+    window.addEventListener('PATHSCRIBE_SYSTEM_NAVIGATE', handler as EventListener);
+    return () => window.removeEventListener('PATHSCRIBE_SYSTEM_NAVIGATE', handler as EventListener);
+  }, []);
+
   return (
     <div style={{ display: 'flex', gap: '20px' }}>
 
@@ -92,7 +102,7 @@ const SystemTab: React.FC = () => {
       </div>
 
       {/* ── Section content ── */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, paddingRight: 20, boxSizing: 'border-box' }}>
         {renderSection()}
       </div>
 

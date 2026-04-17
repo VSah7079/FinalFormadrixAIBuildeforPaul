@@ -949,6 +949,12 @@
 .config-row-action.delete { color: #ef4444; }
 .config-row-action.delete:hover { background: rgba(239,68,68,0.1); }
 
+/* System tab right-panel scroll buffer — keeps content away from scrollbar */
+.ps-system-tab-content {
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
 /* ============================================================
    11. WORKLIST
    ============================================================ */
