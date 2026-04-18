@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { VoiceProfileId } from "../constants/voiceProfiles";
+import { shouldShowBiometricWizard } from "../services/biometric/mockBiometricService";
 
 // 1. Defined the User with the new linguistic property
 export interface User {
