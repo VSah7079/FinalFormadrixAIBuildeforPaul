@@ -1108,7 +1108,12 @@ const MOCK_CASES: Case[] = [
         createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
       },
     ],
-    status: 'draft' as CaseStatus,
+    status: 'pending-countersign' as CaseStatus,
+    requiresCountersign: true,
+    caseTeam: [
+      { userId: 'PATH-UK-001', role: 'Attending', name: 'Paul Carter' },
+      { userId: 'PATH-UK-002', role: 'Resident',  name: 'Oliver Pemberton' },
+    ],
     createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
     caseFlags: [
       { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
@@ -1261,6 +1266,10 @@ const MOCK_CASES: Case[] = [
     caseFlags: [
       { id: 'positive_margin', name: 'Positive Surgical Margin', color: 'red', severity: 3 },
       { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
+    ],
+    requiresCountersign: true,
+    caseTeam: [
+      { userId: 'PATH-UK-001', role: 'Attending', name: 'Paul Carter' },
     ],
     specimenFlags: [],
     reportingMode: 'pathscribe',
@@ -1445,6 +1454,102 @@ const MOCK_CASES: Case[] = [
   // Hospital: HOSP-HFHS  Enterprise: ENT-HFHS
   // ─────────────────────────────────────────────────────────────────────────────
 
+
+  // ── S26-4420: Sarah Johnson — Melanoma Excision, Ready for Finalisation ──────
+  {
+    id: 'S26-4420-MEL',
+    accession: { accessionNumber: '4420', accessionPrefix: 'S', accessionYear: 2026, fullAccession: 'S26-4420-MEL' },
+    originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-001',
+    patient: {
+      id: 'PAT-4420', mrn: '104420',
+      firstName: 'Margaret', lastName: 'Holloway',
+      dateOfBirth: isoYearsAgo(54, 3, 18), sex: 'F',
+      phone: '555-0420', email: 'm.holloway@email.com',
+      address: '44 Elmwood Drive, Springfield, IL 62701',
+    },
+    specimens: [
+      { id: 'S26-4420-SP-1', label: 'A', description: 'Wide local excision — right forearm', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [
+        { id: 'thick_melanoma', name: 'Breslow > 2 mm', color: 'red', severity: 4 },
+      ]},
+      { id: 'S26-4420-SP-2', label: 'B', description: 'Sentinel lymph node — right axilla', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Dr. Nancy Graves',
+      clientId: 'c1', clientName: 'Metro General Hospital',
+      clinicalIndication: 'Pigmented lesion right forearm 2.1 cm, irregular border. Punch biopsy: invasive melanoma, superficial spreading type, Breslow 2.3 mm. Proceeding to wide local excision with 2 cm margin and sentinel node biopsy.',
+      receivedDate: isoDaysAgo(1),
+      assignedTo: 'PATH-001',
+    },
+    diagnostic: {
+      grossDescription: 'A) Received in formalin, labelled "right forearm wide local excision", is an ellipse of skin measuring 6.2 × 4.1 cm with subcutaneous tissue to a depth of 1.8 cm. A scar/biopsy site is identified centrally measuring 1.2 × 0.8 cm with surrounding erythema. Margins are inked (peripheral: blue, deep: black). Sections taken perpendicular to the long axis. B) Received in formalin, labelled "right axillary sentinel lymph node", are two lymph nodes, the larger measuring 1.8 cm and the smaller 0.9 cm.',
+      microscopicDescription: 'A) Sections of the excision show residual invasive melanoma, superficial spreading type, at the biopsy site. Breslow thickness 2.4 mm. Clark level IV. No ulceration. Mitotic rate 3/mm². No microsatellites or macroscopic satellite lesions identified. Lymphovascular invasion not identified. Neurotropism not identified. Tumour-infiltrating lymphocytes: non-brisk. Regression not identified. All peripheral and deep margins are negative; closest deep margin is 8 mm, closest peripheral margin is 11 mm. B) One of two sentinel lymph nodes contains a subcapsular deposit of metastatic melanoma, largest dimension 1.2 mm (micrometastasis). No extranodal extension. Second lymph node negative.',
+      ancillaryStudies: 'Immunohistochemistry: SOX10 positive, S100 positive, HMB45 focal positive, Melan-A positive. MelanA/SOX10 highlight a subcapsular deposit in sentinel node A. BRAF V600E IHC: Positive.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'S26-4420-SYN-1',
+        specimenId: 'S26-4420-SP-1',
+        templateId: 'skin_melanoma_bx',
+        templateName: 'CAP — Melanoma of the Skin',
+        status: 'in-progress',
+        answers: {
+          procedure:                    ['biopsy_incisional'],
+          specimen_laterality:          'right',
+          histologic_type:              'superficial_spreading_melanoma',
+          ulceration:                   'ulceration_not_identified',
+          anatomic_clark_level:         'clark_iv',
+          microsatellites:              'microsatellites_not_identified',
+          lymphatic_vascular_invasion:  'lvi_not_identified',
+          neurotropism:                 'neurotropism_not_identified',
+          tumor_infiltrating_lymphocytes: 'til_non_brisk',
+          margin_status_melanoma:       ['all_margins_negative'],
+          macroscopic_satellite_lesions: 'macroscopic_not_identified',
+        },
+        aiSuggestions: {
+          procedure:                   { value: ['biopsy_incisional'],              confidence: 93, source: 'Gross: "wide local excision … biopsy site"',                               verification: 'verified' },
+          specimen_laterality:         { value: 'right',                            confidence: 99, source: 'Gross: "right forearm"',                                                    verification: 'verified' },
+          histologic_type:             { value: 'superficial_spreading_melanoma',   confidence: 97, source: 'Micro: "superficial spreading type"',                                       verification: 'verified' },
+          ulceration:                  { value: 'ulceration_not_identified',        confidence: 95, source: 'Micro: "No ulceration"',                                                    verification: 'verified' },
+          anatomic_clark_level:        { value: 'clark_iv',                         confidence: 94, source: 'Micro: "Clark level IV"',                                                   verification: 'verified' },
+          microsatellites:             { value: 'microsatellites_not_identified',   confidence: 93, source: 'Micro: "No microsatellites … identified"',                                  verification: 'verified' },
+          lymphatic_vascular_invasion: { value: 'lvi_not_identified',              confidence: 96, source: 'Micro: "Lymphovascular invasion not identified"',                            verification: 'verified' },
+          neurotropism:                { value: 'neurotropism_not_identified',      confidence: 95, source: 'Micro: "Neurotropism not identified"',                                      verification: 'verified' },
+          tumor_infiltrating_lymphocytes: { value: 'til_non_brisk',                confidence: 88, source: 'Micro: "Tumour-infiltrating lymphocytes: non-brisk"',                       verification: 'verified' },
+          margin_status_melanoma:      { value: ['all_margins_negative'],           confidence: 97, source: 'Micro: "All peripheral and deep margins are negative"',                     verification: 'verified' },
+          macroscopic_satellite_lesions: { value: 'macroscopic_not_identified',    confidence: 91, source: 'Micro: "No macroscopic satellite lesions"',                                 verification: 'verified' },
+        },
+        createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+      },
+      {
+        instanceId: 'S26-4420-SYN-2',
+        specimenId: 'S26-4420-SP-2',
+        templateId: 'skin_melanoma_bx',
+        templateName: 'CAP — Melanoma (Sentinel Node)',
+        status: 'in-progress',
+        answers: {
+          procedure:                    ['biopsy_incisional'],
+          margin_status_melanoma:       ['all_margins_negative'],
+        },
+        aiSuggestions: {
+          procedure:               { value: ['biopsy_incisional'],     confidence: 88, source: 'Gross: "sentinel lymph node"',                                      verification: 'verified' },
+          margin_status_melanoma:  { value: ['all_margins_negative'],  confidence: 90, source: 'Micro: sentinel node assessed — no margin involvement',             verification: 'verified' },
+        },
+        createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+      },
+    ],
+    status: 'in-progress' as CaseStatus,
+    caseTeam: [{ userId: 'PATH-001', role: 'Attending', name: 'Dr. Sarah Johnson' }],
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'braf_positive',  name: 'BRAF V600E Positive — Targeted Therapy Eligible', color: 'teal',  severity: 3 },
+      { id: 'sentinel_pos',   name: 'Sentinel Node Positive — Completion Dissection?',  color: 'red',   severity: 4 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C43.61'], snomed: ['372244006'] },
+  },
+
   // HFHS-001 — Amber: Invasive breast carcinoma, AI-assisted
   {
     id: 'MPA26-1001-BR',
@@ -1484,6 +1589,7 @@ const MOCK_CASES: Case[] = [
       status: 'draft', createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
     }],
     status: 'in-progress' as CaseStatus,
+    caseTeam: [{ userId: 'PATH-US-001', role: 'Attending', name: 'Amber Fehrs-Battey' }],
     createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
     caseFlags: [], specimenFlags: [], reportingMode: 'pathscribe', coding: {},
   } as any,
@@ -1505,7 +1611,7 @@ const MOCK_CASES: Case[] = [
     },
     synopticReports: [{
       instanceId: 'MPA26-1002-SYN-1', specimenId: 'MPA26-1002-SP-1',
-      templateId: 'colorectal_resection', templateName: 'CAP — Colon & Rectum Resection',
+      templateId: 'colon_resection', templateName: 'CAP — Colon & Rectum Resection',
       answers: {},
       aiSuggestions: {
         procedure:              { value: 'low_anterior_resection',  confidence: 95, source: 'Gross: "Sigmoid/rectosigmoid resection"',                         verification: 'unverified' },
@@ -1544,17 +1650,23 @@ const MOCK_CASES: Case[] = [
     },
     synopticReports: [{
       instanceId: 'MPA26-1003-SYN-1', specimenId: 'MPA26-1003-SP-1',
-      templateId: 'prostate_radical', templateName: 'CAP — Prostate Gland Radical Prostatectomy',
+      templateId: 'prostate_resection', templateName: 'CAP — Prostate Gland Radical Prostatectomy',
       answers: {},
       aiSuggestions: {
-        gleason_primary:          { value: '3',                               confidence: 98, source: 'Micro: "Gleason 3+4=7"',                                          verification: 'unverified' },
-        gleason_secondary:        { value: '4',                               confidence: 98, source: 'Micro: "Gleason 3+4=7"',                                          verification: 'unverified' },
-        grade_group:              { value: '2',                               confidence: 97, source: 'Micro: "Grade Group 2"',                                          verification: 'unverified' },
-        extraprostatic_extension: { value: 'epe_present_focal',              confidence: 91, source: 'Micro: "Extraprostatic extension present right posterolateral (focal)"', verification: 'unverified' },
-        surgical_margins:         { value: 'margins_positive',               confidence: 94, source: 'Micro: "Surgical margin positive right posterior"',               verification: 'unverified' },
-        seminal_vesicle_invasion: { value: 'svi_not_identified',             confidence: 99, source: 'Micro: "Seminal vesicles uninvolved"',                            verification: 'unverified' },
-        regional_ln_status:       { value: 'ln_all_negative',                confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                       verification: 'unverified' },
-        total_ln_examined:        { value: '14',                              confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                       verification: 'unverified' },
+        histologic_type:          { value: ['acinar_usual'],                 confidence: 97, source: 'Micro: "Acinar adenocarcinoma, conventional"',                   verification: 'unverified' },
+        grade_group:              { value: 'gg2_3_4_7',                      confidence: 98, source: 'Micro: "Gleason Score 3+4=7, Grade Group 2"',                      verification: 'unverified' },
+        idc_present:              { value: 'idc_not_identified',             confidence: 88, source: 'Micro: no intraductal carcinoma mentioned',                          verification: 'unverified' },
+        treatment_effect:         { value: ['tx_no_presurgical'],            confidence: 92, source: 'Clinical: no neoadjuvant therapy documented',                        verification: 'unverified' },
+        extraprostatic_extension: { value: 'epe_present_focal',             confidence: 91, source: 'Micro: "Extraprostatic extension present right posterolateral (focal)"', verification: 'unverified' },
+        bladder_neck_invasion:    { value: 'bn_not_identified',             confidence: 95, source: 'Micro: bladder neck not mentioned as involved',                       verification: 'unverified' },
+        seminal_vesicle_invasion: { value: 'sv_not_identified',             confidence: 99, source: 'Micro: "Seminal vesicles uninvolved"',                              verification: 'unverified' },
+        lymphovascular_invasion:  { value: 'lvi_not_identified',            confidence: 90, source: 'Micro: no lymphovascular invasion identified',                        verification: 'unverified' },
+        margin_status:            { value: 'margin_involved',               confidence: 94, source: 'Micro: "Surgical margin positive right posterior"',                  verification: 'unverified' },
+        margins_involved:         { value: ['margin_right_posterior'],      confidence: 92, source: 'Micro: "right posterior margin"',                                    verification: 'unverified' },
+        regional_ln_status:       { value: 'ln_all_negative',               confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
+        ln_number_examined:       { value: 14,                              confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
+        pT_category:              { value: 'pT3a',                          confidence: 90, source: 'Focal EPE → pT3a (AJCC 8th Ed.)',                                    verification: 'unverified' },
+        pN_category:              { value: 'pN0',                           confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
       },
       status: 'draft', createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
     }],
@@ -1588,11 +1700,11 @@ const MOCK_CASES: Case[] = [
         specimen_laterality:      { value: 'right',                        confidence: 99, source: 'Gross: "Right upper lobe"',                                   verification: 'unverified' },
         tumor_site:               { value: ['upper_lobe'],                 confidence: 99, source: 'Gross: "Right upper lobe"',                                   verification: 'unverified' },
         histologic_type:          { value: 'inv_acinar',                   confidence: 96, source: 'Micro: "Adenocarcinoma"',                                     verification: 'unverified' },
-        tumor_size:               { value: '2.4 cm',                       confidence: 98, source: 'Gross: "2.4 x 2.1 x 1.9 cm"',                               verification: 'unverified' },
+        tumor_size_invasive_cm:   { value: '2.4 cm',                       confidence: 98, source: 'Gross: "2.4 x 2.1 x 1.9 cm"',                               verification: 'unverified' },
         visceral_pleura_invasion: { value: 'vpi_present',                  confidence: 92, source: 'Micro: "Visceral pleural invasion present"',                  verification: 'unverified' },
-        lymphovascular_invasion:  { value: ['lvi_not_identified'],         confidence: 95, source: 'Micro: "Lymphovascular invasion absent"',                     verification: 'unverified' },
+        stas:                     { value: 'stas_not_identified',          confidence: 85, source: 'Micro: no spread through air spaces identified',              verification: 'unverified' },
         regional_ln_status:       { value: 'ln_all_negative',              confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
-
+        ln_number_examined:       { value: 3,                              confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
         pT_category:              { value: 'pT2a',                        confidence: 89, source: 'Visceral pleural invasion + 2.4 cm → pT2a',                  verification: 'unverified' },
         pN_category:              { value: 'pN0',                         confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
       },
@@ -1684,6 +1796,11 @@ export const mockPatientHistoryMap: Record<string, string> = {
     "HFHS24-4401 (May 2024) — CT abdomen/pelvis: pancreatic head mass 2.7 cm, no vascular involvement. CA19-9 380. Surgical referral placed. | " +
     "HFHS25-8810 (Sep 2025) — EUS-FNA repeat. Dx: Adenocarcinoma, moderately differentiated. MDT: borderline resectable. Neoadjuvant FOLFIRINOX commenced.",
 
+  'S26-4420-MEL':
+    "S20-3301 (Jul 2020) — Punch biopsy right forearm pigmented lesion 0.6 cm. Dx: Dysplastic naevus, moderate atypia. Complete excision recommended. | " +
+    "S22-8801 (Oct 2022) — Shave biopsy right forearm, recurrence at prior site. Dx: Dysplastic naevus, severe atypia (almost melanoma in situ). Wide local excision with 5 mm margins advised. | " +
+    "S24-1102 (Feb 2024) — Punch biopsy new pigmented lesion right forearm, 1.4 cm, adjacent to scar. Dx: Melanoma in situ, superficial spreading type. Wide local excision 1 cm margins performed. | " +
+    "S25-8801 (Oct 2025) — Punch biopsy right forearm lesion 2.1 cm, irregular border, rapid growth. Dx: Invasive melanoma, superficial spreading type, Breslow 2.3 mm. Wide local excision + sentinel node planned.",
   'S26-4401':
     "S22-4471 (Mar 2022) — Core needle biopsy, left breast 10 o'clock. Dx: Atypical ductal hyperplasia (ADH). ER+/PR+. Excision recommended; patient deferred. | " +
     "S23-7809 (Nov 2023) — Wire-localised excision, left breast. Dx: DCIS intermediate grade, cribriform, 8 mm. Margins clear >2 mm. XRT planned. | " +
@@ -1716,6 +1833,13 @@ export const mockPatientHistoryMap: Record<string, string> = {
 };
 
 export const mockSimilarCasesMap: Record<string, SimilarCase[]> = {
+  'S26-4420-MEL': [
+    { id: 'S25-9902', accession: 'S25-9902', patient: 'Whitmore, Carol',   diagnosis: 'Melanoma, superficial spreading, Breslow 2.1 mm, Clark IV, no ulceration, pT2b, pN1a SLN+', date: '2025-11-20', similarity: 96, site: 'Right forearm',   outcome: 'Finalized' },
+    { id: 'S25-6611', accession: 'S25-6611', patient: 'Pemberton, Diana',  diagnosis: 'Melanoma, superficial spreading, Breslow 2.8 mm, Clark IV, ulcerated, pT3b, pN0 SLN-',      date: '2025-07-14', similarity: 91, site: 'Left forearm',    outcome: 'Finalized' },
+    { id: 'S25-1103', accession: 'S25-1103', patient: 'Ashworth, Helen',   diagnosis: 'Melanoma, superficial spreading, Breslow 1.9 mm, Clark IV, no ulceration, pT2a, pN0',        date: '2025-03-08', similarity: 84, site: 'Right upper arm', outcome: 'Finalized' },
+    { id: 'S24-8802', accession: 'S24-8802', patient: 'Griffith, Sandra',  diagnosis: 'Melanoma, nodular type, Breslow 3.4 mm, Clark V, ulcerated, pT3b, pN1a SLN+, BRAF+',        date: '2024-10-22', similarity: 76, site: 'Right forearm',   outcome: 'Finalized' },
+    { id: 'S24-3302', accession: 'S24-3302', patient: 'Morrison, Jean',    diagnosis: 'Melanoma, superficial spreading, Breslow 1.5 mm, Clark III, no ulceration, pT2a, pN0',       date: '2024-04-17', similarity: 69, site: 'Left arm',        outcome: 'Amended'   },
+  ],
   'S26-4401': [
     { id: 'S25-3301', accession: 'S25-3301', patient: 'Harrison, Mary',    diagnosis: 'Invasive carcinoma NST, Grade 2, 2.1 cm, ER+/PR+/HER2-, pN1(1/3)',       date: '2025-08-14', similarity: 96, site: 'Left breast UOQ',    outcome: 'Finalized' },
     { id: 'S25-1872', accession: 'S25-1872', patient: 'Foster, Diane',     diagnosis: 'Invasive carcinoma NST, Grade 2, 1.8 cm, ER+/PR+/HER2 2+ (FISH neg)',    date: '2025-03-22', similarity: 91, site: 'Left breast',         outcome: 'Finalized' },
@@ -1817,7 +1941,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '14'; // bumped: RCPath prostate biopsy + RP AI suggestions added
+const MOCK_VERSION = '16'; // bumped: Sarah Johnson melanoma case (correct template ID)
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);
@@ -2281,7 +2405,7 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
       microscopic: 'Benign prostatic glands with focal chronic prostatitis. High-grade PIN in 1 core. No invasive carcinoma.',
       comment: 'No malignancy. HGPIN in 1 core — rebiopsy recommended. PSA 5.1 ng/mL.',
       tags: ['Benign', 'HGPIN', 'No malignancy', 'Surveillance'],
-      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'prostate_needle_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
       _snomedMorphology: ['399068003'],
     },
   ],
@@ -2429,7 +2553,7 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
       microscopic: 'Benign prostatic glands with focal benign prostatic hyperplasia. No PIN. No invasive carcinoma.',
       comment: 'No malignancy. PSA 4.2 ng/mL. Annual PSA surveillance recommended.',
       tags: ['Benign', 'BPH', 'No malignancy', 'Surveillance'],
-      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'prostate_needle_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
       _snomedMorphology: ['399068003'],
     },
   ],

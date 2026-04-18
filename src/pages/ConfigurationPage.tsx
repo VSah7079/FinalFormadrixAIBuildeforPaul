@@ -19,8 +19,9 @@ import SystemTab     from '../components/Config/System/index';
 import MacrosTab     from '../components/Config/Macros/index';
 import VoiceSettings from '../components/Voice/VoiceSettings';
 import { ActionsTab } from '../components/Config/Actions/ActionsTab';
+import { DemoResetTab } from '../components/Config/System/DemoResetTab';
 
-const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros'] as const;
+const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros', 'demoreset'] as const;
 type TabId = typeof VALID_TABS[number];
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
@@ -33,6 +34,7 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: 'actions',   label: 'Action Registry'   },
   { id: 'macros',    label: 'Macros'            },
   { id: 'narrative', label: 'Narrative Templates' },
+  { id: 'demoreset', label: '⟳ Demo Reset'          },
 
 ];
 
@@ -83,27 +85,11 @@ const ConfigurationPage: React.FC = () => {
       });
     };
 
-    const openRoutingRules = () => {
-      navigate('/configuration?tab=system');
-      setActiveTab('system');
-      // Give the System tab time to mount, then dispatch sub-navigation
-      setTimeout(() => window.dispatchEvent(new CustomEvent('PATHSCRIBE_SYSTEM_NAVIGATE', { detail: { section: 'case_routing' } })), 100);
-    };
-    const openParticipationTypes = () => {
-      navigate('/configuration?tab=system');
-      setActiveTab('system');
-      setTimeout(() => window.dispatchEvent(new CustomEvent('PATHSCRIBE_SYSTEM_NAVIGATE', { detail: { section: 'participation_types' } })), 100);
-    };
-
-    window.addEventListener('PATHSCRIBE_NEXT_TAB',               nextTab);
-    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB',           prevTab);
-    window.addEventListener('PATHSCRIBE_OPEN_ROUTING_RULES',     openRoutingRules);
-    window.addEventListener('PATHSCRIBE_OPEN_PARTICIPATION_TYPES', openParticipationTypes);
+    window.addEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
+    window.addEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
     return () => {
-      window.removeEventListener('PATHSCRIBE_NEXT_TAB',               nextTab);
-      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB',           prevTab);
-      window.removeEventListener('PATHSCRIBE_OPEN_ROUTING_RULES',     openRoutingRules);
-      window.removeEventListener('PATHSCRIBE_OPEN_PARTICIPATION_TYPES', openParticipationTypes);
+      window.removeEventListener('PATHSCRIBE_NEXT_TAB',     nextTab);
+      window.removeEventListener('PATHSCRIBE_PREVIOUS_TAB', prevTab);
     };
   }, [navigate, log]);
 
@@ -119,6 +105,7 @@ const ConfigurationPage: React.FC = () => {
       case 'protocols': return <ProtocolsTab />;
       case 'staff':     return <StaffTab />;
       case 'system':    return <SystemTab />;
+      case 'demoreset': return <DemoResetTab />;
       case 'actions':   return <ActionsTab />;
       case 'macros':    return <MacrosTab />;
       case 'voice':     return <VoiceSettings />;
