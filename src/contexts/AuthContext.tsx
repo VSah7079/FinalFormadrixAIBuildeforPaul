@@ -15,15 +15,18 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  updateUserProfile: (updates: Partial<User>) => void; // New: update state without logout
+  updateUserProfile: (updates: Partial<User>) => void;
   isAuthenticated: boolean;
   loading: boolean;
+  showBiometricWizard: boolean;
+  setShowBiometricWizard: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [showBiometricWizard, setShowBiometricWizard] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const STORAGE_KEY = "pathscribe-user";
@@ -84,29 +87,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             locale: "en-GB",
           } as any;
         } else if (email === import.meta.env.VITE_US_DEMO_EMAIL && password === import.meta.env.VITE_US_DEMO_PASS) {
-          // US Demo — Amber Fehrs-Battey, Professional Demo Specialist
+          // US Demo — Amber Fehrs-Battey, MD FCAP — Midwest Pathology Associates
           authenticatedUser = {
             id: "PATH-US-001",
             name: "Amber Fehrs-Battey",
             email: import.meta.env.VITE_US_DEMO_EMAIL,
             role: "pathologist",
             initials: "AF",
+            credentials: "MD, FCAP",
             voiceProfile: "EN-US",
-          };
+          } as any;
         } else if (email === import.meta.env.VITE_TUTHILL_EMAIL && password === import.meta.env.VITE_TUTHILL_PASS) {
-          // US Demo — Dr. J. Mark Tuthill, Division Head Pathology Informatics, HFHS
+          // US Demo — Dr. J. Mark Tuthill — Henry Ford Health System
           authenticatedUser = {
             id: "PATH-US-002",
             name: "Dr. J. Mark Tuthill",
             email: import.meta.env.VITE_TUTHILL_EMAIL,
             role: "pathologist",
             initials: "MT",
+            credentials: "MD, FCAP",
             voiceProfile: "EN-US",
-          };
+          } as any;
         }
 
         if (authenticatedUser) {
           saveUser(authenticatedUser);
+          // Check if biometric setup wizard should be shown on first login
+          if (shouldShowBiometricWizard(authenticatedUser.id)) {
+            setTimeout(() => setShowBiometricWizard(true), 800); // brief delay to let login complete
+          }
           resolve(true);
         } else {
           resolve(false);
@@ -148,6 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         login,
         logout,
+        showBiometricWizard,
+        setShowBiometricWizard,
         updateUserProfile,
         isAuthenticated: !!user,
         loading,

@@ -58,6 +58,8 @@ const CUSTOM_EVENT_ACTIONS = new Set([
   'VOICE_CASE_COMMENT', 'VOICE_SPECIMEN_COMMENT', 'VOICE_INTERNAL_NOTE', 'VOICE_ADD_SYNOPTIC', 'VOICE_FLAGS',
   // Internal notes drawer actions
   'NOTE_ADD', 'NOTE_DICTATE', 'NOTE_VISIBILITY_PRIVATE', 'NOTE_VISIBILITY_SHARED', 'NOTE_SAVE', 'NOTE_CANCEL', 'NOTE_CLOSE',
+  // Finalisation flow
+  'OPEN_PRE_FINALISE', 'FINALISE_AND_NEXT', 'FINALISE_CONFIRM', 'FINALISE_CANCEL',
   // Post-finalization
   'ADD_ADDENDUM', 'ADD_AMENDMENT', 'SIGNOUT_NEXT',
   // Navigation + cancel
@@ -70,8 +72,6 @@ const CUSTOM_EVENT_ACTIONS = new Set([
   'POOL_ACCEPT_CASE', 'POOL_PASS_CASE',
   // Case Team actions
   'OPEN_CASE_TEAM', 'CASE_TEAM_ADD', 'CASE_TEAM_ASSIGN',
-  // Previously missing
-  'AI_REVIEW_NEXT', 'MSG_MARK_URGENT', 'TABLE_REFINE_SEARCH',
   // Worklist participation filters
   'TABLE_FILTER_PARTICIPATING', 'TABLE_FILTER_COUNTERSIGN', 'TABLE_FILTER_POOL',
   // Config navigation
@@ -205,17 +205,6 @@ const SEED_ACTIONS: SystemAction[] = [
     shortcut: 'Escape',
     internalKey: 'F13+PS163',
     voiceTriggers: ['cancel review', 'exit review', 'stop review', 'go back'],
-    learnedTriggers: [],
-    requiredRole: 'Pathologist',
-    isActive: true,
-  },
-  {
-    id: 'AI_REVIEW_NEXT',
-    label: 'Next AI Finding',
-    category: 'SYNOPTIC',
-    shortcut: 'N',
-    internalKey: 'F13+PS164',
-    voiceTriggers: ['next finding', 'ai next', 'next ai finding', 'move to next finding'],
     learnedTriggers: [],
     requiredRole: 'Pathologist',
     isActive: true,
@@ -523,12 +512,6 @@ const SEED_ACTIONS: SystemAction[] = [
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   {
-    id: 'TABLE_REFINE_SEARCH', label: 'Refine Search', category: VOICE_CONTEXT.WORKLIST,
-    shortcut: '', internalKey: ACTION_MAP['table.clearSearch']?.internalKey ?? 'F15+PS018a',
-    voiceTriggers: ['refine search', 'narrow search', 'add filter', 'refine results', 'narrow results'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
     // Worklist filter for completed cases
     id: 'TABLE_FILTER_COMPLETED', label: 'Show Completed', category: VOICE_CONTEXT.WORKLIST,
     shortcut: '', internalKey: ACTION_MAP['table.clearSearch']?.internalKey ?? 'F15+PS018',
@@ -559,22 +542,57 @@ const SEED_ACTIONS: SystemAction[] = [
   {
     id: 'SIGN_OUT', label: 'Sign Out Case', category: VOICE_CONTEXT.REPORTING,
     shortcut: 'Alt+Shift+S', internalKey: ACTION_MAP['system.signOut']?.internalKey ?? 'F13+PS006',
+    voiceTriggers: ['sign out case', 'sign out the case', 'case sign out'],
+    learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
+  },
+  {
+    id: 'OPEN_PRE_FINALISE', label: 'Finalise Report', category: VOICE_CONTEXT.REPORTING,
+    shortcut: 'Alt+F', internalKey: ACTION_MAP['system.finalise']?.internalKey ?? 'F13+PS010',
     voiceTriggers: [
-      'sign out case', 'sign out the case',
-      'finalise', 'finalize', 'finalise case', 'finalize case',
+      'finalise', 'finalize', 'finalise report', 'finalize report',
+      'finalise case', 'finalize case', 'sign off', 'sign off report',
+      'submit report', 'complete report',
     ],
+    learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
+  },
+  {
+    id: 'FINALISE_AND_NEXT', label: 'Finalise and Next Case', category: VOICE_CONTEXT.REPORTING,
+    shortcut: 'Alt+Shift+F', internalKey: ACTION_MAP['system.finaliseNext']?.internalKey ?? 'F13+PS011',
+    voiceTriggers: [
+      'finalise and next', 'finalize and next',
+      'finalise next', 'finalize next',
+      'sign off and next', 'complete and next',
+    ],
+    learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
+  },
+  {
+    id: 'FINALISE_CONFIRM', label: 'Confirm Finalise', category: VOICE_CONTEXT.REPORTING,
+    shortcut: '', internalKey: '',
+    voiceTriggers: ['confirm finalise', 'confirm finalize', 'confirm sign off', 'yes finalise', 'yes finalize'],
+    learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
+  },
+  {
+    id: 'FINALISE_CANCEL', label: 'Cancel Finalise', category: VOICE_CONTEXT.REPORTING,
+    shortcut: 'Escape', internalKey: '',
+    voiceTriggers: ['cancel finalise', 'cancel finalize', 'cancel sign off', 'go back'],
     learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
   },
   {
     id: 'NEXT_FIELD', label: 'Next Field', category: VOICE_CONTEXT.REPORTING,
     shortcut: 'Tab', internalKey: ACTION_MAP['editor.nextField']?.internalKey ?? 'F16+PS001',
-    voiceTriggers: ['next field', 'next question', 'go forward', 'forward', 'tab forward', 'move to next field', 'move forward', 'next item'],
+    voiceTriggers: [
+      'next field', 'next question', 'go forward', 'forward',
+      'tab forward', 'move to next field', 'move forward', 'next item',
+    ],
     learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
   },
   {
     id: 'PREVIOUS_FIELD', label: 'Previous Field', category: VOICE_CONTEXT.REPORTING,
     shortcut: 'Shift+Tab', internalKey: ACTION_MAP['editor.previousField']?.internalKey ?? 'F16+PS002',
-    voiceTriggers: ['previous field', 'previous question', 'go back', 'back', 'tab back', 'move to previous field', 'go back one field', 'back one', 'prior field'],
+    voiceTriggers: [
+      'previous field', 'previous question', 'go back', 'back',
+      'tab back', 'move to previous field', 'go back one field', 'back one', 'prior field',
+    ],
     learnedTriggers: [], requiredRole: 'Pathologist', isActive: true,
   },
 
@@ -968,13 +986,6 @@ const SEED_ACTIONS: SystemAction[] = [
     id: 'MSG_URGENT', label: 'Toggle Urgent', category: VOICE_CONTEXT.MESSAGES,
     shortcut: '', internalKey: ACTION_MAP['messages.markUrgent']?.internalKey ?? 'F18+PS006',
     voiceTriggers: ['urgent', 'mark urgent', 'toggle urgent', 'set urgent', 'mark as urgent'],
-    learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
-  },
-  {
-    // Alias for MSG_URGENT — same handler, explicit "mark" phrasing variant
-    id: 'MSG_MARK_URGENT', label: 'Mark as Urgent', category: VOICE_CONTEXT.MESSAGES,
-    shortcut: '', internalKey: ACTION_MAP['messages.markUrgent']?.internalKey ?? 'F18+PS006',
-    voiceTriggers: ['mark message urgent', 'flag as urgent', 'set message urgent'],
     learnedTriggers: [], requiredRole: 'All Staff', isActive: true,
   },
   // View and management

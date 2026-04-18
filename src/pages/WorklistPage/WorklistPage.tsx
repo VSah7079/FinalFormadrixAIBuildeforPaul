@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const WorklistPage: React.FC = () => {
   const handleLogout = useLogout();
   const { user } = useAuth();
-  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing'>('all');
+  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing' | 'participating' | 'countersign'>('all');
   const [realCases, setRealCases]             = useState<Case[]>([]);
   const [delegatedToMeCount, setDelegatedToMeCount] = useState(0);
   const [physicianFilter, setPhysicianFilter] = useState<string>('');
@@ -119,7 +119,20 @@ const WorklistPage: React.FC = () => {
     if (activeFilter === 'draft')      return c.status === 'draft';
     if (activeFilter === 'inprogress') return c.status === 'in-progress';
     if (activeFilter === 'amended')    return c.status === 'amended';
-    if (activeFilter === 'physician')  return (c.order?.requestingProvider ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
+    if (activeFilter === 'physician')    return (c.order?.requestingProvider ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
+    if (activeFilter === 'participating') {
+      // Cases where current user is the assignee OR appears in caseTeam
+      const isAssigned = (c.order?.assignedTo ?? (c as any).assignedTo) === CURRENT_USER_ID;
+      const inTeam = ((c as any).caseTeam ?? []).some((m: any) =>
+        (m.userId ?? m.id ?? m) === CURRENT_USER_ID
+      );
+      return isAssigned || inTeam;
+    }
+    if (activeFilter === 'countersign') {
+      // Cases pending countersignature — awaiting attending countersign
+      return (c as any).requiresCountersign === true &&
+        c.status === 'pending-countersign';
+    }
     return true;
   });
 
@@ -133,6 +146,17 @@ const WorklistPage: React.FC = () => {
     amended:        nonPoolCases.filter(c => c.status === 'amended').length,
     draft:          nonPoolCases.filter(c => c.status === 'draft').length,
     finalizing:     nonPoolCases.filter(c => c.status === 'finalizing').length,
+    participating:  nonPoolCases.filter(c => {
+      const isAssigned = (c.order?.assignedTo ?? (c as any).assignedTo) === CURRENT_USER_ID;
+      const inTeam = ((c as any).caseTeam ?? []).some((m: any) =>
+        (m.userId ?? m.id ?? m) === CURRENT_USER_ID
+      );
+      return isAssigned || inTeam;
+    }).length,
+    countersign:    nonPoolCases.filter(c =>
+      (c as any).requiresCountersign === true &&
+      c.status === 'pending-countersign'
+    ).length,
     completedToday: nonPoolCases.filter(c => {
       if (c.status !== 'finalized') return false;
       if (!c.updatedAt) return false;
@@ -227,13 +251,13 @@ const WorklistPage: React.FC = () => {
     };
 
     // Filter commands — reset selection when filter changes
-    const filterUrgent        = () => { setActiveFilter('urgent');       setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterCompleted     = () => { setActiveFilter('completed');    setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterReview        = () => { setActiveFilter('review');       setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterUrgent        = () => { setActiveFilter('urgent');        setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterCompleted     = () => { setActiveFilter('completed');     setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterReview        = () => { setActiveFilter('review');        setSelectedIndex(-1); setSelectedCaseId(null); };
     const filterParticipating = () => { setActiveFilter('participating'); setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterCountersign   = () => { setActiveFilter('countersign');  setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterPool          = () => { setActiveFilter('pool');         setSelectedIndex(-1); setSelectedCaseId(null); };
-    const clearFilter         = () => { setActiveFilter('all');          setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterCountersign   = () => { setActiveFilter('countersign');   setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterPool          = () => { setActiveFilter('pool');          setSelectedIndex(-1); setSelectedCaseId(null); };
+    const clearFilter         = () => { setActiveFilter('all');           setSelectedIndex(-1); setSelectedCaseId(null); };
 
     // Sort commands — forward to WorklistTable's internal sort system via custom events
     const sortDate     = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'accessionDate', dir: 'desc' } }));
@@ -284,16 +308,14 @@ const WorklistPage: React.FC = () => {
     window.addEventListener('PATHSCRIBE_TABLE_LAST',             last);
     window.addEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
     window.addEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',          filterUrgent);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING',    filterParticipating);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',      filterCountersign);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_POOL',             filterPool);
-    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',            clearFilter);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',           filterUrgent);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',        filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',     filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',        filterReview);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',     filterPhysician);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING', filterParticipating);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',   filterCountersign);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_POOL',          filterPool);
+    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',         clearFilter);
     window.addEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
     window.addEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
     window.addEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
@@ -314,16 +336,14 @@ const WorklistPage: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_TABLE_LAST',             last);
       window.removeEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
       window.removeEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',          filterUrgent);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING',    filterParticipating);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',      filterCountersign);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_POOL',             filterPool);
-      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',            clearFilter);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',           filterUrgent);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',           filterReview);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',        filterCompleted);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',        filterPhysician);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',        filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',     filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',        filterReview);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',     filterPhysician);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING', filterParticipating);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',   filterCountersign);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_POOL',          filterPool);
+      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',         clearFilter);
       window.removeEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
       window.removeEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
       window.removeEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
@@ -416,6 +436,8 @@ const WorklistPage: React.FC = () => {
 
                 {/* ── Filter tiles group ── */}
                 {([
+                  { key: 'participating', label: 'My Cases',        count: stats.participating,  color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
+                  { key: 'countersign',   label: 'Countersign',     count: stats.countersign,    color: '#F59E0B', bg: 'rgba(245,158,11,0.05)',  border: 'rgba(245,158,11,0.18)',  activeBg: 'rgba(245,158,11,0.18)',  activeBorder: '#F59E0B',               glow: '0 0 12px rgba(245,158,11,0.4)' },
                   { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#F97316', bg: 'rgba(249,115,22,0.05)',  border: 'rgba(249,115,22,0.18)',  activeBg: 'rgba(249,115,22,0.18)',  activeBorder: '#F97316',               glow: '0 0 12px rgba(249,115,22,0.4)' },
                   { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
                   { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
