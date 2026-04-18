@@ -38,7 +38,7 @@ import { useSynopticToast }    from '../Synoptic/useSynopticToast';
 import { useSynopticFlags }    from '../Synoptic/useSynopticFlags';
 import { SaveToast }           from '../Synoptic/UI/SaveToast';
 
-import { mockCaseService } from '@/services/cases/mockCaseService';
+import { mockCaseService, countersignSynoptic } from '@/services/cases/mockCaseService';
 import { useDirtyState } from '@/contexts/DirtyStateContext';
 import { useLogout } from '@/hooks/useLogout';
 import '@/pathscribe.css';
@@ -47,7 +47,13 @@ import type { Case } from '@/types/case/Case';
 import type { MissingRequiredField, ReviewField } from './components/RightSynopticPanel';
 import { AiReviewModal }  from './modals/AiReviewModal';
 import { DelegateModal }  from '../Synoptic/Delegate/DelegateModal';
+import CaseTeamModal     from './modals/CaseTeamModal';
 import { mockActionRegistryService } from '@/services/actionRegistry/mockActionRegistryService';
+import { PreFinalisationModal }    from './modals/PreFinalisationModal';
+import { BiometricSetupWizard }    from '@/components/Biometric/BiometricSetupWizard';
+import { useAuth }                 from '@/contexts/AuthContext';
+import { useMessaging }           from '@/contexts/MessagingContext';
+import { messageService }         from '@/services';
 
 // ─── Shared overlay style (passed to all modals) ──────────────
 const overlayStyle: React.CSSProperties = {
@@ -97,7 +103,23 @@ const SynopticReportPage: React.FC = () => {
  
   const [availableProtocols, setAvailableProtocols] = useState<{id:string;name:string}[]>([]);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  // ── Pre-finalisation review modal ──────────────────────────
+  const [showPreFinalise, setShowPreFinalise]       = useState(false);
+  const [preFinaliseAndNext, setPreFinaliseAndNext] = useState(false);
+
+  // ── Countersign modal ──────────────────────────────────────
+  const [showCountersignModal, setShowCountersignModal] = useState(false);
+  const [countersignPassword, setCountersignPassword]   = useState('');
+  const [countersignError, setCountersignError]         = useState('');
+
+  // ── Auth / user identity for signing panel ─────────────────
+  const { user, showBiometricWizard, setShowBiometricWizard } = useAuth();
+  const { setMessages } = useMessaging();
+
   const [showDelegateModal, setShowDelegateModal]   = useState(false);
+  const [delegateReturnTo,  setDelegateReturnTo]    = useState<'team' | null>(null);
+  const [showTeamModal,     setShowTeamModal]       = useState(false);
 
   useEffect(() => {
     if (!caseId) return;
@@ -228,6 +250,46 @@ const SynopticReportPage: React.FC = () => {
     }
     setShowFinalizeModal(false);
 
+    // ── Countersign required — set to pending-countersign and notify attending ──
+    if ((caseData as any)?.requiresCountersign) {
+      // Set synoptic(s) to pending-countersign
+      const updatedReports = (caseData?.synopticReports ?? []).map((r: any) => ({
+        ...r, status: r.status === 'deferred' ? r.status : 'pending-countersign',
+      }));
+      const updatedCase = {
+        ...caseData!,
+        synopticReports: updatedReports,
+        status: 'pending-countersign' as any,
+        updatedAt: new Date().toISOString(),
+      };
+      setCaseData(updatedCase as any);
+
+      // Notify attending via in-app message
+      const attending = ((caseData as any).caseTeam ?? [])
+        .find((m: any) => m.role === 'Attending');
+      if (attending?.userId && user) {
+        messageService.send({
+          id:            '',
+          senderId:      user.id,
+          senderName:    user.name,
+          recipientId:   attending.userId,
+          recipientName: attending.name,
+          subject:       `Countersign required — ${caseData?.accession?.fullAccession ?? caseData?.id}`,
+          body:          `${user.name} has finalised the synoptic report for ${caseData?.accession?.fullAccession ?? caseData?.id} (${caseData?.patient?.firstName ?? ''} ${caseData?.patient?.lastName ?? ''}) and it is pending your countersignature before transmission to the LIS.`,
+          timestamp:     new Date(),
+          isRead:        false,
+          isDeleted:     false,
+          isUrgent:      false,
+          caseNumber:    caseData?.accession?.fullAccession ?? '',
+          thread:        [],
+        }).then(result => {
+          if (result.ok) setMessages(prev => [...prev, result.data]);
+        }).catch(() => {});
+      }
+      showToast('Report pending countersignature — attending notified');
+      return;
+    }
+
     // Deferred synoptic on already-finalized case → trigger amendment flow
     const activeReport = caseData?.synopticReports?.find(
       r => r.instanceId === activeReportInstanceId
@@ -252,6 +314,68 @@ Original report issued pending ancillary studies. This amendment incorporates th
       showToast('Report finalized');
     }
   }, [setShowFinalizeModal, showToast, caseData, activeReportInstanceId, setAmendmentMode, setShowAmendmentModal]);
+
+  // ── Countersign confirm ────────────────────────────────────
+  const handleCountersignConfirm = useCallback(async () => {
+    if (!countersignPassword.trim()) {
+      setCountersignError('Password is required.');
+      return;
+    }
+    if (countersignPassword.length < 3) {
+      setCountersignError('Incorrect password.');
+      return;
+    }
+    if (!caseData || !user) return;
+
+    // Countersign all pending-countersign synoptics
+    for (const r of (caseData.synopticReports ?? [])) {
+      if ((r as any).status === 'pending-countersign') {
+        await countersignSynoptic(caseData.id, r.instanceId, user.id);
+      }
+    }
+
+    // Update local case state
+    const updatedReports = (caseData.synopticReports ?? []).map((r: any) => ({
+      ...r,
+      status: r.status === 'pending-countersign' ? 'finalized' : r.status,
+      countersignedBy: user.id,
+      countersignedAt: new Date().toISOString(),
+    }));
+    setCaseData(prev => prev ? {
+      ...prev,
+      synopticReports: updatedReports,
+      status: 'finalized' as any,
+      countersignedBy: user.id,
+      countersignedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } : prev);
+
+    setShowCountersignModal(false);
+    setCountersignPassword('');
+    showToast('Report countersigned and transmitted');
+  }, [countersignPassword, caseData, user, setCaseData, showToast]);
+
+  // ── Voice action listeners for finalise flow ───────────────
+  // Must be AFTER handleFinalizeConfirm to avoid TDZ error
+  useEffect(() => {
+    const openPreFinalise   = () => { setPreFinaliseAndNext(false); setShowPreFinalise(true); };
+    const finaliseAndNext   = () => { setPreFinaliseAndNext(true);  setShowPreFinalise(true); };
+    const finaliseConfirm   = () => {
+      setShowPreFinalise(prev => { if (prev) handleFinalizeConfirm(); return false; });
+    };
+    const finaliseCancel    = () => setShowPreFinalise(false);
+
+    window.addEventListener('PATHSCRIBE_OPEN_PRE_FINALISE',  openPreFinalise);
+    window.addEventListener('PATHSCRIBE_FINALISE_AND_NEXT',  finaliseAndNext);
+    window.addEventListener('PATHSCRIBE_FINALISE_CONFIRM',   finaliseConfirm);
+    window.addEventListener('PATHSCRIBE_FINALISE_CANCEL',    finaliseCancel);
+    return () => {
+      window.removeEventListener('PATHSCRIBE_OPEN_PRE_FINALISE', openPreFinalise);
+      window.removeEventListener('PATHSCRIBE_FINALISE_AND_NEXT', finaliseAndNext);
+      window.removeEventListener('PATHSCRIBE_FINALISE_CONFIRM',  finaliseConfirm);
+      window.removeEventListener('PATHSCRIBE_FINALISE_CANCEL',   finaliseCancel);
+    };
+  }, [handleFinalizeConfirm]);
 
   // ── Amendment submit ───────────────────────────────────────
   const handleAmendmentSubmit = useCallback(() => {
@@ -565,12 +689,12 @@ Original report issued pending ancillary studies. This amendment incorporates th
           onSaveDraft={() => { setHasUnsavedData(false); showToast('Draft saved'); }}
           onSaveAndNext={() => { setHasUnsavedData(false); showToast('Draft saved'); navigateToCase('next'); }}
           onFinalize={() => {
-            if (!synopticPanelRef.current) { setShowFinalizeModal(true); return; }
+            if (!synopticPanelRef.current) { setPreFinaliseAndNext(false); setShowPreFinalise(true); return; }
             const missing = synopticPanelRef.current.validateRequired();
             if (missing.length > 0) { setMissingFields(missing); setShowMissingWarning(true); return; }
             const uncertain = synopticPanelRef.current.getUncertainRequiredFields();
             if (uncertain.length > 0) { setReviewFields(uncertain); setFinalizeAndNextPending(false); setShowAiReview(true); return; }
-            // Check for any deferred synoptics — warn but allow sign-out
+            // Check for deferred synoptics — warn but allow
             const deferredReports = (caseData?.synopticReports ?? []).filter((r: any) => r.status === 'deferred');
             if (deferredReports.length > 0) {
               const names = deferredReports.map((r: any) => r.templateName).join(', ');
@@ -578,25 +702,28 @@ Original report issued pending ancillary studies. This amendment incorporates th
 
 ${names}
 
-These will require an amendment when ancillary results are available.
+These will require an addendum when ancillary results are available.
 
 Proceed with sign-out?`)) return;
             }
-            setShowFinalizeModal(true);
+            setPreFinaliseAndNext(false);
+            setShowPreFinalise(true);
           }}
           onFinalizeAndNext={() => {
-            if (!synopticPanelRef.current) { setShowFinalizeModal(true); return; }
+            if (!synopticPanelRef.current) { setPreFinaliseAndNext(true); setShowPreFinalise(true); return; }
             const missing = synopticPanelRef.current.validateRequired();
             if (missing.length > 0) { setMissingFields(missing); setShowMissingWarning(true); return; }
             const uncertain = synopticPanelRef.current.getUncertainRequiredFields();
             if (uncertain.length > 0) { setReviewFields(uncertain); setFinalizeAndNextPending(true); setShowAiReview(true); return; }
-            setShowFinalizeModal(true);
+            setPreFinaliseAndNext(true);
+            setShowPreFinalise(true);
           }}
           onSignOut={() => setShowSignOutModal(true)}
           onAddendumAmendment={() => { setAmendmentMode('addendum'); setShowAmendmentModal(true); }}
           onHistory={() => setIsSimilarCasesOpen(true)}
           onFlags={() => openFlagManager(caseData)}
           onDelegate={() => setShowDelegateModal(true)}
+          onTeam={() => setShowTeamModal(true)}
           onCodes={() => setShowCodesModal(true)}
           onNextCase={() => { if (hasUnsavedData) { setPendingNavigation('next'); } else { navigateToCase('next'); } }}
           onPreviousCase={() => { if (hasUnsavedData) { setPendingNavigation('prev'); } else { navigateToCase('prev'); } }}
@@ -629,7 +756,8 @@ Proceed with sign-out?`)) return;
           onComplete={(summary) => {
             console.info('[PathScribe] AI review summary:', summary);
             setShowAiReview(false);
-            setShowFinalizeModal(true);
+            // Open pre-finalisation review (not the old password modal)
+            setShowPreFinalise(true);
           }}
           onCancel={() => setShowAiReview(false)}
         />
@@ -679,6 +807,135 @@ Proceed with sign-out?`)) return;
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Countersign banner ───────────────────────────────── */}
+      {(caseData as any)?.requiresCountersign && caseData?.status === 'pending-countersign' && (
+        <div style={{
+          position: 'fixed', bottom: 72, left: 0, right: 0, zIndex: 9000,
+          background: 'rgba(245,158,11,0.12)', borderTop: '2px solid #f59e0b',
+          padding: '12px 32px', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 16,
+        }}>
+          <div>
+            <span style={{ fontWeight: 700, color: '#fbbf24', fontSize: 14 }}>
+              ⏳ Countersignature required
+            </span>
+            <span style={{ color: '#94a3b8', fontSize: 13, marginLeft: 12 }}>
+              This report has been finalised and is pending your review and countersignature before LIS transmission.
+            </span>
+          </div>
+          <button
+            onClick={() => { setShowCountersignModal(true); setCountersignPassword(''); setCountersignError(''); }}
+            style={{
+              padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', border: '1.5px solid #f59e0b',
+              background: 'rgba(245,158,11,0.15)', color: '#fbbf24', flexShrink: 0,
+            }}
+          >
+            Countersign Report
+          </button>
+        </div>
+      )}
+
+      {/* ── Countersign modal ─────────────────────────────────── */}
+      {showCountersignModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 30000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: 32, width: 480, maxWidth: '90vw' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', margin: '0 0 8px' }}>
+              Countersign Report
+            </h2>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.6 }}>
+              You are countersigning <strong style={{ color: '#f1f5f9' }}>{caseData?.accession?.fullAccession}</strong> —&nbsp;
+              {caseData?.patient?.firstName} {caseData?.patient?.lastName}.
+              This confirms your clinical review and authorises LIS transmission.
+            </p>
+            <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: '#fbbf24' }}>
+              ⚠ Countersignature constitutes a legal attestation. Ensure you have reviewed the complete report before proceeding.
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+                Password — confirm your identity (21 CFR Part 11)
+              </label>
+              <input
+                type="password"
+                value={countersignPassword}
+                onChange={e => { setCountersignPassword(e.target.value); setCountersignError(''); }}
+                placeholder="Enter your password"
+                autoFocus
+                autoComplete="current-password"
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13,
+                  border: `1px solid ${countersignError ? '#ef4444' : '#334155'}`,
+                  background: '#0f172a', color: '#f1f5f9', boxSizing: 'border-box' as const, outline: 'none',
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') handleCountersignConfirm(); }}
+              />
+              {countersignError && <p style={{ fontSize: 11, color: '#ef4444', margin: '4px 0 0' }}>{countersignError}</p>}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowCountersignModal(false)}
+                style={{ padding: '9px 18px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '1px solid #334155', background: 'transparent', color: '#94a3b8' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCountersignConfirm}
+                style={{ padding: '9px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#f59e0b', color: '#000' }}
+              >
+                Countersign & Transmit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pre-finalisation review modal ─────────────────────── */}
+      <PreFinalisationModal
+        show={showPreFinalise}
+        caseAccession={caseData?.accession?.fullAccession ?? ''}
+        patientName={`${caseData?.patient?.firstName ?? ''} ${caseData?.patient?.lastName ?? ''}`}
+        reportingMode={(caseData as any)?.reportingMode === 'pathscribe' ? 'pathscribe' : 'copilot'}
+        synoptics={(caseData?.synopticReports ?? []).map((r: any) => {
+          const specimen = caseData?.specimens?.find((s: any) => s.id === r.specimenId);
+          const answered = Object.entries(r.answers ?? {}).filter(([, v]) =>
+            v !== '' && v !== null && v !== undefined &&
+            !(Array.isArray(v) && (v as any[]).length === 0)
+          );
+          return {
+            instanceId:    r.instanceId,
+            templateName:  r.templateName,
+            specimenId:    r.specimenId,
+            specimenLabel: specimen?.label ?? '?',
+            specimenDesc:  specimen?.description ?? '',
+            answers:       r.answers ?? {},
+            fieldLabels:   {},
+            fieldOrder:    Object.keys(r.answers ?? {}),
+            answeredCount: answered.length,
+            totalCount:    Object.keys(r.answers ?? {}).length,
+            status:        r.status,
+          };
+        })}
+        userId={user?.id ?? ''}
+        userDisplayName={user?.name ?? ''}
+        userCredentials={(user as any)?.credentials ?? ''}
+        finalizeAndNext={preFinaliseAndNext}
+        onConfirm={(_ordered, _excluded) => {
+          setShowPreFinalise(false);
+          handleFinalizeConfirm();
+        }}
+        onCancel={() => setShowPreFinalise(false)}
+      />
+
+      {/* ── Biometric setup wizard (first login) ──────────────── */}
+      {showBiometricWizard && user && (
+        <BiometricSetupWizard
+          userId={user.id}
+          userName={user.name}
+          onComplete={() => setShowBiometricWizard(false)}
+          onDismiss={() => setShowBiometricWizard(false)}
+        />
       )}
 
       <FinalizeSynopticModal
@@ -848,17 +1105,37 @@ Proceed with sign-out?`)) return;
         />
       )}
 
+      {/* Case Team Modal */}
+      {showTeamModal && caseData && (
+        <CaseTeamModal
+          caseData={caseData}
+          onClose={() => setShowTeamModal(false)}
+          onUpdated={(updated) => { setCaseData(updated); }}
+          onDelegate={() => { setShowTeamModal(false); setDelegateReturnTo('team'); setShowDelegateModal(true); }}
+        />
+      )}
+
       {/* Delegate Modal */}
       {showDelegateModal && (
         <DelegateModal
           isOpen={showDelegateModal}
-          onClose={() => setShowDelegateModal(false)}
+          onClose={() => {
+            setShowDelegateModal(false);
+            if (delegateReturnTo === 'team') {
+              setShowTeamModal(true);
+              setDelegateReturnTo(null);
+            }
+          }}
           registry={mockActionRegistryService}
           caseId={caseId}
           currentUserId="PATH-001"
           onDelegated={() => {
             setShowDelegateModal(false);
             showToast('Case delegated successfully');
+            if (delegateReturnTo === 'team') {
+              setShowTeamModal(true);
+              setDelegateReturnTo(null);
+            }
           }}
           synopticInstances={(caseData?.synopticReports ?? []).map(r => ({
             instanceId: r.instanceId,

@@ -11,15 +11,71 @@ export const ActionsTab: React.FC = () => {
   const [editingAction, setEditingAction] = useState<SystemAction | null>(null);
   const [tempShortcut, setTempShortcut] = useState('');
   const [tempTriggers, setTempTriggers] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [shortcutError, setShortcutError] = useState('');
+  const [shortcutSuggestion, setShortcutSuggestion] = useState('');
 
   const openEditModal = (action: SystemAction) => {
     setEditingAction(action);
     setTempShortcut(action.shortcut);
     setTempTriggers(action.voiceTriggers.join(', '));
+    setShortcutError('');
+    setShortcutSuggestion('');
+    setIsRecording(false);
+  };
+
+  // Capture key combo from actual keypress
+  const handleShortcutKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isRecording) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const parts: string[] = [];
+    if (e.ctrlKey)  parts.push('Ctrl');
+    if (e.altKey)   parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+    if (e.metaKey)  parts.push('Meta');
+
+    const key = e.key;
+    // Ignore standalone modifier keys
+    if (['Control','Alt','Shift','Meta'].includes(key)) return;
+
+    // Normalise key names
+    const keyMap: Record<string,string> = {
+      ' ': 'Space', 'ArrowUp': 'ArrowUp', 'ArrowDown': 'ArrowDown',
+      'ArrowLeft': 'ArrowLeft', 'ArrowRight': 'ArrowRight',
+      'Enter': 'Enter', 'Escape': 'Escape', 'Backspace': 'Backspace',
+      'Delete': 'Delete', 'Tab': 'Tab', 'Home': 'Home', 'End': 'End',
+      'PageUp': 'PageUp', 'PageDown': 'PageDown',
+    };
+    const normKey = keyMap[key] ?? (key.length === 1 ? key.toUpperCase() : key);
+    parts.push(normKey);
+
+    const combo = parts.join('+');
+    setTempShortcut(combo);
+    setIsRecording(false);
+    validateShortcut(combo, editingAction?.id ?? '');
+  };
+
+  const validateShortcut = (combo: string, currentId: string) => {
+    setShortcutError('');
+    setShortcutSuggestion('');
+    if (!combo) return;
+    const conflict = actions.find(a => a.id !== currentId && a.shortcut.toLowerCase() === combo.toLowerCase());
+    if (conflict) {
+      setShortcutError('"' + combo + '" is already assigned to "' + conflict.label + '"');
+      // Suggest Alt+Shift variant or Ctrl variant
+      const base = combo.replace(/^(Ctrl[+]|Alt[+]|Shift[+])*/i, '').replace(/[+]$/, '');
+      const suggestions = [
+        'Alt+Shift+' + base, 'Ctrl+' + base, 'Ctrl+Shift+' + base
+      ].filter(s => !actions.find(a => a.shortcut.toLowerCase() === s.toLowerCase()));
+      if (suggestions[0]) setShortcutSuggestion(suggestions[0]);
+    }
   };
 
   const handleSave = async () => {
     if (!editingAction) return;
+    if (shortcutError) return;
     const triggers = tempTriggers.split(',').map(t => t.trim()).filter(t => t !== "");
     await mockActionRegistryService.updateAction(editingAction.id, { 
       shortcut: tempShortcut, 
@@ -197,7 +253,7 @@ export const ActionsTab: React.FC = () => {
       <div style={{ overflowX: 'auto', opacity: editingAction ? 0.2 : 1, pointerEvents: editingAction ? 'none' : 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.2)', color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+            <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.2)', color: '#64748b', fontSize: '12px', textTransform: 'uppercase', position: 'sticky', top: 0, background: '#0a0f1e', zIndex: 2 }}>
               <th style={{ padding: '12px' }}>Action</th>
               <th style={{ padding: '12px' }}>Shortcut</th>
               <th style={{ padding: '12px' }}>Voice Triggers</th>
@@ -207,7 +263,7 @@ export const ActionsTab: React.FC = () => {
           <tbody>
             {displayedCategories.map(cat => (
               <React.Fragment key={cat}>
-                <tr style={{ background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.15)', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+                <tr style={{ background: 'rgba(10,15,30,0.98)', borderTop: '1px solid rgba(255,255,255,0.15)', borderBottom: '1px solid rgba(255,255,255,0.15)', position: 'sticky', top: '41px', zIndex: 1 }}>
                   <td colSpan={4} style={{ padding: '10px 12px', fontSize: '11px', fontWeight: 'bold', color: '#38bdf8' }}>{cat}</td>
                 </tr>
                 {filteredActions.filter(a => a.category === cat).map((action) => (
@@ -240,7 +296,38 @@ export const ActionsTab: React.FC = () => {
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>{editingAction.label}</p>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', color: '#94a3b8', fontSize: '11px', fontWeight: 'bold', marginBottom: '8px' }}>Shortcut</label>
-              <input value={tempShortcut} onChange={(e) => setTempShortcut(e.target.value)} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#38bdf8', padding: '12px', borderRadius: '6px', outline: 'none' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={isRecording ? '⏺ Press your keys now…' : (tempShortcut || 'None')}
+                  readOnly
+                  onKeyDown={handleShortcutKeyDown}
+                  onFocus={() => { setIsRecording(true); setShortcutError(''); setShortcutSuggestion(''); }}
+                  onBlur={() => setIsRecording(false)}
+                  style={{ flex: 1, background: isRecording ? 'rgba(56,189,248,0.1)' : '#1e293b', border: `1px solid ${isRecording ? '#38bdf8' : shortcutError ? '#ef4444' : '#334155'}`, color: isRecording ? '#38bdf8' : '#e2e8f0', padding: '12px', borderRadius: '6px', outline: 'none', cursor: 'pointer', fontFamily: 'monospace', fontSize: 14 }}
+                  placeholder="Click then press keys"
+                />
+                {tempShortcut && (
+                  <button onClick={() => { setTempShortcut(''); setShortcutError(''); setShortcutSuggestion(''); }}
+                    style={{ padding: '0 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#f87171', cursor: 'pointer', fontSize: 12 }}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>
+                {isRecording ? '🎯 Recording — press your key combination now' : 'Click the field and press the key combination you want to assign'}
+              </div>
+              {shortcutError && (
+                <div style={{ marginTop: 6, padding: '8px 10px', borderRadius: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', fontSize: 12, color: '#f87171' }}>
+                  ⚠ {shortcutError}
+                  {shortcutSuggestion && (
+                    <span
+                      onClick={() => { setTempShortcut(shortcutSuggestion); validateShortcut(shortcutSuggestion, editingAction?.id ?? ''); }}
+                      style={{ marginLeft: 10, color: '#38bdf8', cursor: 'pointer', textDecoration: 'underline' }}>
+                      {'Use "' + shortcutSuggestion + '" instead?'}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ marginBottom: '32px' }}>
               <label style={{ display: 'block', color: '#94a3b8', fontSize: '11px', fontWeight: 'bold', marginBottom: '8px' }}>Voice Triggers (Comma Separated)</label>
@@ -248,7 +335,10 @@ export const ActionsTab: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
               <button onClick={() => setEditingAction(null)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' }}>CANCEL</button>
-              <button onClick={handleSave} style={{ background: '#38bdf8', border: 'none', color: '#000', padding: '10px 28px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>SAVE CHANGES</button>
+              <button onClick={handleSave} disabled={!!shortcutError}
+                style={{ background: shortcutError ? '#1e293b' : '#38bdf8', border: 'none', color: shortcutError ? '#475569' : '#000', padding: '10px 28px', borderRadius: '6px', fontWeight: 'bold', cursor: shortcutError ? 'not-allowed' : 'pointer' }}>
+                SAVE CHANGES
+              </button>
             </div>
           </div>
         </div>

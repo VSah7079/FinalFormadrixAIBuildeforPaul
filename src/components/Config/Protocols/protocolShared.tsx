@@ -104,6 +104,27 @@ export let PROTOCOL_REGISTRY: Protocol[] = [
     lastModified: '2026-03-30', owner: 'Dr. R. Singh',
   },
   {
+    // CAP v4.3.0.0 — 7 sections, 29 fields (official eCC Word doc)
+    id: 'prostate_resection', name: 'CAP Prostate Gland — Radical Prostatectomy',
+    category: 'PROSTATE', version: '4.3.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 29, snomedPct: 84, icdPct: 78,
+    lastModified: '2026-04-17', owner: 'Dr. S. Johnson',
+  },
+  {
+    // CAP v5.1.0.0 — 7 sections, 31 fields (official eCC Word doc)
+    id: 'lung_resection', name: 'CAP Lung — Resection (All Types)',
+    category: 'LUNG', version: '5.1.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 31, snomedPct: 82, icdPct: 75,
+    lastModified: '2026-04-17', owner: 'Dr. S. Johnson',
+  },
+  {
+    // CAP v1.1.0.0 — 5 sections, 17 fields (real eCC JSON)
+    id: 'skin_melanoma_bx', name: 'CAP Melanoma of the Skin — Biopsy/Excision',
+    category: 'SKIN', version: '1.1.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 22, snomedPct: 80, icdPct: 72,
+    lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
+  },
+  {
     id: 'liver_biopsy_medical', name: 'Liver Biopsy — Medical (Native)',
     category: 'LIVER', version: '1.0.1', source: 'Custom', type: 'Non-cancer / Custom',
     status: 'in_review', fields: 18, snomedPct: 72, icdPct: 60,

@@ -140,8 +140,31 @@ export async function getTemplate(id: string): Promise<TemplateDetail> {
 
   // â”€â”€ MOCK â”€â”€
   const entry = registryEntry(id);
+  const storedTemplate = editorStore.get(id);
+
+  // Fallback: template seeded directly into editorStore but not in PROTOCOL_REGISTRY
+  // (e.g. skin_melanoma_bx, or any template added via editorStore.set without a registry entry)
+  if (!entry && storedTemplate) {
+    const tpl = storedTemplate as any;
+    const fieldCount = (tpl.sections ?? []).reduce((n: number, s: any) => n + (s.fields?.length ?? 0), 0);
+    return {
+      id,
+      name:      tpl.name ?? id,
+      source:    tpl.source ?? 'CAP',
+      version:   tpl.version ?? '1.0.0',
+      category:  tpl.category ?? 'Other',
+      status:    'approved' as TemplateStatus,
+      fields:    fieldCount,
+      sections:  (tpl.sections ?? []).length,
+      createdBy: 'CAP',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+      template:  storedTemplate,
+    };
+  }
+
   if (!entry) throw { code: 'NOT_FOUND', message: `Template ${id} not found` } as ServiceError;
-  const template = editorStore.get(id) ?? {
+  const template = storedTemplate ?? {
     id, name: entry.name, source: entry.source,
     version: entry.version, category: entry.category, sections: [],
   };
@@ -539,15 +562,21 @@ import BREAST_DCIS_JSON          from '../../data/templates/CAP/breast_dcis_rese
 import LUNG_ADENO_JSON           from '../../data/templates/CAP/lung_adeno.json';
 import PROSTATE_NEEDLE_JSON      from '../../data/templates/CAP/prostate_needle_biopsy.json';
 import COLON_RESECTION_JSON      from '../../data/templates/CAP/colon_resection.json';
+import SKIN_MELANOMA_JSON        from '../../data/templates/CAP/skin_melanoma_bx.json';
+import PROSTATE_RESECTION_JSON   from '../../data/templates/CAP/prostate_resection.json';
+import LUNG_RESECTION_JSON       from '../../data/templates/CAP/lung_resection.json';
 
 // Seed all real CAP templates
-editorStore.set('breast_invasive',      BREAST_INVASIVE_JSON   as any);
-editorStore.set('breast_dcis_resection',BREAST_DCIS_JSON       as any);
-editorStore.set('lung_adeno',           LUNG_ADENO_JSON        as any);
-editorStore.set('prostate_needle_biopsy', PROSTATE_NEEDLE_JSON as any);
-editorStore.set('colon_resection',         COLON_RESECTION_JSON   as any);
-
-// Keep melanoma (already seeded above from skin_melanoma_bx.json)
+editorStore.set('breast_invasive',        BREAST_INVASIVE_JSON   as any);
+editorStore.set('breast_dcis_resection',  BREAST_DCIS_JSON       as any);
+editorStore.set('lung_adeno',             LUNG_ADENO_JSON        as any);
+editorStore.set('prostate_needle_biopsy', PROSTATE_NEEDLE_JSON   as any);
+editorStore.set('colon_resection',        COLON_RESECTION_JSON   as any);
+editorStore.set('skin_melanoma_bx',          SKIN_MELANOMA_JSON       as any);
+editorStore.set('prostate_resection',        PROSTATE_RESECTION_JSON  as any);
+editorStore.set('lung_resection',            LUNG_RESECTION_JSON      as any);
+// Alias — internal protocol ID used in CAP JSON
+editorStore.set('skin_invasive_melanoma_biopsy', SKIN_MELANOMA_JSON as any);
 
 // RCPath Templates (UK)
 import RCPATH_BREAST_JSON         from '../../data/templates/RCPATH/rcpath_g148_breast_surgical_excision.json';

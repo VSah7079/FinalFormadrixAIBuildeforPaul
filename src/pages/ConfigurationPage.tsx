@@ -15,12 +15,13 @@ import AITab         from '../components/Config/AI/index';
 import ModelsTab     from '../components/Config/Models/index';
 import ProtocolsTab  from '../components/Config/Protocols/index';
 import StaffTab      from '../components/Config/Users/index';
-import SystemTab     from '../components/Config/System/Index';
+import SystemTab     from '../components/Config/System/index';
 import MacrosTab     from '../components/Config/Macros/index';
 import VoiceSettings from '../components/Voice/VoiceSettings';
 import { ActionsTab } from '../components/Config/Actions/ActionsTab';
+import { DemoResetTab } from '../components/Config/System/DemoResetTab';
 
-const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros'] as const;
+const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros', 'demoreset'] as const;
 type TabId = typeof VALID_TABS[number];
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
@@ -33,6 +34,7 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: 'actions',   label: 'Action Registry'   },
   { id: 'macros',    label: 'Macros'            },
   { id: 'narrative', label: 'Narrative Templates' },
+  { id: 'demoreset', label: '⟳ Demo Reset'          },
 
 ];
 
@@ -103,6 +105,7 @@ const ConfigurationPage: React.FC = () => {
       case 'protocols': return <ProtocolsTab />;
       case 'staff':     return <StaffTab />;
       case 'system':    return <SystemTab />;
+      case 'demoreset': return <DemoResetTab />;
       case 'actions':   return <ActionsTab />;
       case 'macros':    return <MacrosTab />;
       case 'voice':     return <VoiceSettings />;

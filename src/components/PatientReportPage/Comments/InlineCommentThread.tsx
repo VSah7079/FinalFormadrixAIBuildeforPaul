@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import '../../../pathscribe.css';
-import { logEvent } from "../../../audit/auditLogger";
-import { mockDcisTemplate } from "../../../templates/mockDcisTemplate";
+import '../../pathscribe.css';
+import { logEvent } from "../../audit/auditLogger";
+import { mockDcisTemplate } from "../../templates/mockDcisTemplate";
 
 interface Comment {
   id: string;

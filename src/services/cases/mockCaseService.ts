@@ -47,7 +47,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4401-SP-1', label: 'A', description: 'Left breast mastectomy', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
       { id: 'S26-4401-SP-2', label: 'B', description: 'Left axillary sentinel lymph node', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clinicalIndication: 'Invasive ductal carcinoma, left breast 10 o\'clock, ER+/PR+/HER2 2+. Proceeding to mastectomy following multidisciplinary tumour board recommendation.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Invasive ductal carcinoma, left breast 10 o\'clock, ER+/PR+/HER2 2+. Proceeding to mastectomy following multidisciplinary tumour board recommendation.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "left breast mastectomy" is a 487g specimen, 18.0 × 14.0 × 4.5 cm. The overlying skin ellipse measures 16.0 × 7.0 cm and is unremarkable. Sectioning reveals a firm, stellate, tan-white mass measuring 2.3 × 1.8 × 1.5 cm in the upper outer quadrant, 3.0 cm from the nipple and 2.0 cm from the deep margin. No satellite nodules identified. Remaining breast tissue is fibrofatty.',
       microscopicDescription: 'Sections show invasive carcinoma of no special type (NST), Nottingham grade 2 (tubules 3, nuclei 2, mitoses 1; total score 6). The invasive component measures 2.3 cm. Lymphovascular invasion is not identified. DCIS of intermediate nuclear grade, cribriform pattern, is present at the periphery of the invasive carcinoma, spanning approximately 4 mm. All margins are negative; closest margin is the deep margin at 2.0 mm.',
@@ -135,7 +135,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4402-SP-1', label: 'A', description: 'Sigmoid colon resection', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
       { id: 'S26-4402-SP-2', label: 'B', description: 'Apical lymph node', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Michael Torres', clinicalIndication: 'Sigmoid colon adenocarcinoma diagnosed on colonoscopy biopsy. CT staging: T3N1M0. Proceeding to laparoscopic sigmoid resection.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-001' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Michael Torres', clientId: 'c2', clientName: 'Riverside Medical Center', clinicalIndication: 'Sigmoid colon adenocarcinoma diagnosed on colonoscopy biopsy. CT staging: T3N1M0. Proceeding to laparoscopic sigmoid resection.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "sigmoid colon resection" is a segment of sigmoid colon measuring 22.0 cm in length. The serosal surface is smooth and glistening. A fungating, ulcerating tumor measuring 4.5 × 3.2 cm is present on the anterior wall, 9.0 cm from the distal margin and 11.0 cm from the proximal margin. The tumor invades through the muscularis propria into pericolorectal adipose tissue. The circumferential resection margin is 3 mm from the tumor.',
       microscopicDescription: 'Sections show moderately differentiated adenocarcinoma (low grade) infiltrating through the muscularis propria into pericolorectal adipose tissue (pT3). Perineural invasion is present. Lymphovascular invasion is not identified. All surgical margins (proximal, distal, radial) are uninvolved; the closest margin (radial) is 3 mm. 18 lymph nodes identified in the pericolorectal fat; 3 of 18 are positive for metastatic carcinoma, all without extranodal extension (pN1b).',
@@ -159,7 +159,7 @@ const MOCK_CASES: Case[] = [
           perineural_invasion: 'pni_present',
           margin_status_invasive: 'all_margins_negative_invasive',
           distance_radial_margin: '3 mm',
-          regional_ln_status: 'ln_tumor_present',
+          regional_ln_status: 'ln_all_negative',
           ln_with_tumor: '3',
           ln_examined: '18',
           pT_category: 'pT3',
@@ -218,7 +218,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4403-SP-2', label: 'B', description: 'Station 4R mediastinal lymph nodes', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
       { id: 'S26-4403-SP-3', label: 'C', description: 'Station 7 subcarinal lymph nodes', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. James Park', clinicalIndication: '2.3 cm right upper lobe solid nodule, PET-avid (SUVmax 8.4). CT-guided biopsy: adenocarcinoma. EGFR/ALK negative. Proceeding to VATS right upper lobectomy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. James Park', clientId: 'c3', clientName: 'Northside Clinic', clinicalIndication: '2.3 cm right upper lobe solid nodule, PET-avid (SUVmax 8.4). CT-guided biopsy: adenocarcinoma. EGFR/ALK negative. Proceeding to VATS right upper lobectomy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "right upper lobe" is a lobectomy specimen, 14.0 × 10.0 × 3.5 cm, weighing 180g. The pleural surface is smooth. Sectioning reveals a firm, tan-white, spiculated mass measuring 2.3 × 2.1 × 1.9 cm in the posterior segment, 1.5 cm from the bronchial margin and 0.3 cm from the pleural surface. The remaining lung parenchyma shows mild emphysematous change.',
       microscopicDescription: 'Sections show acinar-predominant adenocarcinoma, IASLC/ATS/ERS grade 2 (moderately differentiated). The invasive component measures 2.3 cm. Visceral pleural invasion is present (PL1, elastic layer). Lymphovascular invasion is not identified. The bronchial margin is negative (1.5 cm). Specimens B and C: 0 of 5 lymph nodes positive for metastatic carcinoma.',
@@ -305,7 +305,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4404-SP-5', label: 'E', description: 'Prostate biopsy — left mid', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
       { id: 'S26-4404-SP-6', label: 'F', description: 'Prostate biopsy — left base', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 8.4 ng/mL, rising from 5.2 ng/mL 12 months prior. Abnormal DRE: firm nodule right lobe. MRI prostate: PI-RADS 4 lesion right mid-gland. Proceeding to systematic + targeted biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clientId: 'c4', clientName: 'Westview Surgery Center', clinicalIndication: 'PSA 8.4 ng/mL, rising from 5.2 ng/mL 12 months prior. Abnormal DRE: firm nodule right lobe. MRI prostate: PI-RADS 4 lesion right mid-gland. Proceeding to systematic + targeted biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin are six containers labeled A through F, each containing prostate needle biopsy cores. Specimen A (right apex): 2 cores, 1.4 and 1.2 cm. Specimen B (right mid): 2 cores, 1.6 and 1.5 cm. Specimen C (right base): 2 cores, 1.8 and 1.6 cm. Specimens D–F (left apex, mid, base): 2 cores each, 1.3–1.7 cm. All cores are grey-white and rubbery.',
       microscopicDescription: 'Specimens A, B, C (right apex, mid, base): Acinar adenocarcinoma (usual type), Gleason score 3+4=7 (Grade Group 2). 4 of 6 cores involved. Maximum % core involvement: 70% (right mid). Perineural invasion present (right mid, right apex). Specimens D, E, F (left apex, mid, base): Benign prostatic tissue with mild chronic inflammation. No carcinoma identified.',
@@ -373,7 +373,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4405-SP-1', label: 'A', description: 'Right breast lumpectomy', receivedAt: isoDaysAgo(5), collectedAt: isoDaysAgo(6), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clinicalIndication: 'Stereotactic biopsy: DCIS, intermediate grade. Screening mammogram calcifications right upper outer quadrant. Proceeding to wire-localised lumpectomy.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Stereotactic biopsy: DCIS, intermediate grade. Screening mammogram calcifications right upper outer quadrant. Proceeding to wire-localised lumpectomy.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh, wire-localised, labeled "right breast lumpectomy" is a 68g specimen, 7.0 × 5.5 × 3.0 cm. Specimen radiograph confirms calcifications correlating with a firm, white, granular area measuring 1.8 × 1.2 cm in the upper outer quadrant. No discrete mass identified.',
       microscopicDescription: 'Sections show ductal carcinoma in situ (DCIS), intermediate nuclear grade, predominantly cribriform architecture with focal solid areas, spanning 18 mm. Calcifications are present within DCIS foci, correlating with the specimen radiograph. No invasive carcinoma identified. All margins are negative; closest margin is superior at 3 mm. No lymph nodes submitted.',
@@ -444,7 +444,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4406-SP-1', label: 'A', description: 'Left breast core needle biopsy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Patricia Moore', clinicalIndication: 'Palpable mass left breast 2 o\'clock. Ultrasound: 1.8 cm hypoechoic irregular mass. BIRADS 5. Proceeding to ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Patricia Moore', clientId: 'c2', clientName: 'Riverside Medical Center', clinicalIndication: 'Palpable mass left breast 2 o\'clock. Ultrasound: 1.8 cm hypoechoic irregular mass. BIRADS 5. Proceeding to ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin labeled "left breast core needle biopsy" are 3 cores measuring 1.3, 1.4, and 1.5 cm, grey-white and firm.',
       microscopicDescription: 'Pending.',
@@ -457,62 +457,7 @@ const MOCK_CASES: Case[] = [
         templateId: 'breast_invasive',
         templateName: 'CAP Breast Invasive Carcinoma — Resection',
         status: 'draft',
-        // Gross-phase only — microscopy and ancillaries pending
-        answers: {
-          procedure:           'core_needle_biopsy',
-          specimen_laterality: 'left',
-          tumor_site:          ['unknown_quadrant'],
-        },
-        aiSuggestions: {
-          procedure: {
-            value: 'core_needle_biopsy',
-            confidence: 96,
-            source: 'Gross: "left breast core needle biopsy … 3 cores"',
-            verification: 'unverified',
-          },
-          specimen_laterality: {
-            value: 'left',
-            confidence: 99,
-            source: 'Gross: "left breast core needle biopsy"',
-            verification: 'unverified',
-          },
-          tumor_site: {
-            value: ['unknown_quadrant'],
-            confidence: 65,
-            source: 'Order: "2 oclock position" — quadrant not yet confirmed on micro',
-            verification: 'unverified',
-          },
-          // Microscopy-dependent fields — awaiting processing
-          histologic_type: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          histologic_grade: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          tumor_size: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          lvi: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          margin_status_invasive: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          regional_ln_status: {
-            value: '', confidence: 0, source: '', verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          // Receptor status — ordered but awaiting IHC results
-          receptor_status: {
-            value: '', confidence: 0, source: 'ER/PR/HER2 IHC ordered — results pending',
-            verification: 'unverified', awaitingMicroscopy: true,
-          },
-        },
+        answers: {},
         createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(1),
       },
     ],
@@ -521,7 +466,6 @@ const MOCK_CASES: Case[] = [
     caseFlags: [
       { id: 'stat_rush',           name: 'STAT — Rush Processing',   color: 'red',    severity: 5 },
       { id: 'frozen_section',      name: 'Frozen Section Pending',   color: 'orange', severity: 4 },
-      { id: 'awaiting_micro',      name: 'Awaiting Microscopy',      color: 'yellow', severity: 3 },
     ],
     specimenFlags: [
       { id: 'er_pr_her2_ordered',  name: 'ER/PR/HER2 Ordered',       color: 'blue',   severity: 2 },
@@ -545,7 +489,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4407-SP-1', label: 'A', description: 'Anterior resection — rectum', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
       { id: 'S26-4407-SP-2', label: 'B', description: 'Mesorectal lymph nodes', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. James Nguyen', clinicalIndication: 'Rectal adenocarcinoma, 8 cm from anal verge. MRI: mrT3N2. Completed neoadjuvant chemoradiotherapy (FOLFOX × 6 + long-course RT). Restaging MRI: good response. Proceeding to low anterior resection.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. James Nguyen', clientId: 'c3', clientName: 'Northside Clinic', clinicalIndication: 'Rectal adenocarcinoma, 8 cm from anal verge. MRI: mrT3N2. Completed neoadjuvant chemoradiotherapy (FOLFOX × 6 + long-course RT). Restaging MRI: good response. Proceeding to low anterior resection.', receivedDate: isoDaysAgo(3), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "anterior resection" is a segment of rectum measuring 18.0 cm in length with attached mesorectum. The mesorectal fascia is intact (complete TME). An ulcerating tumor measuring 2.5 × 2.0 cm is present on the posterior wall, 8.0 cm from the distal margin. The tumor appears to penetrate through the muscularis propria. The circumferential resection margin is 4 mm.',
       microscopicDescription: 'Post-treatment rectal adenocarcinoma with moderate treatment response (Ryan score 2, <5% residual viable carcinoma). Residual carcinoma invades through muscularis propria into pericolorectal adipose tissue (ypT3). Perineural invasion not identified. Lymphovascular invasion not identified. Proximal and distal margins negative. CRM: 4 mm (negative). 14 of 16 lymph nodes show treatment effect only; 2 lymph nodes contain viable metastatic carcinoma (ypN1b).',
@@ -570,7 +514,7 @@ const MOCK_CASES: Case[] = [
           lvi: ['lvi_not_identified'],
           margin_status_invasive: 'all_margins_negative_invasive',
           distance_radial_margin: '4 mm',
-          regional_ln_status: 'ln_tumor_present',
+          regional_ln_status: 'ln_all_negative',
           ln_with_tumor: '2',
           ln_examined: '16',
           pT_category: 'pT3',
@@ -630,7 +574,7 @@ const MOCK_CASES: Case[] = [
       { id: 'S26-4408-SP-1', label: 'A', description: 'Right breast mastectomy', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(2), specimenFlags: [] },
       { id: 'S26-4408-SP-2', label: 'B', description: 'Right axillary contents', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(2), specimenFlags: [] },
     ],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Sarah Chen', clinicalIndication: 'Multifocal right breast carcinoma — index lesion 2.1 cm invasive NST plus extensive DCIS. BRCA1 positive. Opting for bilateral mastectomy.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-001' },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Sarah Chen', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Multifocal right breast carcinoma — index lesion 2.1 cm invasive NST plus extensive DCIS. BRCA1 positive. Opting for bilateral mastectomy.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "right breast mastectomy" is a 512g specimen. Index tumor: stellate tan-white mass 2.1 × 1.9 × 1.7 cm, upper outer quadrant. Surrounding DCIS-suspicious granular tissue spanning approximately 5 cm. Axillary contents contain abundant fibrofatty tissue.',
       microscopicDescription: 'Invasive carcinoma NST, grade 3 (score 9). Extensive high-grade DCIS, comedo type, spanning 52 mm. Lymphovascular invasion identified. All margins negative. Axillary lymph nodes: 2 of 22 positive, largest deposit 8 mm, no extranodal extension.',
@@ -738,7 +682,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4409-SP-1', label: 'A', description: 'Left breast lumpectomy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clinicalIndication: 'Breast mass, left upper outer quadrant. 100-year-old female. Core biopsy: invasive carcinoma. Proceeding to lumpectomy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Breast mass, left upper outer quadrant. 100-year-old female. Core biopsy: invasive carcinoma. Proceeding to lumpectomy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received fresh labeled "left breast lumpectomy" is a 42g specimen, 6.0 × 4.5 × 2.5 cm. A firm, tan-white, stellate mass measuring 1.4 × 1.1 × 1.0 cm is present in the upper outer quadrant.',
       microscopicDescription: 'Invasive carcinoma of no special type (NST), Nottingham grade 1. Margins negative.',
@@ -802,7 +746,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4410-SP-1', label: 'A', description: 'Products of conception', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clinicalIndication: 'Elective termination of pregnancy at 9 weeks gestation. Products of conception submitted for histological evaluation.', receivedDate: isoDaysAgo(0), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Wong', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Elective termination of pregnancy at 9 weeks gestation. Products of conception submitted for histological evaluation.', receivedDate: isoDaysAgo(0), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Received in formalin labeled "products of conception" is a 12g aggregate of pale grey-white, friable tissue measuring in aggregate 4.0 × 3.0 × 1.5 cm. Chorionic villi are identified grossly.',
       microscopicDescription: 'Pending.',
@@ -843,7 +787,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4411-SP-1', label: 'A', description: 'Right breast core needle biopsy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clinicalIndication: 'Suspicious right breast mass 1.5 cm. BI-RADS 5. Ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Sarah Chen', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Suspicious right breast mass 1.5 cm. BI-RADS 5. Ultrasound-guided core needle biopsy.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Three cores, 1.2–1.5 cm, grey-white and firm.',
       microscopicDescription: 'Invasive carcinoma of no special type, Grade 2. ER/PR/HER2 pending.',
@@ -897,7 +841,7 @@ const MOCK_CASES: Case[] = [
     specimens: [
       { id: 'S26-4412-SP-1', label: 'A', description: 'Prostate needle biopsy — right mid', receivedAt: isoDaysAgo(5), collectedAt: isoDaysAgo(6), specimenFlags: [] },
     ],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clinicalIndication: 'PSA 7.2, PI-RADS 4. Targeted biopsy right mid-gland. Original report amended to update Gleason grade following second opinion review.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-001' },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Anil Sharma', clientId: 'c4', clientName: 'Westview Surgery Center', clinicalIndication: 'PSA 7.2, PI-RADS 4. Targeted biopsy right mid-gland. Original report amended to update Gleason grade following second opinion review.', receivedDate: isoDaysAgo(6), assignedTo: 'PATH-001' },
     diagnostic: {
       grossDescription: 'Two cores, 1.4 and 1.6 cm.',
       microscopicDescription: 'AMENDED: Acinar adenocarcinoma, Gleason score 3+4=7, Grade Group 2. Original report issued as Gleason 3+3=6 — amended following MDT review.',
@@ -947,7 +891,7 @@ const MOCK_CASES: Case[] = [
     originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
     patient: { id: 'PAT-015', mrn: '100015', firstName: 'Robert', lastName: 'Hawkins', dateOfBirth: '1958-11-22T07:00:00.000Z', sex: 'M', phone: '555-301-7711', email: 'rhawkins@example.org', address: '88 Cedar Rd, Phoenix, AZ 85004' },
     specimens: [{ id: 'S26-4415-SP-1', label: 'A', description: 'Sigmoid colon biopsy — three fragments', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Amanda Chen', clinicalIndication: 'Change in bowel habits. Colonoscopy: 15mm polyp sigmoid colon.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Amanda Chen', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Change in bowel habits. Colonoscopy: 15mm polyp sigmoid colon.', receivedDate: isoDaysAgo(0), assignedTo: null },
     diagnostic: { grossDescription: 'Received in formalin labeled "sigmoid colon biopsy" are three tan-pink fragments measuring 0.4–0.8 cm.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -964,7 +908,7 @@ const MOCK_CASES: Case[] = [
     originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
     patient: { id: 'PAT-016', mrn: '100016', firstName: 'Linda', lastName: 'Okafor', dateOfBirth: '1971-04-09T07:00:00.000Z', sex: 'F', phone: '555-302-8822', email: 'lokafor@example.org', address: '22 Maple St, Phoenix, AZ 85006' },
     specimens: [{ id: 'S26-4416-SP-1', label: 'A', description: 'Skin punch biopsy — right forearm', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] }],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Susan Park', clinicalIndication: 'Pigmented lesion right forearm, irregular border. Rule out melanoma.', receivedDate: isoDaysAgo(1), assignedTo: null },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Susan Park', clientId: 'c2', clientName: 'Riverside Medical Center', clinicalIndication: 'Pigmented lesion right forearm, irregular border. Rule out melanoma.', receivedDate: isoDaysAgo(1), assignedTo: null },
     diagnostic: { grossDescription: 'Received in formalin labeled "skin punch biopsy right forearm" is a punch biopsy measuring 0.4 cm in diameter and 0.3 cm deep.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -981,7 +925,7 @@ const MOCK_CASES: Case[] = [
     originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-ACME',
     patient: { id: 'PAT-017', mrn: '100017', firstName: 'Marcus', lastName: 'Delgado', dateOfBirth: '1965-07-30T07:00:00.000Z', sex: 'M', phone: '555-303-9933', email: 'mdelgado@example.org', address: '54 Oak Ave, Phoenix, AZ 85008' },
     specimens: [{ id: 'S26-4417-SP-1', label: 'A', description: 'Colon resection — right hemicolectomy', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
-    order: { priority: 'STAT', requestingProvider: 'Dr. Kevin Ng', clinicalIndication: 'Ascending colon adenocarcinoma diagnosed on biopsy. CT: T3N0. STAT — OR case.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    order: { priority: 'STAT', requestingProvider: 'Dr. Kevin Ng', clientId: 'c1', clientName: 'Metro General Hospital', clinicalIndication: 'Ascending colon adenocarcinoma diagnosed on biopsy. CT: T3N0. STAT — OR case.', receivedDate: isoDaysAgo(0), assignedTo: null },
     diagnostic: { grossDescription: 'Received fresh labeled "right hemicolectomy" is a 28 cm segment of right colon with attached terminal ileum. A fungating tumor measuring 3.8 × 3.2 cm is identified in the ascending colon.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -1135,7 +1079,7 @@ const MOCK_CASES: Case[] = [
     ],
     order: {
       priority: 'Routine',
-      requestingProvider: 'Mr. David Whitmore',
+      requestingProvider: 'Mr. David Whitmore', clientId: 'c-mft-02', clientName: 'Wythenshawe Hospital',
       clinicalIndication: 'PSA 12.4 ng/mL, rising trend. Abnormal DRE: nodule right lobe. mpMRI prostate: PI-RADS 5 lesion right mid-gland, 14 mm. Proceeding to MRI-targeted and systematic transperineal biopsy under general anaesthetic.',
       receivedDate: isoDaysAgo(1),
       assignedTo: 'PATH-UK-001',
@@ -1153,11 +1097,23 @@ const MOCK_CASES: Case[] = [
         templateName: 'RCPath Prostate — Needle Biopsy',
         status: 'draft',
         answers: {},
-        aiSuggestions: {},
+        aiSuggestions: {
+          procedure:                      { value: ['procedure_systematic_biopsy', 'procedure_targeted_biopsy'], confidence: 95, source: 'Gross: "systematic transperineal biopsy ... targeted cores"',  verification: 'unverified' },
+          positive_specimen_locations:    { value: ['positive_right'],             confidence: 97, source: 'Micro: "Specimens A, B, C (right) — carcinoma identified"',           verification: 'unverified' },
+          highest_gleason_score:          { value: 'gg3_4_3_7',                   confidence: 98, source: 'Micro: "Gleason score 4+3=7 (Grade Group 3)"',                        verification: 'unverified' },
+          intraductal_carcinoma:          { value: 'idc_not_identified',           confidence: 80, source: 'Micro: no intraductal carcinoma mentioned',                           verification: 'unverified' },
+          perineural_invasion:            { value: 'pni_present',                  confidence: 97, source: 'Micro: "Perineural invasion present"',                               verification: 'unverified' },
+          seminal_vesicle_invasion:       { value: 'svi_not_identified',           confidence: 90, source: 'Micro: "No seminal vesicle involvement identified on biopsy"',        verification: 'unverified' },
+        },
         createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
       },
     ],
-    status: 'draft' as CaseStatus,
+    status: 'pending-countersign' as CaseStatus,
+    requiresCountersign: true,
+    caseTeam: [
+      { userId: 'PATH-UK-001', role: 'Attending', name: 'Paul Carter' },
+      { userId: 'PATH-UK-002', role: 'Resident',  name: 'Oliver Pemberton' },
+    ],
     createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
     caseFlags: [
       { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
@@ -1270,7 +1226,7 @@ const MOCK_CASES: Case[] = [
     ],
     order: {
       priority: 'Routine',
-      requestingProvider: 'Mr. David Whitmore',
+      requestingProvider: 'Mr. David Whitmore', clientId: 'c-mft-02', clientName: 'Wythenshawe Hospital',
       clinicalIndication: 'Prostate adenocarcinoma, Gleason 4+3=7, Grade Group 3. PSA 11.2 ng/mL. MRI: T2N0. Proceeding to robot-assisted radical prostatectomy with bilateral pelvic lymph node dissection.',
       receivedDate: isoDaysAgo(1),
       assignedTo: 'PATH-UK-001',
@@ -1288,7 +1244,20 @@ const MOCK_CASES: Case[] = [
         templateName: 'RCPath Prostate — Radical Prostatectomy',
         status: 'draft',
         answers: {},
-        aiSuggestions: {},
+        aiSuggestions: {
+          histological_tumour_type:         { value: ['acinar_adenocarcinoma'],  confidence: 99, source: 'Micro: "acinar adenocarcinoma"',                                          verification: 'unverified' },
+          primary_gleason_grade:            { value: 'primary_4',               confidence: 98, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          secondary_gleason_grade:          { value: 'secondary_3',             confidence: 98, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          gleason_score_total:              { value: 'gleason_7',               confidence: 97, source: 'Micro: "Gleason score 4+3=7"',                                            verification: 'unverified' },
+          grade_group:                      { value: 'gg_3',                    confidence: 97, source: 'Micro: "Grade Group 3"',                                                  verification: 'unverified' },
+          extraprostatic_extension:         { value: 'epe_present',             confidence: 96, source: 'Micro: "Extraprostatic extension present at right posterolateral"',        verification: 'unverified' },
+          extraprostatic_extension_extent:  { value: 'epe_established',         confidence: 88, source: 'Micro: "spanning 2.1 mm"',                                               verification: 'unverified' },
+          seminal_vesicle_involvement:      { value: 'sv_not_involved',         confidence: 99, source: 'Micro: "No seminal vesicle invasion"',                                    verification: 'unverified' },
+          margin_status:                    { value: 'margin_involved',         confidence: 97, source: 'Micro: "Right posterolateral surgical margin positive over 1.2 mm"',      verification: 'unverified' },
+          lymphovascular_invasion:          { value: 'lvi_not_identified',      confidence: 96, source: 'Micro: "No lymphovascular invasion"',                                     verification: 'unverified' },
+          n_category:                       { value: 'pN0',                     confidence: 99, source: 'Micro: "0 of 8 positive ... 0 of 7 positive"',                            verification: 'unverified' },
+          t_category:                       { value: 'pT3a',                    confidence: 94, source: 'Micro: extraprostatic extension -> pT3a',                                 verification: 'unverified' },
+        },
         createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
       },
     ],
@@ -1297,6 +1266,10 @@ const MOCK_CASES: Case[] = [
     caseFlags: [
       { id: 'positive_margin', name: 'Positive Surgical Margin', color: 'red', severity: 3 },
       { id: 'urology_mdt', name: 'Urology MDT — Fri 09:00', color: 'blue', severity: 2 },
+    ],
+    requiresCountersign: true,
+    caseTeam: [
+      { userId: 'PATH-UK-001', role: 'Attending', name: 'Paul Carter' },
     ],
     specimenFlags: [],
     reportingMode: 'pathscribe',
@@ -1397,7 +1370,7 @@ const MOCK_CASES: Case[] = [
     ],
     order: {
       priority: 'STAT',
-      requestingProvider: 'Mr. Peter Thornton',
+      requestingProvider: 'Mr. Peter Thornton', clientId: 'c-mft-01', clientName: 'Manchester Royal Infirmary',
       clinicalIndication: 'Emergency presentation with perforated sigmoid colon. CT: sigmoid mass with free air. Proceeding to emergency Hartmann\'s procedure. Intraoperative finding: perforated sigmoid adenocarcinoma.',
       receivedDate: isoDaysAgo(0),
       assignedTo: 'PATH-UK-001',
@@ -1407,158 +1380,16 @@ const MOCK_CASES: Case[] = [
       microscopicDescription: 'Pending processing.',
       ancillaryStudies: 'Pending.',
     },
-    synopticReports: [
-      {
-        instanceId: 'MFT26-8806-SP-1_rcpath_colorectal_resection_001',
-        specimenId: 'MFT26-8806-SP-1',
-        templateId: 'rcpath_colorectal_resection',
-        templateName: 'RCPath Colorectal Carcinoma — Resection (Appendix F)',
-        status: 'draft',
-        // ── Gross-phase answers ───────────────────────────────────────────────
-        // Auto-assigned from specimen type + gross description on case receipt.
-        // Microscopy-dependent fields are intentionally absent — they will be
-        // populated when micro is reported in the LIS and PathScribe re-runs
-        // AI suggestions. Fields marked awaitingMicroscopy: true will render
-        // with an "Awaiting microscopy" placeholder in the synoptic UI.
-        answers: {
-          specimen_type:            'hartmanns_procedure',
-          tumour_site:              'sigmoid_colon',
-          maximum_tumour_diameter_mm: '65',
-          tumour_perforation:       'perforation_yes',
-          relation_to_peritoneal_reflection: 'above_reflection',
-          // Microscopy fields — not yet answerable:
-          // tumour_type, differentiation, local_invasion, venous_invasion,
-          // lymphatic_invasion, perineural_invasion, number_of_lymph_nodes,
-          // number_of_positive_lymph_nodes, circumferential_margin,
-          // pt_category, pn_category, resection_status
-        },
-        // ── Gross-phase AI suggestions ────────────────────────────────────────
-        // High confidence on gross-derivable fields.
-        // Microscopy fields flagged as awaitingMicroscopy so the UI can render
-        // them distinctly rather than leaving them blank.
-        aiSuggestions: {
-          specimen_type: {
-            value: 'hartmanns_procedure',
-            confidence: 94,
-            source: 'Order: "emergency Hartmanns procedure"',
-            verification: 'unverified',
-          },
-          tumour_site: {
-            value: 'sigmoid_colon',
-            confidence: 97,
-            source: 'Gross: "sigmoid colectomy … anterior wall"',
-            verification: 'unverified',
-          },
-          maximum_tumour_diameter_mm: {
-            value: '65',
-            confidence: 92,
-            source: 'Gross: "6.5 × 5.2 cm"',
-            verification: 'unverified',
-          },
-          tumour_perforation: {
-            value: 'perforation_yes',
-            confidence: 98,
-            source: 'Gross: "Perforation site 8 mm in diameter"',
-            verification: 'unverified',
-          },
-          relation_to_peritoneal_reflection: {
-            value: 'above_reflection',
-            confidence: 78,
-            source: 'Gross: sigmoid colon — typically above peritoneal reflection',
-            verification: 'unverified',
-          },
-          // Microscopy-dependent fields — awaiting LIS micro report
-          tumour_type: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          differentiation: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          local_invasion: {
-            value: '',
-            confidence: 0,
-            source: 'CT: "tumour invades through full bowel wall — likely pT4a"',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          venous_invasion: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          lymphatic_invasion: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          perineural_invasion: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          number_of_lymph_nodes_examined: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          circumferential_margin_involvement: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          pt_category: {
-            value: 'pT4a',
-            confidence: 55,
-            source: 'CT + gross: "invades through full bowel wall thickness" — awaiting micro confirmation',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          pn_category: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-          resection_status: {
-            value: '',
-            confidence: 0,
-            source: '',
-            verification: 'unverified',
-            awaitingMicroscopy: true,
-          },
-        },
-        createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
-      },
-    ],
+    synopticReports: [],
     status: 'draft' as CaseStatus,
     createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
     caseFlags: [
       { id: 'stat_flag', name: 'STAT — Rush Processing', color: 'red', severity: 3 },
       { id: 'perforation', name: 'Tumour Perforation — pT4', color: 'red', severity: 3 },
-      { id: 'awaiting_micro', name: 'Awaiting Microscopy', color: 'yellow', severity: 3 },
     ],
     specimenFlags: [],
     reportingMode: 'pathscribe',
-    coding: { icd10: ['C18.7'], snomed: ['363346000'] },
+    coding: { icd10: ['C18.7'], snomed: [] },
   },
 
   // ── UK Pool Cases — Manchester University NHS Foundation Trust ───────────────
@@ -1568,7 +1399,7 @@ const MOCK_CASES: Case[] = [
     originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
     patient: { id: 'PAT-UK-007', mrn: '200007', firstName: 'Susan', lastName: 'Hargreaves', dateOfBirth: isoYearsAgo(62, 5, 14), sex: 'F', phone: '0161 890 1234', email: 's.hargreaves@nhs.net', address: '19 Portland Street, Manchester, M1 3HU', nhsNumber: '345 891 2345' },
     specimens: [{ id: 'MFT26-8807-SP-1', label: 'A', description: 'Sigmoid colon biopsy — three fragments', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
-    order: { priority: 'Routine', requestingProvider: 'Dr. Helen Marsden', clinicalIndication: 'Change in bowel habit. Colonoscopy: 18mm sessile polyp sigmoid colon. Biopsy taken.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    order: { priority: 'Routine', requestingProvider: 'Dr. Helen Marsden', clientId: 'c-mft-03', clientName: 'North Manchester General Hospital', clinicalIndication: 'Change in bowel habit. Colonoscopy: 18mm sessile polyp sigmoid colon. Biopsy taken.', receivedDate: isoDaysAgo(0), assignedTo: null },
     diagnostic: { grossDescription: 'Received in formalin labelled "sigmoid colon biopsy" are three tan-pink fragments measuring 0.3–0.7 cm.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -1587,7 +1418,7 @@ const MOCK_CASES: Case[] = [
     specimens: [{ id: 'MFT26-8808-SP-1', label: 'A', description: 'Prostate biopsy — right apex', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
                 { id: 'MFT26-8808-SP-2', label: 'B', description: 'Prostate biopsy — right mid', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
                 { id: 'MFT26-8808-SP-3', label: 'C', description: 'Prostate biopsy — right base', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
-    order: { priority: 'Routine', requestingProvider: 'Mr. David Whitmore', clinicalIndication: 'PSA 9.1 ng/mL. PI-RADS 4 lesion right mid. Proceeding to targeted biopsy.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    order: { priority: 'Routine', requestingProvider: 'Mr. David Whitmore', clientId: 'c-mft-02', clientName: 'Wythenshawe Hospital', clinicalIndication: 'PSA 9.1 ng/mL. PI-RADS 4 lesion right mid. Proceeding to targeted biopsy.', receivedDate: isoDaysAgo(0), assignedTo: null },
     diagnostic: { grossDescription: 'Three containers labelled A–C, each containing 2 prostate needle biopsy cores, 12–15 mm each.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -1604,7 +1435,7 @@ const MOCK_CASES: Case[] = [
     originHospitalId: 'HOSP-MFT', originEnterpriseId: 'ENT-MFT',
     patient: { id: 'PAT-UK-009', mrn: '200009', firstName: 'Dorothy', lastName: 'Whitworth', dateOfBirth: isoYearsAgo(49, 8, 5), sex: 'F', phone: '0161 012 3456', email: 'd.whitworth@nhs.net', address: '31 Chapel Street, Salford, M3 5JJ', nhsNumber: '567 013 4567' },
     specimens: [{ id: 'MFT26-8809-SP-1', label: 'A', description: 'Right hemicolectomy — emergency resection', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] }],
-    order: { priority: 'STAT', requestingProvider: 'Mr. Peter Thornton', clinicalIndication: 'Emergency right hemicolectomy for obstructing caecal mass. CT: suspected adenocarcinoma.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    order: { priority: 'STAT', requestingProvider: 'Mr. Peter Thornton', clientId: 'c-mft-01', clientName: 'Manchester Royal Infirmary', clinicalIndication: 'Emergency right hemicolectomy for obstructing caecal mass. CT: suspected adenocarcinoma.', receivedDate: isoDaysAgo(0), assignedTo: null },
     diagnostic: { grossDescription: 'Right hemicolectomy specimen, 32 cm, received fresh. Obstructing tumour in caecum, 5.8 cm. Tumour perforates the serosal surface at one point.', microscopicDescription: '', ancillaryStudies: '' },
     synopticReports: [],
     status: 'pool' as CaseStatus,
@@ -1614,6 +1445,318 @@ const MOCK_CASES: Case[] = [
     caseFlags: [{ id: 'stat_rush', name: 'STAT — Rush Processing', color: 'red', severity: 5 }],
     specimenFlags: [],
     reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // US DEMO CASES — Henry Ford Health System
+  // Amber Fehrs-Battey (PATH-US-001) — Surgical Pathology
+  // Dr. J. Mark Tuthill (PATH-US-002) — Pathology Informatics
+  // Hospital: HOSP-HFHS  Enterprise: ENT-HFHS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+
+  // ── S26-4420: Sarah Johnson — Melanoma Excision, Ready for Finalisation ──────
+  {
+    id: 'S26-4420-MEL',
+    accession: { accessionNumber: '4420', accessionPrefix: 'S', accessionYear: 2026, fullAccession: 'S26-4420-MEL' },
+    originHospitalId: 'HOSP-001', originEnterpriseId: 'ENT-001',
+    patient: {
+      id: 'PAT-4420', mrn: '104420',
+      firstName: 'Margaret', lastName: 'Holloway',
+      dateOfBirth: isoYearsAgo(54, 3, 18), sex: 'F',
+      phone: '555-0420', email: 'm.holloway@email.com',
+      address: '44 Elmwood Drive, Springfield, IL 62701',
+    },
+    specimens: [
+      { id: 'S26-4420-SP-1', label: 'A', description: 'Wide local excision — right forearm', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [
+        { id: 'thick_melanoma', name: 'Breslow > 2 mm', color: 'red', severity: 4 },
+      ]},
+      { id: 'S26-4420-SP-2', label: 'B', description: 'Sentinel lymph node — right axilla', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+    ],
+    order: {
+      priority: 'Routine',
+      requestingProvider: 'Dr. Nancy Graves',
+      clientId: 'c1', clientName: 'Metro General Hospital',
+      clinicalIndication: 'Pigmented lesion right forearm 2.1 cm, irregular border. Punch biopsy: invasive melanoma, superficial spreading type, Breslow 2.3 mm. Proceeding to wide local excision with 2 cm margin and sentinel node biopsy.',
+      receivedDate: isoDaysAgo(1),
+      assignedTo: 'PATH-001',
+    },
+    diagnostic: {
+      grossDescription: 'A) Received in formalin, labelled "right forearm wide local excision", is an ellipse of skin measuring 6.2 × 4.1 cm with subcutaneous tissue to a depth of 1.8 cm. A scar/biopsy site is identified centrally measuring 1.2 × 0.8 cm with surrounding erythema. Margins are inked (peripheral: blue, deep: black). Sections taken perpendicular to the long axis. B) Received in formalin, labelled "right axillary sentinel lymph node", are two lymph nodes, the larger measuring 1.8 cm and the smaller 0.9 cm.',
+      microscopicDescription: 'A) Sections of the excision show residual invasive melanoma, superficial spreading type, at the biopsy site. Breslow thickness 2.4 mm. Clark level IV. No ulceration. Mitotic rate 3/mm². No microsatellites or macroscopic satellite lesions identified. Lymphovascular invasion not identified. Neurotropism not identified. Tumour-infiltrating lymphocytes: non-brisk. Regression not identified. All peripheral and deep margins are negative; closest deep margin is 8 mm, closest peripheral margin is 11 mm. B) One of two sentinel lymph nodes contains a subcapsular deposit of metastatic melanoma, largest dimension 1.2 mm (micrometastasis). No extranodal extension. Second lymph node negative.',
+      ancillaryStudies: 'Immunohistochemistry: SOX10 positive, S100 positive, HMB45 focal positive, Melan-A positive. MelanA/SOX10 highlight a subcapsular deposit in sentinel node A. BRAF V600E IHC: Positive.',
+    },
+    synopticReports: [
+      {
+        instanceId: 'S26-4420-SYN-1',
+        specimenId: 'S26-4420-SP-1',
+        templateId: 'skin_melanoma_bx',
+        templateName: 'CAP — Melanoma of the Skin',
+        status: 'in-progress',
+        answers: {
+          procedure:                    ['biopsy_incisional'],
+          specimen_laterality:          'right',
+          histologic_type:              'superficial_spreading_melanoma',
+          ulceration:                   'ulceration_not_identified',
+          anatomic_clark_level:         'clark_iv',
+          microsatellites:              'microsatellites_not_identified',
+          lymphatic_vascular_invasion:  'lvi_not_identified',
+          neurotropism:                 'neurotropism_not_identified',
+          tumor_infiltrating_lymphocytes: 'til_non_brisk',
+          margin_status_melanoma:       ['all_margins_negative'],
+          macroscopic_satellite_lesions: 'macroscopic_not_identified',
+        },
+        aiSuggestions: {
+          procedure:                   { value: ['biopsy_incisional'],              confidence: 93, source: 'Gross: "wide local excision … biopsy site"',                               verification: 'verified' },
+          specimen_laterality:         { value: 'right',                            confidence: 99, source: 'Gross: "right forearm"',                                                    verification: 'verified' },
+          histologic_type:             { value: 'superficial_spreading_melanoma',   confidence: 97, source: 'Micro: "superficial spreading type"',                                       verification: 'verified' },
+          ulceration:                  { value: 'ulceration_not_identified',        confidence: 95, source: 'Micro: "No ulceration"',                                                    verification: 'verified' },
+          anatomic_clark_level:        { value: 'clark_iv',                         confidence: 94, source: 'Micro: "Clark level IV"',                                                   verification: 'verified' },
+          microsatellites:             { value: 'microsatellites_not_identified',   confidence: 93, source: 'Micro: "No microsatellites … identified"',                                  verification: 'verified' },
+          lymphatic_vascular_invasion: { value: 'lvi_not_identified',              confidence: 96, source: 'Micro: "Lymphovascular invasion not identified"',                            verification: 'verified' },
+          neurotropism:                { value: 'neurotropism_not_identified',      confidence: 95, source: 'Micro: "Neurotropism not identified"',                                      verification: 'verified' },
+          tumor_infiltrating_lymphocytes: { value: 'til_non_brisk',                confidence: 88, source: 'Micro: "Tumour-infiltrating lymphocytes: non-brisk"',                       verification: 'verified' },
+          margin_status_melanoma:      { value: ['all_margins_negative'],           confidence: 97, source: 'Micro: "All peripheral and deep margins are negative"',                     verification: 'verified' },
+          macroscopic_satellite_lesions: { value: 'macroscopic_not_identified',    confidence: 91, source: 'Micro: "No macroscopic satellite lesions"',                                 verification: 'verified' },
+        },
+        createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+      },
+      {
+        instanceId: 'S26-4420-SYN-2',
+        specimenId: 'S26-4420-SP-2',
+        templateId: 'skin_melanoma_bx',
+        templateName: 'CAP — Melanoma (Sentinel Node)',
+        status: 'in-progress',
+        answers: {
+          procedure:                    ['biopsy_incisional'],
+          margin_status_melanoma:       ['all_margins_negative'],
+        },
+        aiSuggestions: {
+          procedure:               { value: ['biopsy_incisional'],     confidence: 88, source: 'Gross: "sentinel lymph node"',                                      verification: 'verified' },
+          margin_status_melanoma:  { value: ['all_margins_negative'],  confidence: 90, source: 'Micro: sentinel node assessed — no margin involvement',             verification: 'verified' },
+        },
+        createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+      },
+    ],
+    status: 'in-progress' as CaseStatus,
+    caseTeam: [{ userId: 'PATH-001', role: 'Attending', name: 'Dr. Sarah Johnson' }],
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'braf_positive',  name: 'BRAF V600E Positive — Targeted Therapy Eligible', color: 'teal',  severity: 3 },
+      { id: 'sentinel_pos',   name: 'Sentinel Node Positive — Completion Dissection?',  color: 'red',   severity: 4 },
+    ],
+    specimenFlags: [],
+    reportingMode: 'pathscribe',
+    coding: { icd10: ['C43.61'], snomed: ['372244006'] },
+  },
+
+  // HFHS-001 — Amber: Invasive breast carcinoma, AI-assisted
+  {
+    id: 'MPA26-1001-BR',
+    accession: { accessionNumber: '1001', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'MPA26-1001-BR' },
+    originHospitalId: 'HOSP-MPA',  originEnterpriseId: 'ENT-MPA',
+    patient: { id: 'PAT-US-001', mrn: '300001', firstName: 'Patricia', lastName: 'Novak', dateOfBirth: isoYearsAgo(58, 3, 14), sex: 'F', phone: '313-555-1001', email: 'p.novak@email.com', address: '4840 Woodward Ave, Detroit, MI 48201' },
+    specimens: [
+      { id: 'MPA26-1001-SP-1', label: 'A', description: 'Left breast lumpectomy — wire-guided excision', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
+      { id: 'MPA26-1001-SP-2', label: 'B', description: 'Left axillary sentinel lymph node biopsy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
+    ],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Lisa Kaminski', clientId: 'c-mpa-01', clientName: 'Northwestern Memorial Hospital', clinicalIndication: 'Left breast mass 1.8 cm on mammogram. BI-RADS 5. Wire-guided excision. Sentinel node mapping performed.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-US-001' },
+    diagnostic: {
+      grossDescription: 'A) Lumpectomy specimen 4.2 x 3.8 x 2.1 cm. Irregular firm tan-white mass 1.9 cm at 12 o\'clock position, 0.3 cm from anterior margin. B) Three fragments of fibrofatty tissue, largest 1.2 cm. AF/mg',
+      microscopicDescription: 'A) Sections show invasive ductal carcinoma, grade 2. Tubules: 3, nuclei: 2, mitoses: 1. Lymphovascular invasion identified. Margins: anterior 0.2 cm, posterior 1.1 cm, superior 0.8 cm, inferior 1.4 cm. B) One of three sentinel nodes positive for metastatic carcinoma, largest deposit 4 mm.',
+      ancillaryStudies: 'ER 95% strong, PR 80% moderate, HER2 2+ (equivocal — FISH pending), Ki-67 18%.',
+    },
+    synopticReports: [{
+      instanceId: 'MPA26-1001-SYN-1', specimenId: 'MPA26-1001-SP-1',
+      templateId: 'breast_invasive', templateName: 'CAP — Breast Invasive Carcinoma',
+      answers: {},
+      aiSuggestions: {
+        procedure:                          { value: 'excision_less_than_total_mastectomy', confidence: 96, source: 'Gross: "Lumpectomy specimen"',                 verification: 'unverified' },
+        specimen_laterality:                { value: 'left',                           confidence: 99, source: 'Gross: "Left breast lumpectomy"',                       verification: 'unverified' },
+        histologic_type:                    { value: 'invasive_nst',                   confidence: 97, source: 'Micro: "invasive ductal carcinoma"',                    verification: 'unverified' },
+        histologic_grade:                   { value: '2 (score 6)',                    confidence: 92, source: 'Micro: "grade 2. Tubules: 3, nuclei: 2, mitoses: 1"',   verification: 'unverified' },
+        tumor_size:                         { value: '1.9 cm',                         confidence: 95, source: 'Gross: "1.9 cm at 12 o\'clock position"',              verification: 'unverified' },
+        tumor_focality:                     { value: 'single_focus',                   confidence: 88, source: 'Gross: single mass identified',                         verification: 'unverified' },
+        lvi:                                { value: 'lvi_present',                    confidence: 90, source: 'Micro: "Lymphovascular invasion identified"',            verification: 'unverified' },
+        margin_status_invasive:             { value: 'invasive_present_at_margin',     confidence: 88, source: 'Micro: "anterior 0.2 cm"',                              verification: 'unverified' },
+        distance_invasive_to_named_margins: { value: '0.2 cm (anterior margin)',       confidence: 86, source: 'Micro: "anterior 0.2 cm"',                              verification: 'unverified' },
+        regional_ln_status:                 { value: 'tumor_present_nodes',            confidence: 93, source: 'Micro: "One of three sentinel nodes positive"',         verification: 'unverified' },
+        number_ln_macrometastases:          { value: '1',                              confidence: 91, source: 'Micro: "largest deposit 4 mm"',                         verification: 'unverified' },
+        largest_nodal_met_mm:               { value: '4',                              confidence: 89, source: 'Micro: "largest deposit 4 mm"',                         verification: 'unverified' },
+        total_ln_examined:                  { value: '3',                              confidence: 95, source: 'Micro: "One of three sentinel nodes"',                  verification: 'unverified' },
+        sentinel_ln_examined:               { value: '3',                              confidence: 95, source: 'Specimen B: "Left axillary sentinel lymph node biopsy"', verification: 'unverified' },
+      },
+      status: 'draft', createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    }],
+    status: 'in-progress' as CaseStatus,
+    caseTeam: [{ userId: 'PATH-US-001', role: 'Attending', name: 'Amber Fehrs-Battey' }],
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [], reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // HFHS-002 — Amber: Colorectal adenocarcinoma, post-neoadjuvant
+  {
+    id: 'MPA26-1002-CR',
+    accession: { accessionNumber: '1002', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'MPA26-1002-CR' },
+    originHospitalId: 'HOSP-MPA',  originEnterpriseId: 'ENT-MPA',
+    patient: { id: 'PAT-US-002', mrn: '300002', firstName: 'Robert', lastName: 'Dziedzic', dateOfBirth: isoYearsAgo(67, 11, 2), sex: 'M', phone: '313-555-1002', email: 'r.dziedzic@email.com', address: '15 Grand Blvd, Detroit, MI 48202' },
+    specimens: [
+      { id: 'MPA26-1002-SP-1', label: 'A', description: 'Low anterior resection — sigmoid/rectosigmoid', receivedAt: isoDaysAgo(2), collectedAt: isoDaysAgo(3), specimenFlags: [] },
+    ],
+    order: { priority: 'Routine', requestingProvider: 'Dr. James Orringer', clientId: 'c-mpa-02', clientName: 'Rush University Medical Center', clinicalIndication: 'Rectal adenocarcinoma cT3N1. Post-neoadjuvant chemoradiation (5-FU/capecitabine). Low anterior resection. Assess treatment response.', receivedDate: isoDaysAgo(2), assignedTo: 'PATH-US-001' },
+    diagnostic: {
+      grossDescription: 'Sigmoid/rectosigmoid resection 28 cm. Area of tumour regression 3.2 x 2.8 cm, firm, pale, 11 cm from distal margin. Mesorectum intact. 18 lymph nodes identified. AF/sd',
+      microscopicDescription: 'Residual moderately differentiated adenocarcinoma with extensive treatment effect. Tumour regression grade 2 (Ryan scheme) — moderate response with residual cancer. pT3 pN0 (0/18). CRM clear by 3.1 mm. Proximal and distal margins uninvolved.',
+      ancillaryStudies: 'MMR IHC: MLH1+, MSH2+, MSH6+, PMS2+ — mismatch repair proficient (pMMR). KRAS exon 2: wild type. NRAS: wild type. BRAF V600E: not detected.',
+    },
+    synopticReports: [{
+      instanceId: 'MPA26-1002-SYN-1', specimenId: 'MPA26-1002-SP-1',
+      templateId: 'colon_resection', templateName: 'CAP — Colon & Rectum Resection',
+      answers: {},
+      aiSuggestions: {
+        procedure:              { value: 'low_anterior_resection',  confidence: 95, source: 'Gross: "Sigmoid/rectosigmoid resection"',                         verification: 'unverified' },
+        tumor_site:             { value: ['rectosigmoid_colon'],    confidence: 94, source: 'Gross: "Sigmoid/rectosigmoid resection"',                         verification: 'unverified' },
+        histologic_type:        { value: 'adenocarcinoma',          confidence: 95, source: 'Micro: "moderately differentiated adenocarcinoma"',               verification: 'unverified' },
+        histologic_grade:       { value: 'g2',                      confidence: 91, source: 'Micro: "moderately differentiated"',                              verification: 'unverified' },
+        treatment_effect:       { value: 'te_partial',              confidence: 93, source: 'Micro: "Tumour regression grade 2 (Ryan scheme)"',               verification: 'unverified' },
+        pT_category:            { value: 'pT3',                     confidence: 97, source: 'Micro: "pT3"',                                                   verification: 'unverified' },
+        pN_category:            { value: 'pN0',                     confidence: 99, source: 'Micro: "pN0 (0/18)"',                                            verification: 'unverified' },
+        ln_examined:            { value: '18',                      confidence: 99, source: 'Micro: "0/18 lymph nodes"',                                      verification: 'unverified' },
+        distance_radial_margin: { value: '3.1 mm',                  confidence: 96, source: 'Micro: "CRM clear by 3.1 mm"',                                   verification: 'unverified' },
+      },
+      status: 'draft', createdAt: isoDaysAgo(2), updatedAt: isoDaysAgo(1),
+    }],
+    status: 'in-progress' as CaseStatus,
+    createdAt: isoDaysAgo(2), updatedAt: isoDaysAgo(1),
+    caseFlags: [], specimenFlags: [], reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // HFHS-003 — Amber: Prostate adenocarcinoma, radical prostatectomy
+  {
+    id: 'MPA26-1003-PRO',
+    accession: { accessionNumber: '1003', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'MPA26-1003-PRO' },
+    originHospitalId: 'HOSP-MPA',  originEnterpriseId: 'ENT-MPA',
+    patient: { id: 'PAT-US-003', mrn: '300003', firstName: 'Charles', lastName: 'Okafor', dateOfBirth: isoYearsAgo(63, 7, 22), sex: 'M', phone: '313-555-1003', email: 'c.okafor@email.com', address: '2799 W Grand Blvd, Detroit, MI 48202' },
+    specimens: [
+      { id: 'MPA26-1003-SP-1', label: 'A', description: 'Radical prostatectomy — robotic-assisted', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
+      { id: 'MPA26-1003-SP-2', label: 'B', description: 'Right pelvic lymph node dissection', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
+      { id: 'MPA26-1003-SP-3', label: 'C', description: 'Left pelvic lymph node dissection', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(2), specimenFlags: [] },
+    ],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Mani Menon', clientId: 'c-mpa-03', clientName: 'Advocate Illinois Masonic Medical Center', clinicalIndication: 'PSA 8.4. Biopsy Gleason 3+4=7 (Grade Group 2), 6/12 cores positive right lobe. Robotic-assisted radical prostatectomy with bilateral pelvic lymph node dissection.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-US-001' },
+    diagnostic: {
+      grossDescription: 'Prostate gland 38g, 4.2 x 3.9 x 3.5 cm. Posterior right-sided induration. Seminal vesicles intact. Vas deferens bilaterally submitted. AF/mg',
+      microscopicDescription: 'Prostatic adenocarcinoma, Gleason 3+4=7 (Grade Group 2). Dominant nodule 1.8 cm right posterior lobe. Extraprostatic extension present right posterolateral (focal). Seminal vesicles uninvolved. Surgical margin positive right posterior, 1 mm length. B+C) 0/14 lymph nodes with metastasis.',
+      ancillaryStudies: '',
+    },
+    synopticReports: [{
+      instanceId: 'MPA26-1003-SYN-1', specimenId: 'MPA26-1003-SP-1',
+      templateId: 'prostate_resection', templateName: 'CAP — Prostate Gland Radical Prostatectomy',
+      answers: {},
+      aiSuggestions: {
+        histologic_type:          { value: ['acinar_usual'],                 confidence: 97, source: 'Micro: "Acinar adenocarcinoma, conventional"',                   verification: 'unverified' },
+        grade_group:              { value: 'gg2_3_4_7',                      confidence: 98, source: 'Micro: "Gleason Score 3+4=7, Grade Group 2"',                      verification: 'unverified' },
+        idc_present:              { value: 'idc_not_identified',             confidence: 88, source: 'Micro: no intraductal carcinoma mentioned',                          verification: 'unverified' },
+        treatment_effect:         { value: ['tx_no_presurgical'],            confidence: 92, source: 'Clinical: no neoadjuvant therapy documented',                        verification: 'unverified' },
+        extraprostatic_extension: { value: 'epe_present_focal',             confidence: 91, source: 'Micro: "Extraprostatic extension present right posterolateral (focal)"', verification: 'unverified' },
+        bladder_neck_invasion:    { value: 'bn_not_identified',             confidence: 95, source: 'Micro: bladder neck not mentioned as involved',                       verification: 'unverified' },
+        seminal_vesicle_invasion: { value: 'sv_not_identified',             confidence: 99, source: 'Micro: "Seminal vesicles uninvolved"',                              verification: 'unverified' },
+        lymphovascular_invasion:  { value: 'lvi_not_identified',            confidence: 90, source: 'Micro: no lymphovascular invasion identified',                        verification: 'unverified' },
+        margin_status:            { value: 'margin_involved',               confidence: 94, source: 'Micro: "Surgical margin positive right posterior"',                  verification: 'unverified' },
+        margins_involved:         { value: ['margin_right_posterior'],      confidence: 92, source: 'Micro: "right posterior margin"',                                    verification: 'unverified' },
+        regional_ln_status:       { value: 'ln_all_negative',               confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
+        ln_number_examined:       { value: 14,                              confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
+        pT_category:              { value: 'pT3a',                          confidence: 90, source: 'Focal EPE → pT3a (AJCC 8th Ed.)',                                    verification: 'unverified' },
+        pN_category:              { value: 'pN0',                           confidence: 99, source: 'Micro: "0/14 lymph nodes"',                                         verification: 'unverified' },
+      },
+      status: 'draft', createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    }],
+    status: 'in-progress' as CaseStatus,
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [], reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // HFHS-004 — Tuthill: Lung adenocarcinoma — Pathology Informatics focus, AI routing demo
+  {
+    id: 'HFHS26-1004-LU',
+    accession: { accessionNumber: '1004', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'HFHS26-1004-LU' },
+    originHospitalId: 'HOSP-HFHS', originEnterpriseId: 'ENT-HFHS',
+    patient: { id: 'PAT-US-004', mrn: '300004', firstName: 'Sandra', lastName: 'Kowalski', dateOfBirth: isoYearsAgo(71, 5, 8), sex: 'F', phone: '313-555-1004', email: 's.kowalski@email.com', address: '1 Ford Place, Dearborn, MI 48126' },
+    specimens: [
+      { id: 'HFHS26-1004-SP-1', label: 'A', description: 'Right upper lobe lobectomy — VATS', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+      { id: 'HFHS26-1004-SP-2', label: 'B', description: 'Level 4R lymph node — mediastinoscopy', receivedAt: isoDaysAgo(1), collectedAt: isoDaysAgo(1), specimenFlags: [] },
+    ],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Harvey Pass', clientId: 'c-hfhs-01', clientName: 'Henry Ford Macomb Hospital', clinicalIndication: 'RUL nodule 2.4 cm, SUV 6.2 on PET. No mediastinal uptake. VATS lobectomy with mediastinal staging. Former smoker 40 pack-years.', receivedDate: isoDaysAgo(1), assignedTo: 'PATH-US-002' },
+    diagnostic: {
+      grossDescription: 'Right upper lobe 12 x 9 x 4 cm. Subpleural nodule 2.4 x 2.1 x 1.9 cm, grey-white, firm, irregular. Pleural puckering overlying. MT/sd',
+      microscopicDescription: 'Adenocarcinoma, predominantly acinar pattern with lepidic component (acinar 70%, lepidic 30%). Visceral pleural invasion present. Lymphovascular invasion absent. Surgical margins uninvolved. B) 0/3 lymph nodes.',
+      ancillaryStudies: 'EGFR: exon 19 deletion detected. ALK: negative. ROS1: negative. PD-L1 TPS: 35% (22C3).',
+    },
+    synopticReports: [{
+      instanceId: 'HFHS26-1004-SYN-1', specimenId: 'HFHS26-1004-SP-1',
+      templateId: 'lung_resection', templateName: 'CAP — Lung Resection',
+      answers: {},
+      aiSuggestions: {
+        procedure:                { value: ['lobectomy'],                  confidence: 97, source: 'Gross: "Right upper lobe lobectomy"',                          verification: 'unverified' },
+        specimen_laterality:      { value: 'right',                        confidence: 99, source: 'Gross: "Right upper lobe"',                                   verification: 'unverified' },
+        tumor_site:               { value: ['upper_lobe'],                 confidence: 99, source: 'Gross: "Right upper lobe"',                                   verification: 'unverified' },
+        histologic_type:          { value: 'inv_acinar',                   confidence: 96, source: 'Micro: "Adenocarcinoma"',                                     verification: 'unverified' },
+        tumor_size_invasive_cm:   { value: '2.4 cm',                       confidence: 98, source: 'Gross: "2.4 x 2.1 x 1.9 cm"',                               verification: 'unverified' },
+        visceral_pleura_invasion: { value: 'vpi_present',                  confidence: 92, source: 'Micro: "Visceral pleural invasion present"',                  verification: 'unverified' },
+        stas:                     { value: 'stas_not_identified',          confidence: 85, source: 'Micro: no spread through air spaces identified',              verification: 'unverified' },
+        regional_ln_status:       { value: 'ln_all_negative',              confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
+        ln_number_examined:       { value: 3,                              confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
+        pT_category:              { value: 'pT2a',                        confidence: 89, source: 'Visceral pleural invasion + 2.4 cm → pT2a',                  verification: 'unverified' },
+        pN_category:              { value: 'pN0',                         confidence: 99, source: 'Micro: "0/3 lymph nodes"',                                   verification: 'unverified' },
+      },
+      status: 'draft', createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    }],
+    status: 'in-progress' as CaseStatus,
+    createdAt: isoDaysAgo(1), updatedAt: isoDaysAgo(0),
+    caseFlags: [{ id: 'egfr_actionable', name: 'Actionable Mutation — Oncology Alert', color: 'teal', severity: 4 }],
+    specimenFlags: [], reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // HFHS-005 — Tuthill: STAT frozen section — routing/workflow demo
+  {
+    id: 'HFHS26-1005-FS',
+    accession: { accessionNumber: '1005', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'HFHS26-1005-FS' },
+    originHospitalId: 'HOSP-HFHS', originEnterpriseId: 'ENT-HFHS',
+    patient: { id: 'PAT-US-005', mrn: '300005', firstName: 'George', lastName: 'Washington', dateOfBirth: isoYearsAgo(55, 1, 18), sex: 'M', phone: '313-555-1005', email: 'g.washington@email.com', address: '6071 W Outer Dr, Detroit, MI 48235' },
+    specimens: [
+      { id: 'HFHS26-1005-SP-1', label: 'A', description: 'Pancreatic head mass — INTRAOPERATIVE FROZEN SECTION', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [{ id: 'frozen', name: 'Frozen Section', color: 'amber', severity: 5 }] },
+    ],
+    order: { priority: 'STAT', requestingProvider: 'Dr. Mazen Iskandar', clientId: 'c-hfhs-03', clientName: 'Detroit Medical Center', clinicalIndication: 'Pancreatic head mass 3.1 cm. CA19-9 elevated 480. Whipple procedure. Intraoperative: assess pancreatic neck margin and common bile duct margin.', receivedDate: isoDaysAgo(0), assignedTo: 'PATH-US-002' },
+    diagnostic: {
+      grossDescription: 'Pancreatic neck margin: grey-white fibrous tissue 1.2 cm. Common bile duct margin: tan tubular tissue 0.8 cm. MT/fs — called to OR at 10:42',
+      microscopicDescription: 'FROZEN SECTION DIAGNOSIS: Pancreatic neck margin — NO CARCINOMA. Common bile duct margin — NO CARCINOMA. Permanent sections pending.',
+      ancillaryStudies: '',
+    },
+    synopticReports: [],
+    status: 'draft' as CaseStatus,
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [
+      { id: 'stat_frozen', name: 'STAT — Intraoperative Frozen Section', color: 'red', severity: 5 },
+      { id: 'or_pending', name: 'OR Awaiting Result', color: 'amber', severity: 4 },
+    ],
+    specimenFlags: [], reportingMode: 'pathscribe', coding: {},
+  } as any,
+
+  // HFHS-006 — Pool case (unassigned, routes to Surgical Pathology pool)
+  {
+    id: 'MPA26-1006-POOL',
+    accession: { accessionNumber: '1006', accessionPrefix: 'HFHS', accessionYear: 2026, fullAccession: 'MPA26-1006-POOL' },
+    originHospitalId: 'HOSP-MPA',  originEnterpriseId: 'ENT-MPA',
+    patient: { id: 'PAT-US-006', mrn: '300006', firstName: 'Maria', lastName: 'Kowalczyk', dateOfBirth: isoYearsAgo(44, 9, 3), sex: 'F', phone: '313-555-1006', email: 'm.kowalczyk@email.com', address: '3990 John R St, Detroit, MI 48201' },
+    specimens: [
+      { id: 'MPA26-1006-SP-1', label: 'A', description: 'Cervical LEEP excision', receivedAt: isoDaysAgo(0), collectedAt: isoDaysAgo(0), specimenFlags: [] },
+    ],
+    order: { priority: 'Routine', requestingProvider: 'Dr. Carolyn Johnston', clientId: 'c-hfhs-07', clientName: 'Michigan Urology Centre', clinicalIndication: 'High-grade squamous intraepithelial lesion on colposcopy. LEEP excision. Assess margins and grade.', receivedDate: isoDaysAgo(0), assignedTo: null },
+    diagnostic: { grossDescription: '', microscopicDescription: '', ancillaryStudies: '' },
+    synopticReports: [],
+    status: 'pool' as CaseStatus,
+    poolId: 'GYN-MPA', poolName: 'Gynaecologic Pathology',
+    createdAt: isoDaysAgo(0), updatedAt: isoDaysAgo(0),
+    caseFlags: [], specimenFlags: [], reportingMode: 'pathscribe', coding: {},
   } as any,
 ];
 
@@ -1625,6 +1768,39 @@ export interface SimilarCase {
 }
 
 export const mockPatientHistoryMap: Record<string, string> = {
+
+  // ── US Demo — Amber Fehrs-Battey (MPA) ──────────────────────────────────────
+  'MPA26-1001-BR':
+    "MPA23-0441 (Mar 2023) — Screening mammogram bilateral. BI-RADS 3 left breast — short-interval follow-up advised. | " +
+    "MPA24-1882 (Jun 2024) — Diagnostic mammogram + ultrasound left breast. BI-RADS 4B, 1.4 cm mass 12 o'clock. Core biopsy recommended. | " +
+    "MPA24-3301 (Aug 2024) — Ultrasound-guided core needle biopsy left breast 12 o'clock. Dx: Atypical ductal hyperplasia (ADH). Excision recommended.",
+  'MPA26-1002-CR':
+    "MPA19-0088 (Jan 2019) — Colonoscopy polypectomy, sigmoid colon. Dx: Tubular adenoma, low grade, completely excised. Surveillance in 5 years. | " +
+    "MPA22-4401 (Apr 2022) — Colonoscopy biopsy, rectosigmoid junction. Dx: Tubulovillous adenoma with low grade dysplasia. Repeat colonoscopy in 3 years. | " +
+    "MPA24-9910 (Oct 2024) — Colonoscopy biopsy, sigmoid/rectosigmoid mass 28 cm from AV. Dx: Adenocarcinoma, moderately differentiated. MRI staging: cT3N1. Neoadjuvant chemoradiation commenced.",
+  'MPA26-1003-PRO':
+    "MPA18-3301 (Jun 2018) — Prostate needle biopsy x12. Dx: Benign prostatic tissue. PSA 3.8. Annual PSA surveillance. | " +
+    "MPA21-7712 (Sep 2021) — Prostate needle biopsy x12. Dx: Benign with focal high-grade PIN. PSA 5.6. MRI surveillance in 12 months. | " +
+    "MPA24-4401 (Apr 2024) — MRI prostate PI-RADS 4 right posterior mid-gland. PSA 7.9. MRI-targeted biopsy recommended. | " +
+    "MPA25-0881 (Jan 2025) — MRI-targeted + systematic biopsy x14. Dx: Acinar adenocarcinoma Gleason 3+4=7 (GG2) right posterior, 3/6 targeted cores positive. Radical prostatectomy planned.",
+
+  // ── US Demo — Dr. Mark Tuthill (HFHS) ───────────────────────────────────────
+  'HFHS26-1004-LU':
+    "HFHS21-4401 (Oct 2021) — CT chest incidental finding: 8 mm RUL nodule. Fleischner low-risk — repeat CT in 12 months. | " +
+    "HFHS22-6610 (Dec 2022) — CT chest surveillance: RUL nodule 11 mm, stable. Continue surveillance. | " +
+    "HFHS24-3301 (May 2024) — CT chest: RUL nodule 1.9 cm, new ground-glass component. PET-CT arranged. | " +
+    "HFHS25-8801 (Oct 2025) — PET-CT: RUL lesion 2.2 cm, SUVmax 5.8. No mediastinal uptake. CT-guided biopsy planned. | " +
+    "HFHS25-9910 (Nov 2025) — CT-guided needle biopsy RUL mass. Dx: Adenocarcinoma acinar predominant. EGFR pending. VATS lobectomy booked.",
+  'HFHS26-1005-FS':
+    "HFHS24-0441 (Jan 2024) — EUS-FNA pancreatic head mass 2.1 cm. Dx: Atypical cells — insufficient for definitive diagnosis. CA19-9 210. Repeat imaging in 3 months. | " +
+    "HFHS24-4401 (May 2024) — CT abdomen/pelvis: pancreatic head mass 2.7 cm, no vascular involvement. CA19-9 380. Surgical referral placed. | " +
+    "HFHS25-8810 (Sep 2025) — EUS-FNA repeat. Dx: Adenocarcinoma, moderately differentiated. MDT: borderline resectable. Neoadjuvant FOLFIRINOX commenced.",
+
+  'S26-4420-MEL':
+    "S20-3301 (Jul 2020) — Punch biopsy right forearm pigmented lesion 0.6 cm. Dx: Dysplastic naevus, moderate atypia. Complete excision recommended. | " +
+    "S22-8801 (Oct 2022) — Shave biopsy right forearm, recurrence at prior site. Dx: Dysplastic naevus, severe atypia (almost melanoma in situ). Wide local excision with 5 mm margins advised. | " +
+    "S24-1102 (Feb 2024) — Punch biopsy new pigmented lesion right forearm, 1.4 cm, adjacent to scar. Dx: Melanoma in situ, superficial spreading type. Wide local excision 1 cm margins performed. | " +
+    "S25-8801 (Oct 2025) — Punch biopsy right forearm lesion 2.1 cm, irregular border, rapid growth. Dx: Invasive melanoma, superficial spreading type, Breslow 2.3 mm. Wide local excision + sentinel node planned.",
   'S26-4401':
     "S22-4471 (Mar 2022) — Core needle biopsy, left breast 10 o'clock. Dx: Atypical ductal hyperplasia (ADH). ER+/PR+. Excision recommended; patient deferred. | " +
     "S23-7809 (Nov 2023) — Wire-localised excision, left breast. Dx: DCIS intermediate grade, cribriform, 8 mm. Margins clear >2 mm. XRT planned. | " +
@@ -1657,6 +1833,13 @@ export const mockPatientHistoryMap: Record<string, string> = {
 };
 
 export const mockSimilarCasesMap: Record<string, SimilarCase[]> = {
+  'S26-4420-MEL': [
+    { id: 'S25-9902', accession: 'S25-9902', patient: 'Whitmore, Carol',   diagnosis: 'Melanoma, superficial spreading, Breslow 2.1 mm, Clark IV, no ulceration, pT2b, pN1a SLN+', date: '2025-11-20', similarity: 96, site: 'Right forearm',   outcome: 'Finalized' },
+    { id: 'S25-6611', accession: 'S25-6611', patient: 'Pemberton, Diana',  diagnosis: 'Melanoma, superficial spreading, Breslow 2.8 mm, Clark IV, ulcerated, pT3b, pN0 SLN-',      date: '2025-07-14', similarity: 91, site: 'Left forearm',    outcome: 'Finalized' },
+    { id: 'S25-1103', accession: 'S25-1103', patient: 'Ashworth, Helen',   diagnosis: 'Melanoma, superficial spreading, Breslow 1.9 mm, Clark IV, no ulceration, pT2a, pN0',        date: '2025-03-08', similarity: 84, site: 'Right upper arm', outcome: 'Finalized' },
+    { id: 'S24-8802', accession: 'S24-8802', patient: 'Griffith, Sandra',  diagnosis: 'Melanoma, nodular type, Breslow 3.4 mm, Clark V, ulcerated, pT3b, pN1a SLN+, BRAF+',        date: '2024-10-22', similarity: 76, site: 'Right forearm',   outcome: 'Finalized' },
+    { id: 'S24-3302', accession: 'S24-3302', patient: 'Morrison, Jean',    diagnosis: 'Melanoma, superficial spreading, Breslow 1.5 mm, Clark III, no ulceration, pT2a, pN0',       date: '2024-04-17', similarity: 69, site: 'Left arm',        outcome: 'Amended'   },
+  ],
   'S26-4401': [
     { id: 'S25-3301', accession: 'S25-3301', patient: 'Harrison, Mary',    diagnosis: 'Invasive carcinoma NST, Grade 2, 2.1 cm, ER+/PR+/HER2-, pN1(1/3)',       date: '2025-08-14', similarity: 96, site: 'Left breast UOQ',    outcome: 'Finalized' },
     { id: 'S25-1872', accession: 'S25-1872', patient: 'Foster, Diane',     diagnosis: 'Invasive carcinoma NST, Grade 2, 1.8 cm, ER+/PR+/HER2 2+ (FISH neg)',    date: '2025-03-22', similarity: 91, site: 'Left breast',         outcome: 'Finalized' },
@@ -1700,6 +1883,38 @@ export const mockSimilarCasesMap: Record<string, SimilarCase[]> = {
     { id: 'S24-7809', accession: 'S24-7809', patient: 'Cross, Ralph',      diagnosis: 'Rectal adenocarcinoma post-CRT, ypT0N0 (pCR), Ryan score 0',             date: '2024-08-30', similarity: 79, site: 'Rectum',             outcome: 'Finalized' },
     { id: 'S24-2201', accession: 'S24-2201', patient: 'Hunt, Ernest',      diagnosis: 'Rectal adenocarcinoma post-CRT, ypT3N2b(5/16), Ryan score 3, pMMR',     date: '2024-02-11', similarity: 71, site: 'Rectum',             outcome: 'Finalized' },
   ],
+  // ── US Demo — Amber (MPA) ───────────────────────────────────────────────────
+  'MPA26-1001-BR': [
+    { id: 'MPA25-4401', accession: 'MPA25-4401', patient: 'Jensen, Carol',     diagnosis: 'Invasive carcinoma NST, Grade 2, 2.0 cm, ER+/PR+/HER2 2+ FISH neg, pN1(1/3), LVI+', date: '2025-09-14', similarity: 95, site: 'Left breast 12 o\'clock', outcome: 'Finalized' },
+    { id: 'MPA25-1882', accession: 'MPA25-1882', patient: 'Kowalski, Ruth',    diagnosis: 'Invasive carcinoma NST, Grade 2, 1.7 cm, ER+/PR+/HER2-, pN0, margin 0.1 cm anterior', date: '2025-04-22', similarity: 91, site: 'Left breast',            outcome: 'Finalized' },
+    { id: 'MPA24-8801', accession: 'MPA24-8801', patient: 'Brennan, Helen',    diagnosis: 'Invasive carcinoma NST, Grade 2, 2.2 cm, ER+/PR+/HER2 2+ FISH pos, pN1(2/4)',       date: '2024-11-08', similarity: 86, site: 'Left breast UOQ',          outcome: 'Finalized' },
+    { id: 'MPA24-3301', accession: 'MPA24-3301', patient: 'Patel, Sunita',     diagnosis: 'Invasive carcinoma NST, Grade 1, 1.5 cm, ER+/PR+/HER2-, pN0, all margins >2 mm',    date: '2024-06-19', similarity: 80, site: 'Left breast',            outcome: 'Finalized' },
+    { id: 'MPA23-9103', accession: 'MPA23-9103', patient: 'Torres, Maria',     diagnosis: 'Invasive lobular carcinoma, Grade 2, 2.4 cm, ER+/PR+/HER2-, pN1(1/2)',              date: '2023-12-01', similarity: 73, site: 'Left breast UIQ',          outcome: 'Finalized' },
+  ],
+  'MPA26-1002-CR': [
+    { id: 'MPA25-8801', accession: 'MPA25-8801', patient: 'Kowalczyk, Peter',  diagnosis: 'Rectal adenocarcinoma post-CRT, ypT3N0, Ryan grade 2 (moderate response), pMMR, KRAS wt', date: '2025-10-22', similarity: 94, site: 'Rectosigmoid',  outcome: 'Finalized' },
+    { id: 'MPA25-3309', accession: 'MPA25-3309', patient: 'Nowak, Richard',    diagnosis: 'Rectal adenocarcinoma post-CRT, ypT2N0, Ryan grade 1, pMMR, KRAS G12D',             date: '2025-05-15', similarity: 89, site: 'Rectum',              outcome: 'Finalized' },
+    { id: 'MPA24-7712', accession: 'MPA24-7712', patient: 'Grabowski, Frank',  diagnosis: 'Rectal adenocarcinoma post-CRT, ypT3N1b(2/16), Ryan grade 2, pMMR, BRAF wt',        date: '2024-09-03', similarity: 82, site: 'Rectosigmoid',          outcome: 'Finalized' },
+    { id: 'MPA24-2201', accession: 'MPA24-2201', patient: 'Wisniewski, Carl',  diagnosis: 'Rectal adenocarcinoma post-CRT, ypT0N0 (pCR), Ryan grade 0, pMMR',                   date: '2024-03-11', similarity: 74, site: 'Rectum',              outcome: 'Finalized' },
+    { id: 'MPA23-8814', accession: 'MPA23-8814', patient: 'Kaminski, Robert',  diagnosis: 'Rectal adenocarcinoma post-CRT, ypT3N2b(4/18), Ryan grade 3, pMMR, KRAS G12V',       date: '2023-08-20', similarity: 66, site: 'Rectum',              outcome: 'Finalized' },
+  ],
+  'MPA26-1003-PRO': [
+    { id: 'MPA25-6601', accession: 'MPA25-6601', patient: 'Mueller, Thomas',   diagnosis: 'Acinar adenocarcinoma, Gleason 3+4=7 (GG2), pT3a, EPE focal, margin+ 1 mm, pN0',    date: '2025-11-02', similarity: 97, site: 'Prostate right posterior', outcome: 'Finalized' },
+    { id: 'MPA25-3318', accession: 'MPA25-3318', patient: 'Hoffman, David',    diagnosis: 'Acinar adenocarcinoma, Gleason 3+4=7 (GG2), pT2c, margins clear, pN0(0/12)',         date: '2025-07-19', similarity: 91, site: 'Prostate bilateral',      outcome: 'Finalized' },
+    { id: 'MPA24-9912', accession: 'MPA24-9912', patient: 'Schultz, Michael',  diagnosis: 'Acinar adenocarcinoma, Gleason 4+3=7 (GG3), pT3a, EPE extensive, SVI absent, pN0',  date: '2024-09-30', similarity: 84, site: 'Prostate bilateral',      outcome: 'Finalized' },
+    { id: 'MPA24-5514', accession: 'MPA24-5514', patient: 'Fischer, Gary',     diagnosis: 'Acinar adenocarcinoma, Gleason 3+4=7 (GG2), pT3a, margin+ 2 mm, pN1(1/14)',         date: '2024-05-14', similarity: 77, site: 'Prostate right',          outcome: 'Amended'   },
+    { id: 'MPA23-8801', accession: 'MPA23-8801', patient: 'Wagner, Kenneth',   diagnosis: 'Acinar adenocarcinoma, Gleason 3+3=6 (GG1), pT2b, all margins clear, pN0(0/9)',     date: '2023-10-07', similarity: 69, site: 'Prostate right',          outcome: 'Finalized' },
+  ],
+
+  // ── US Demo — Tuthill (HFHS) ─────────────────────────────────────────────────
+  'HFHS26-1004-LU': [
+    { id: 'HFHS25-5501', accession: 'HFHS25-5501', patient: 'Kowalski, James', diagnosis: 'Adenocarcinoma RUL, acinar predominant, pT2a pN0, EGFR exon 19 del, PD-L1 28%',    date: '2025-10-05', similarity: 96, site: 'Right upper lobe',  outcome: 'Finalized' },
+    { id: 'HFHS25-2219', accession: 'HFHS25-2219', patient: 'Petrovich, Ann',  diagnosis: 'Adenocarcinoma LUL, acinar/lepidic, pT1c pN0, EGFR exon 21 L858R, PD-L1 10%',      date: '2025-06-11', similarity: 89, site: 'Left upper lobe',   outcome: 'Finalized' },
+    { id: 'HFHS24-8802', accession: 'HFHS24-8802', patient: 'Ostrowski, Paul', diagnosis: 'Adenocarcinoma RUL, acinar predominant, pT2b pN1, KRAS G12C, PD-L1 45%',           date: '2024-12-20', similarity: 82, site: 'Right upper lobe',  outcome: 'Finalized' },
+    { id: 'HFHS24-3318', accession: 'HFHS24-3318', patient: 'Grabowski, Sue',  diagnosis: 'Adenocarcinoma RUL, papillary predominant, pT2a pN0, EGFR exon 19 del, PL1',        date: '2024-07-08', similarity: 75, site: 'Right upper lobe',  outcome: 'Finalized' },
+    { id: 'HFHS23-7741', accession: 'HFHS23-7741', patient: 'Malinowski, Ed',  diagnosis: 'Adenocarcinoma RUL, solid predominant, pT3 pN2, PD-L1 65%, no targetable mutation', date: '2023-11-14', similarity: 67, site: 'Right upper lobe',  outcome: 'Finalized' },
+  ],
+
   'S26-4408': [
     { id: 'S25-7701', accession: 'S25-7701', patient: 'Holt, Virginia',    diagnosis: 'Invasive carcinoma NST, Grade 3, 2.4 cm, ER-/PR-/HER2 3+, pN0, BRCA1+', date: '2025-10-11', similarity: 96, site: 'Right breast',        outcome: 'Finalized' },
     { id: 'S25-4410', accession: 'S25-4410', patient: 'Warren, Dorothy',   diagnosis: 'Invasive carcinoma NST, Grade 3, 1.9 cm, ER-/PR-/HER2 3+, pN1(2/15)',   date: '2025-06-28', similarity: 91, site: 'Left breast',         outcome: 'Finalized' },
@@ -1726,7 +1941,7 @@ export const mockPatientHistory = mockPatientHistoryMap['S26-4401'] ?? DEFAULT_H
 // ─── Persisted case store ─────────────────────────────────────────────────────
 // Version bump here forces a re-seed whenever mock data changes structurally.
 // Increment MOCK_VERSION whenever MOCK_CASES fields are added/changed.
-const MOCK_VERSION = '10'; // bumped: Ruth Anderson gross-phase synoptic added
+const MOCK_VERSION = '16'; // bumped: Sarah Johnson melanoma case (correct template ID)
 const VERSION_KEY  = 'pathscribe_mock_cases_version';
 
 const storedVersion = localStorage.getItem(VERSION_KEY);
@@ -2190,7 +2405,7 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
       microscopic: 'Benign prostatic glands with focal chronic prostatitis. High-grade PIN in 1 core. No invasive carcinoma.',
       comment: 'No malignancy. HGPIN in 1 core — rebiopsy recommended. PSA 5.1 ng/mL.',
       tags: ['Benign', 'HGPIN', 'No malignancy', 'Surveillance'],
-      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'prostate_needle_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
       _snomedMorphology: ['399068003'],
     },
   ],
@@ -2338,142 +2553,11 @@ export const MOCK_PRIOR_PATHOLOGY: Record<string, PatientHistoryCase[]> = {
       microscopic: 'Benign prostatic glands with focal benign prostatic hyperplasia. No PIN. No invasive carcinoma.',
       comment: 'No malignancy. PSA 4.2 ng/mL. Annual PSA surveillance recommended.',
       tags: ['Benign', 'BPH', 'No malignancy', 'Surveillance'],
-      _templateId: 'prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
+      _templateId: 'prostate_needle_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
       _snomedMorphology: ['399068003'],
     },
   ],
 
-
-  // ── UK patients — Paul Carter's cases ────────────────────────────────────
-
-  // William Hartley — MRN 200001 (active case MFT26-8801, anterior resection)
-  '200001': [
-    {
-      id: 'MFT24-1142',
-      date: 'Mar 2024',
-      diagnosis: 'Tubular adenoma, low-grade dysplasia (×2 sites)',
-      site: 'Sigmoid and ascending colon',
-      procedure: 'Colonoscopic biopsy',
-      physician: 'Dr. A. Patel',
-      receptors: 'N/A', ki67: 'N/A', margins: 'Complete excision', nodes: 'Not sampled',
-      gross: 'Two fragments of tan-pink mucosal tissue, 0.4 cm and 0.6 cm (A). Single polypoid mucosal fragment, 1.1 cm, with lobulated surface (B).',
-      microscopic: 'A: Tubular adenoma with low-grade dysplasia. No high-grade dysplasia or invasive carcinoma. B: Tubulovillous adenoma with low-grade dysplasia. Excision appears complete.',
-      comment: 'Recommend surveillance colonoscopy in 3 years per BSG guidelines given low-risk adenoma.',
-      tags: ['Adenoma', 'Low-grade dysplasia', 'Surveillance', 'BSG guidelines'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['413448000', '363346000'],
-    },
-  ],
-
-  // Geoffrey Barrowclough — MRN 200002 (active case MFT26-8802, prostate biopsy)
-  '200002': [
-    {
-      id: 'MFT23-5503',
-      date: 'Jul 2023',
-      diagnosis: 'Benign prostatic hyperplasia. No evidence of malignancy.',
-      site: 'Prostate',
-      procedure: 'TURP chippings',
-      physician: 'Mr. C. Whitfield',
-      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
-      gross: '18 g of tan-white prostatic tissue fragments. Representative sections in 4 cassettes.',
-      microscopic: 'Benign prostatic glandular and stromal hyperplasia. Occasional foci of chronic inflammation. No PIN or adenocarcinoma identified.',
-      comment: 'Benign TURP. PSA surveillance recommended. Re-biopsy if PSA rises further.',
-      tags: ['BPH', 'Benign', 'TURP', 'No malignancy'],
-      _templateId: 'rcpath_prostate_biopsy', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['399068003'],
-    },
-  ],
-
-  // Margaret Ashworth — MRN 200003 (active case MFT26-8803, TEMS excision)
-  '200003': [
-    {
-      id: 'MFT25-0771',
-      date: 'May 2025',
-      diagnosis: 'Tubulovillous adenoma, high-grade dysplasia.',
-      site: 'Upper rectum',
-      procedure: 'Rectal biopsy',
-      physician: 'Dr. S. Okonkwo',
-      receptors: 'N/A', ki67: 'N/A', margins: 'Biopsy — margins not assessable', nodes: 'Not sampled',
-      gross: 'Three fragments of tan-pink tissue, 0.8–1.2 cm.',
-      microscopic: 'Tubulovillous adenoma with focal high-grade dysplasia. No invasive adenocarcinoma. Muscularis mucosae intact.',
-      comment: 'High-grade dysplasia — discussed at MDT. TEMS excision recommended. Referred to colorectal surgery.',
-      tags: ['Tubulovillous adenoma', 'High-grade dysplasia', 'MDT', 'TEMS planned'],
-      _templateId: 'rcpath_colorectal_local_excision', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['413448000', '363346000'],
-    },
-  ],
-
-  // Thomas Pemberton — MRN 200004 (active case MFT26-8804, radical prostatectomy)
-  '200004': [
-    {
-      id: 'MFT25-1109',
-      date: 'Feb 2025',
-      diagnosis: 'Prostatic adenocarcinoma, Gleason 3+4=7, Grade Group 2. Perineural invasion present.',
-      site: 'Prostate — right peripheral zone',
-      procedure: 'Transperineal prostate biopsy ×12 cores',
-      physician: 'Mr. H. Al-Rashid',
-      receptors: 'N/A', ki67: 'N/A', margins: 'Biopsy — not applicable', nodes: 'Not sampled',
-      gross: 'Twelve separately submitted biopsy cores, 1.0–1.8 cm each.',
-      microscopic: 'Cores A, C, D: prostatic adenocarcinoma, Gleason 3+4=7. Perineural invasion in core A. Cores B, E, F: benign. Cores G–L: benign with focal chronic prostatitis.',
-      comment: 'Gleason 3+4 right-sided disease. Robotic radical prostatectomy recommended at MDT.',
-      tags: ['Adenocarcinoma', 'Gleason 3+4', 'Grade Group 2', 'MDT', 'RARP planned'],
-      _templateId: 'rcpath_prostate_radical_prostatectomy', _grade: 2, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['399068003'],
-    },
-  ],
-
-  // Patricia Hollingsworth — MRN 200005 (active case MFT26-8805, right hemicolectomy)
-  '200005': [
-    {
-      id: 'MFT24-3318',
-      date: 'Jan 2024',
-      diagnosis: 'Hyperplastic polyp. No adenomatous change.',
-      site: 'Sigmoid colon',
-      procedure: 'Colonoscopic biopsy',
-      physician: 'Dr. R. Kapoor',
-      receptors: 'N/A', ki67: 'N/A', margins: 'Complete excision', nodes: 'Not sampled',
-      gross: 'Single fragment of tan-pink mucosal tissue, 0.5 cm.',
-      microscopic: 'Hyperplastic (metaplastic) polyp. No adenomatous change or dysplasia. No serrated adenoma.',
-      comment: 'Benign hyperplastic polyp. Continue standard surveillance given family history of CRC.',
-      tags: ['Hyperplastic polyp', 'Benign', 'Surveillance', 'Family history CRC'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['413448000', '363346000'],
-    },
-    {
-      id: 'MFT22-8801',
-      date: 'Sep 2022',
-      diagnosis: 'Colonic mucosa within normal limits. No polyps.',
-      site: 'Colon — multiple sites',
-      procedure: 'Surveillance colonoscopy biopsies',
-      physician: 'Dr. R. Kapoor',
-      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
-      gross: 'Multiple small mucosal fragments from right colon, transverse colon, and sigmoid.',
-      microscopic: 'Colonic mucosa with normal crypt architecture. No dysplasia, adenoma, or carcinoma.',
-      comment: 'Normal surveillance result. Repeat in 5 years.',
-      tags: ['Normal', 'Surveillance', 'No polyps'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: [],
-    },
-  ],
-
-  // Edward Blackwood — MRN 200006 (active case MFT26-8806, emergency sigmoid)
-  '200006': [
-    {
-      id: 'MFT26-0441',
-      date: 'Jan 2026',
-      diagnosis: 'Colonic mucosa with moderate active inflammation. No dysplasia or malignancy.',
-      site: 'Sigmoid colon',
-      procedure: 'Colonoscopic biopsy — change in bowel habit',
-      physician: 'Dr. T. Mensah',
-      receptors: 'N/A', ki67: 'N/A', margins: 'N/A', nodes: 'Not sampled',
-      gross: 'Two fragments of pink mucosal tissue, 0.4 and 0.5 cm.',
-      microscopic: 'Colonic mucosa with moderate active cryptitis and focal crypt abscess formation. No granulomas. No dysplasia or carcinoma.',
-      comment: 'Inflammatory changes, no malignancy. CT colonography requested. Urgent follow-up arranged.',
-      tags: ['Inflammation', 'Active cryptitis', 'No malignancy', 'CT colonography planned'],
-      _templateId: 'rcpath_colorectal_resection', _grade: 1, _erPositive: false, _her2Positive: false,
-      _snomedMorphology: ['363346000'],
-    },
-  ],
   // ── Grace Thompson — MRN 100001 (existing entry) ──────────────────────────
   '100001': [
     {
@@ -2773,7 +2857,7 @@ export async function findSimilarCases(
 
     results.push({
       caseId: c.id,
-      accession: typeof c.accession === 'string' ? c.accession : c.accession.fullAccession,
+      accession: c.accession.fullAccession,
       patientInitials,
       date: new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       diagnosis: primaryReport?.templateName?.replace('CAP ', '').replace(' — Resection', '').replace(' — Needle Biopsy', '') ?? 'Unknown',
@@ -2819,11 +2903,33 @@ export const mockCaseService: ICaseService = {
   async listCasesForUser(userId: string): Promise<Case[]> {
     await delay();
     if (!userId || userId === 'all' || userId === 'current') return CASES;
-    // Get the user's organisation from their assigned cases
-    const userOrg = CASES.find(c => c.order?.assignedTo === userId)?.originHospitalId;
+
+    // Explicit user → hospital mapping.
+    // Never infer from case data — a new user with no cases yet would get nothing.
+    // Add new users here when accounts are created.
+    const USER_HOSPITAL_MAP: Record<string, string> = {
+      // US Demo — Desert Valley Medical Center
+      'PATH-001':    'HOSP-001',
+      // UK Demo — Manchester University NHS Foundation Trust
+      'PATH-UK-001': 'HOSP-MFT',
+      'PATH-UK-002': 'HOSP-MFT',
+      // US Demo — Midwest Pathology Associates
+      'PATH-US-001': 'HOSP-MPA',
+      // US Demo — Henry Ford Health System
+      'PATH-US-002': 'HOSP-HFHS',
+    };
+
+    const userHospital = USER_HOSPITAL_MAP[userId];
+
     return CASES.filter(c =>
+      // Directly assigned to this user
       c.order?.assignedTo === userId ||
-      ((c as any).status === 'pool' && (!userOrg || c.originHospitalId === userOrg))
+      // Pool cases from the same institution
+      (
+        (c as any).status === 'pool' &&
+        userHospital &&
+        c.originHospitalId === userHospital
+      )
     );
   },
 

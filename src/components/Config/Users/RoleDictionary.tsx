@@ -8,6 +8,7 @@ import {
   ACTION_GROUPS, DEFAULT_ROLE_PERMISSIONS,
   ActionId, PermissionSet,
 } from '../../../constants/systemActions';
+import { loadParticipationTypes, ParticipationType } from '../System/ParticipationTypesSection';
 import { roleService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
@@ -25,14 +26,22 @@ export interface Role {
   configAccess: boolean;
   permissions: PermissionSet;
   builtIn: boolean;
-  clientIds?: string[];   // undefined / empty = all clients
+  clientIds?: string[];                          // undefined / empty = all clients
+  participationTypeIds: string[];                // IDs from ParticipationTypesSection master list
 }
 
+export const DEFAULT_PARTICIPATION: Record<string, string[]> = {
+  pathologist: ['primary', 'consultant', 'second_opinion', 'frozen_section'],
+  resident:    ['grossing', 'preliminary_report', 'observer'],
+  admin:       [],
+  physician:   [],
+};
+
 export const DEFAULT_ROLES: Role[] = [
-  { id: 'pathologist', name: 'Pathologist', description: 'Licensed pathologist with full clinical case access and sign-out authority.',   color: '#8AB4F8', caseAccess: true,  configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Pathologist'], builtIn: true },
-  { id: 'resident',    name: 'Resident',    description: 'Pathology resident with case access and co-sign capability.',                    color: '#81C995', caseAccess: true,  configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Resident'],    builtIn: true },
-  { id: 'admin',       name: 'Admin',       description: 'System administrator with configuration access but no clinical case access.',    color: '#FDD663', caseAccess: false, configAccess: true,  permissions: DEFAULT_ROLE_PERMISSIONS['Admin'],       builtIn: true },
-  { id: 'physician',   name: 'Physician',   description: 'External ordering physician. Directory only — no app access.',                   color: '#C084FC', caseAccess: false, configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Physician'],   builtIn: true },
+  { id: 'pathologist', name: 'Pathologist', description: 'Licensed pathologist with full clinical case access and sign-out authority.',   color: '#8AB4F8', caseAccess: true,  configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Pathologist'], builtIn: true, participationTypeIds: DEFAULT_PARTICIPATION['pathologist'] },
+  { id: 'resident',    name: 'Resident',    description: 'Pathology resident with case access and co-sign capability.',                    color: '#81C995', caseAccess: true,  configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Resident'],    builtIn: true, participationTypeIds: DEFAULT_PARTICIPATION['resident']    },
+  { id: 'admin',       name: 'Admin',       description: 'System administrator with configuration access but no clinical case access.',    color: '#FDD663', caseAccess: false, configAccess: true,  permissions: DEFAULT_ROLE_PERMISSIONS['Admin'],       builtIn: true, participationTypeIds: []                                        },
+  { id: 'physician',   name: 'Physician',   description: 'External ordering physician. Directory only — no app access.',                   color: '#C084FC', caseAccess: false, configAccess: false, permissions: DEFAULT_ROLE_PERMISSIONS['Physician'],   builtIn: true, participationTypeIds: []                                        },
 ];
 
 // Mock client list — replace with clientService.getAll() when wired
@@ -96,9 +105,11 @@ const RoleModal: React.FC<{
     permissions: role?.permissions ?? {},
     builtIn: role?.builtIn ?? false,
     clientIds: role?.clientIds ?? [],
+    participationTypeIds: role?.participationTypeIds ?? [],
   });
 
-  const [activeTab,       setActiveTab]       = useState<'permissions' | 'clients' | 'cheatsheet'>('permissions');
+
+  const [activeTab,       setActiveTab]       = useState<'permissions' | 'clients' | 'participation' | 'cheatsheet'>('permissions');
   const [selectedGroupId, setSelectedGroupId] = useState<string>(ACTION_GROUPS[0].id);
   const [search,          setSearch]          = useState('');
   const [cheatSearch,     setCheatSearch]     = useState('');
@@ -225,9 +236,10 @@ const RoleModal: React.FC<{
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, padding: '0 24px' }}>
           {([
-            { id: 'permissions', label: `Permissions (${permCount})` },
-            { id: 'clients',     label: `Client Access (${allClients ? 'All' : (draft.clientIds?.length ?? 0)})` },
-            { id: 'cheatsheet',  label: 'Action Reference' },
+            { id: 'permissions',   label: `Permissions (${permCount})` },
+            { id: 'clients',       label: `Client Access (${allClients ? 'All' : (draft.clientIds?.length ?? 0)})` },
+            { id: 'participation', label: `Case Participation (${draft.participationTypeIds?.length ?? 0})` },
+            { id: 'cheatsheet',    label: 'Action Reference' },
           ] as const).map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               style={{
@@ -443,6 +455,90 @@ const RoleModal: React.FC<{
               )}
             </div>
           )}
+
+          {/* ── CASE PARTICIPATION TAB ── */}
+          {activeTab === 'participation' && (() => {
+            const allTypes = loadParticipationTypes().filter(t => t.active);
+            const selectedIds = draft.participationTypeIds ?? [];
+            const toggle = (id: string) => setDraft(d => ({
+              ...d,
+              participationTypeIds: selectedIds.includes(id)
+                ? selectedIds.filter(x => x !== id)
+                : [...selectedIds, id],
+            }));
+            return (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 8, lineHeight: 1.6 }}>
+                  Select which participation types staff with this role can serve as on a case.
+                  Participation types are defined in <strong style={{ color: '#e5e7eb' }}>System → Participation Types</strong>.
+                </p>
+                {!draft.caseAccess && (
+                  <div style={{ marginBottom: 16, padding: '8px 12px', borderRadius: 8, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#fbbf24', fontSize: 12 }}>
+                    ⚠ This role has no Case Access — participation types will have no effect until Case Access is enabled.
+                  </div>
+                )}
+                {allTypes.length === 0 ? (
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: '#4b5563', fontSize: 13, border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12 }}>
+                    No active participation types defined yet.<br />
+                    <span style={{ color: '#6b7280' }}>Go to System → Participation Types to add some.</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
+                    {allTypes.map(t => {
+                      const selected = selectedIds.includes(t.id);
+                      return (
+                        <div key={t.id} onClick={() => toggle(t.id)} style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 14, padding: '12px 16px',
+                          borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s',
+                          background: selected ? 'rgba(138,180,248,0.06)' : 'rgba(255,255,255,0.02)',
+                          border: `1px solid ${selected ? 'rgba(138,180,248,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                        }}
+                          onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                          onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                        >
+                          {/* Checkbox */}
+                          <div style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 2, border: `2px solid ${selected ? '#8AB4F8' : '#374151'}`, background: selected ? '#8AB4F8' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                            {selected && <span style={{ color: '#0d1117', fontSize: 10, fontWeight: 900 }}>✓</span>}
+                          </div>
+                          {/* Chip */}
+                          <div style={{ paddingTop: 1 }}>
+                            <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: t.color + '22', color: t.color, border: `1px solid ${t.color}44`, whiteSpace: 'nowrap' }}>
+                              {t.abbreviation}
+                            </span>
+                          </div>
+                          {/* Details */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: selected ? '#e5e7eb' : '#9ca3af', marginBottom: 4 }}>{t.label}</div>
+                            {t.description && <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>{t.description}</div>}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {[
+                                { label: 'Can Finalise',       value: t.canFinalize,           onColor: '#22c55e' },
+                                { label: 'Countersign Req.',   value: t.requiresCountersign,   onColor: '#f59e0b' },
+                                { label: 'Template Assign.',   value: t.canBeAssignedTemplate, onColor: '#8AB4F8' },
+                                { label: 'Full Case View',     value: t.canViewWholeCase,      onColor: '#8AB4F8' },
+                              ].map(attr => (
+                                <span key={attr.label} style={{
+                                  fontSize: 10, padding: '1px 7px', borderRadius: 5, fontWeight: 600,
+                                  background: attr.value ? attr.onColor + '18' : 'rgba(255,255,255,0.04)',
+                                  color: attr.value ? attr.onColor : '#4b5563',
+                                  border: `1px solid ${attr.value ? attr.onColor + '33' : 'rgba(255,255,255,0.06)'}`,
+                                }}>
+                                  {attr.value ? '✓' : '—'} {attr.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <div style={{ marginTop: 16, fontSize: 12, color: '#4b5563' }}>
+                  {selectedIds.length} of {allTypes.length} participation types selected for this role
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── CHEAT SHEET TAB ── */}
           {activeTab === 'cheatsheet' && (

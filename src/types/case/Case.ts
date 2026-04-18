@@ -29,6 +29,10 @@ export interface AssignmentEvent {
 export interface OrderMetadata {
   priority: "Routine" | "STAT" | "ASAP" | "Critical";
   requestingProvider?: string;
+  /** ID reference to the Client Dictionary — the institution that sent the specimen */
+  clientId?: string;
+  /** Cached display name — avoids async lookup on every render */
+  clientName?: string;
   reasonCodes?: string[];
   clinicalIndication?: string;
   receivedDate?: string;

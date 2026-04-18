@@ -19,6 +19,7 @@ interface BottomActionBarProps {
   onHistory?: () => void;
   onFlags?: () => void;
   onCodes?: () => void;
+  onTeam?: () => void;
   onNextCase: () => void;
   onPreviousCase: () => void;
 }
@@ -77,6 +78,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   onHistory,
   onFlags,
   onCodes,
+  onTeam,
   onNextCase,
   onPreviousCase,
 }) => {
@@ -153,6 +155,7 @@ useEffect(() => {
         {/* Hide delegate/review/flags/codes for pool cases — not yet assigned */}
         {!isPool && <>
           <ActionButton onClick={() => onDelegate?.()} variant="outline" color="#7c3aed" title="Delegate case">👥 Delegate</ActionButton>
+          <ActionButton onClick={() => onTeam?.()} variant="outline" color="#0891B2" title="Manage case team">👤 Team</ActionButton>
           <ActionButton onClick={() => setReviewOpen(true)} variant="outline" color="#8B5CF6" title="Request informal peer review">🔍 Request Review</ActionButton>
           <ActionButton onClick={() => onHistory?.()} variant="outline" color="#0891B2">📋 History</ActionButton>
           <ActionButton onClick={() => onFlags?.()} variant="outline" color="#f59e0b">🚩 Flags</ActionButton>

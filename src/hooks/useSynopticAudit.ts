@@ -64,7 +64,7 @@ export function useSynopticAudit() {
     };
 
     // 1. Audit log — existing infrastructure, same as TemplateRenderer
-      logEvent({ ...event, detail: event.note || event.action || 'Synoptic audit event' });
+    logEvent(event);
 
     // 2. Email notification — fire-and-forget, never blocks UI
     try {
@@ -79,10 +79,9 @@ export function useSynopticAudit() {
    * Writes to audit log only. No email sent.
    */
   const auditOnly = useCallback((input: AuditInput): void => {
-      logEvent({
+    logEvent({
       ...input,
       user: input.user ?? DEFAULT_USER,
-        detail: input.note || input.action || 'Synoptic audit event',
     });
   }, []);
 

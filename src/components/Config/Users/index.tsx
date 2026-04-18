@@ -17,14 +17,14 @@ export interface StaffUser {
   lastName: string;
   email: string;
   roles: string[];
-  npi: string;
+  npi: string;           // US National Provider Identifier — used for HL7 matching
+  gmcNumber?: string;    // UK General Medical Council number — used for HL7 matching
   license: string;
   phone: string;
   department: string;
   signatureUrl?: string;
   status: 'Active' | 'Inactive';
-  // Add | null here to match the service
-  voiceProfile?: string | null; 
+  voiceProfile?: string | null;
 }
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const roleStyle: Record<string, React.CSSProperties> = {
@@ -89,8 +89,8 @@ const SignatureUpload = ({ url, onChange }: { url?: string; onChange: (url: stri
 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-type Draft = { firstName: string; lastName: string; email: string; roles: string[]; npi: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean; voiceProfile: string;};
-const emptyDraft: Draft = { firstName: '', lastName: '', email: '', roles: [], npi: '', license: '', phone: '', department: '', signatureUrl: '', active: true, voiceProfile: '' };
+type Draft = { firstName: string; lastName: string; email: string; roles: string[]; npi: string; gmcNumber: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean; voiceProfile: string;};
+const emptyDraft: Draft = { firstName: '', lastName: '', email: '', roles: [], npi: '', gmcNumber: '', license: '', phone: '', department: '', signatureUrl: '', active: true, voiceProfile: '' };
 
 interface StaffModalProps {
   mode: 'add' | 'edit';
@@ -102,7 +102,7 @@ interface StaffModalProps {
 
 const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onClose }) => {
   const [draft, setDraft] = useState<Draft>(
-    user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, roles: [...user.roles], npi: user.npi, license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active', voiceProfile: user.voiceProfile || '' }
+    user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, roles: [...user.roles], npi: user.npi, gmcNumber: user.gmcNumber || '', license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active', voiceProfile: user.voiceProfile || '' }
          : emptyDraft
   );
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
@@ -189,13 +189,20 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
 
           <div style={ROW}>
             <div style={FIELD}>
-              <label style={LABEL}>NPI Number</label>
+              <label style={LABEL}>NPI Number <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(US)</span></label>
               <input style={INPUT} value={draft.npi} onChange={e => set('npi', e.target.value)} placeholder="10-digit NPI" />
             </div>
+            <div style={FIELD}>
+              <label style={LABEL}>GMC Number <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(UK)</span></label>
+              <input style={INPUT} value={draft.gmcNumber} onChange={e => set('gmcNumber', e.target.value)} placeholder="7-digit GMC number" />
+            </div>
+          </div>
+          <div style={ROW}>
             <div style={FIELD}>
               <label style={LABEL}>License Number</label>
               <input style={INPUT} value={draft.license} onChange={e => set('license', e.target.value)} placeholder="State license #" />
             </div>
+            <div style={FIELD} />
           </div>
 
           <div style={FIELD}>
@@ -319,7 +326,7 @@ React.useEffect(() => {
   const handleSave = async (draft: Draft) => {
     const payload = {
       firstName: draft.firstName, lastName: draft.lastName, email: draft.email,
-      roles: draft.roles, npi: draft.npi, license: draft.license, phone: draft.phone,
+      roles: draft.roles, npi: draft.npi, gmcNumber: draft.gmcNumber, license: draft.license, phone: draft.phone,
       department: draft.department, signatureUrl: draft.signatureUrl,
       status: (draft.active ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
       voiceProfile: draft.voiceProfile === '' ? undefined : (draft.voiceProfile as VoiceProfileId),

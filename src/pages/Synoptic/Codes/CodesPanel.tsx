@@ -2,9 +2,6 @@ import React from 'react';
 import '../../../pathscribe.css';
 import type { MedicalCode, SynopticField } from '../synopticTypes';
 import CodeBadge from './CodeBadge';
-import { useState } from 'react';
-import type { FieldVerification, SpecimenOption } from '../synopticTypes';
-import { SOURCE_META } from '../synopticConstants';
 
 const CodesPanel: React.FC<{
   codes: MedicalCode[];

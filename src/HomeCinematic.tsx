@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SunCalc from "suncalc";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
+import { useAuth } from "./app/AuthContext";
 
 type ThemeMode = "light" | "dark" | "auto" | "scheduled";
 
@@ -11,12 +11,12 @@ export default function HomeCinematic() {
 
   const [theme, setTheme] = useState<ThemeMode>("auto");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-    const [pauseAnimation] = useState(false);
+  const [pauseAnimation, setPauseAnimation] = useState(false);
   const [themeNotice, setThemeNotice] = useState("");
   const [showAbout, setShowAbout] = useState(false);
 
-    const isAdmin = user?.role === "admin";
-    const isPathologist = user?.role === "pathologist";
+  const isAdmin = user?.roles?.includes("SystemAdmin");
+  const isPathologist = user?.roles?.includes("Pathologist");
 
   useEffect(() => {
     const saved = localStorage.getItem("theme-mode") as ThemeMode | null;
