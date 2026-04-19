@@ -1,1 +1,16 @@
-{"projectId":"prj_oHV3bezhxSQJZBNrZFvkORuKW6R1","orgId":"team_LBN4K5Wjo7X7XRNkWxVkBdjw","projectName":"final-formadrix-aib-uildefor-paul"}
+{
+  "projectId": "prj_oHV3bezhxSQJZBNrZFvkORuKW6R1",
+  "orgId": "team_LBN4K5Wjo7X7XRNkWxVkBdjw",
+  "projectName": "final-formadrix-aib-uildefor-paul",
+  "settings": {
+    "createdAt": 1776322552053,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
