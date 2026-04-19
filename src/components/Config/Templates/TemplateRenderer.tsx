@@ -46,7 +46,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import '../../../pathscribe.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockDcisTemplate } from '../../../templates/mockDcisTemplate';
-import { InlineCommentThread } from '../../../components/Comments/InlineCommentThread';
+import { InlineCommentThread } from '../../../components/PatientReportPage/Comments/InlineCommentThread';
 import { TemplateLifecycleState } from '../../../types/AuditEvent';
 import { Question, ChoiceQuestion, TemplateSection } from '../../../types/templateTypes';
 import { PROTOCOL_REGISTRY } from '../Protocols/protocolShared';
