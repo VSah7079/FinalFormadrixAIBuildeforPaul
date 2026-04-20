@@ -32,7 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const STORAGE_KEY = "pathscribe-user";
 
-  const getEnv = (key: string): string => String((import.meta as any).env?.[key] ?? "").trim();
+  const getEnv = (key: string): string => {
+    const raw = String((import.meta as any).env?.[key] ?? "").trim();
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      return raw.slice(1, -1).trim();
+    }
+    return raw;
+  };
 
   // Helper to sync state and storage
   const saveUser = (userData: User | null) => {
