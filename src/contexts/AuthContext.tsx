@@ -145,8 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const usersRes = await userService.getAll();
             if (usersRes.ok) {
               const staffUser = usersRes.data.find((u: any) => u.id === authenticatedUser!.id);
-              if (staffUser?.credentials) {
-                (authenticatedUser as any).credentials = staffUser.credentials;
+              const credentials = (staffUser as { credentials?: string } | undefined)?.credentials;
+              if (credentials) {
+                (authenticatedUser as any).credentials = credentials;
               }
             }
           } catch { /* non-critical */ }
@@ -202,7 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const usersRes = await userService.getAll();
               if (usersRes.ok) {
                 const staffUser = usersRes.data.find((u: any) => u.id === parsed.id);
-                if (staffUser?.credentials) parsed.credentials = staffUser.credentials;
+                const credentials = (staffUser as { credentials?: string } | undefined)?.credentials;
+                if (credentials) parsed.credentials = credentials;
               }
             } catch { /* non-critical */ }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));

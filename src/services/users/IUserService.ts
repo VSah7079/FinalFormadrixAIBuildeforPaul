@@ -6,6 +6,7 @@ export interface StaffUser {
   id: string;
   firstName: string;
   lastName: string;
+  credentials?: string;
   email: string;
   roles: string[];
   npi: string;
