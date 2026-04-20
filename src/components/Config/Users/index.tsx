@@ -15,6 +15,7 @@ export interface StaffUser {
   id: string;
   firstName: string;
   lastName: string;
+  credentials?: string;  // e.g. MD, FCAP / MBChB, FRCPath
   email: string;
   roles: string[];
   npi: string;           // US National Provider Identifier — used for HL7 matching
@@ -25,6 +26,7 @@ export interface StaffUser {
   signatureUrl?: string;
   status: 'Active' | 'Inactive';
   voiceProfile?: string | null;
+  canViewPediatric?: boolean;  // Option C: user-level pediatric qualification flag
 }
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const roleStyle: Record<string, React.CSSProperties> = {
@@ -89,8 +91,8 @@ const SignatureUpload = ({ url, onChange }: { url?: string; onChange: (url: stri
 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-type Draft = { firstName: string; lastName: string; email: string; roles: string[]; npi: string; gmcNumber: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean; voiceProfile: string;};
-const emptyDraft: Draft = { firstName: '', lastName: '', email: '', roles: [], npi: '', gmcNumber: '', license: '', phone: '', department: '', signatureUrl: '', active: true, voiceProfile: '' };
+type Draft = { firstName: string; lastName: string; credentials: string; email: string; roles: string[]; npi: string; gmcNumber: string; license: string; phone: string; department: string; signatureUrl: string; active: boolean; voiceProfile: string; canViewPediatric: boolean;};
+const emptyDraft: Draft = { firstName: '', lastName: '', credentials: '', email: '', roles: [], npi: '', gmcNumber: '', license: '', phone: '', department: '', signatureUrl: '', active: true, voiceProfile: '', canViewPediatric: false };
 
 interface StaffModalProps {
   mode: 'add' | 'edit';
@@ -102,7 +104,7 @@ interface StaffModalProps {
 
 const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onClose }) => {
   const [draft, setDraft] = useState<Draft>(
-    user ? { firstName: user.firstName, lastName: user.lastName, email: user.email, roles: [...user.roles], npi: user.npi, gmcNumber: user.gmcNumber || '', license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active', voiceProfile: user.voiceProfile || '' }
+    user ? { firstName: user.firstName, lastName: user.lastName, credentials: user.credentials || '', email: user.email, roles: [...user.roles], npi: user.npi, gmcNumber: user.gmcNumber || '', license: user.license, phone: user.phone, department: user.department, signatureUrl: user.signatureUrl || '', active: user.status === 'Active', voiceProfile: user.voiceProfile || '', canViewPediatric: user.canViewPediatric ?? false }
          : emptyDraft
   );
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
@@ -187,6 +189,11 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
             </div>
           </div>
 
+          <div style={FIELD}>
+            <label style={LABEL}>Credentials <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(e.g. MD, FCAP)</span></label>
+            <input style={INPUT} value={draft.credentials} onChange={e => set('credentials', e.target.value)} placeholder="e.g. MD, FCAP / MBChB, FRCPath" />
+          </div>
+
           <div style={ROW}>
             <div style={FIELD}>
               <label style={LABEL}>NPI Number <span style={{ color: '#4b5563', fontWeight: 400, textTransform: 'none' }}>(US)</span></label>
@@ -245,6 +252,31 @@ const StaffModal: React.FC<StaffModalProps> = ({ mode, user, roles, onSave, onCl
             <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
               Leave as "System Default" to use the facility-wide accent setting.
             </p>
+          </div>
+
+          {/* Pediatric Access */}
+          <div style={{
+            padding: '12px 16px', borderRadius: 8,
+            background: draft.canViewPediatric ? 'rgba(8,145,178,0.06)' : 'transparent',
+            border: `1px solid ${draft.canViewPediatric ? 'rgba(8,145,178,0.25)' : 'rgba(255,255,255,0.08)'}`,
+            transition: 'all 0.2s',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={draft.canViewPediatric}
+                onChange={e => setDraft(d => ({ ...d, canViewPediatric: e.target.checked }))}
+                style={{ width: 16, height: 16, accentColor: '#0891b2', cursor: 'pointer' }}
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: draft.canViewPediatric ? '#38bdf8' : '#9ca3af' }}>
+                  Pediatric Access
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                  Qualifies this pathologist to report pediatric cases. Client-level authorization is also required per client.
+                </div>
+              </div>
+            </label>
           </div>
 
           <div style={ROW}>
@@ -325,8 +357,9 @@ React.useEffect(() => {
 
   const handleSave = async (draft: Draft) => {
     const payload = {
-      firstName: draft.firstName, lastName: draft.lastName, email: draft.email,
+      firstName: draft.firstName, lastName: draft.lastName, credentials: draft.credentials, email: draft.email,
       roles: draft.roles, npi: draft.npi, gmcNumber: draft.gmcNumber, license: draft.license, phone: draft.phone,
+      canViewPediatric: draft.canViewPediatric,
       department: draft.department, signatureUrl: draft.signatureUrl,
       status: (draft.active ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
       voiceProfile: draft.voiceProfile === '' ? undefined : (draft.voiceProfile as VoiceProfileId),
@@ -391,7 +424,15 @@ React.useEffect(() => {
                         <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'rgba(138,180,248,0.2)', border: '1.5px solid rgba(138,180,248,0.5)', color: '#8AB4F8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
                           {initials(u)}
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#DEE4E7' }} data-phi="name">{fullName(u)}</span>
+                        <div>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#DEE4E7' }} data-phi="name">{fullName(u)}</span>
+                          {u.credentials && <span style={{ fontSize: '11px', color: '#64748b', marginLeft: 6 }}>{u.credentials}</span>}
+                          {u.canViewPediatric && (
+                            <span style={{ fontSize: '10px', fontWeight: 700, marginLeft: 8, padding: '1px 6px',
+                              borderRadius: 4, background: 'rgba(8,145,178,0.1)', color: '#38bdf8',
+                              border: '1px solid rgba(8,145,178,0.25)' }}>Peds</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: '13px', color: '#9AA0A6' }}>{u.email}</td>

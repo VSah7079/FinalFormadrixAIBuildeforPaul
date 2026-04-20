@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../../../pathscribe.css';
-import { clientService } from '../../../services';
+import { clientService, userService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
   cancelButtonStyle, applyButtonStyle,
@@ -29,6 +30,10 @@ export interface Client {
   status: 'Active' | 'Inactive';
   /** Per-institution code system configuration (SR-25) */
   codeSystems: ClientCodeSystems;
+  /** Age (years) below which patients are considered pediatric for this client. Null = not configured. */
+  pediatricAgeThreshold: number | null;
+  /** Pathologist user IDs explicitly approved to report pediatric cases from this client. */
+  authorizedPediatricPathologistIds: string[];
 }
 
 // Clients loaded via clientService
@@ -77,6 +82,95 @@ const emptyDraft: Draft = {
   phone: '', fax: '', email: '', contactName: '', contactTitle: '',
   notes: '', status: 'Active',
   codeSystems: { ...defaultCodeSystems },
+  pediatricAgeThreshold: null,
+  authorizedPediatricPathologistIds: [],
+};
+
+// ─── Pathologist Picker ───────────────────────────────────────────────────────
+interface PathologistPickerProps {
+  pathologists: { id: string; name: string; credentials?: string; role?: string }[];
+  selected: string[];
+  onToggle: (id: string) => void;
+}
+
+const PathologistPicker: React.FC<PathologistPickerProps> = ({ pathologists, selected, onToggle }) => {
+  const [search, setSearch] = useState('');
+  const filtered = pathologists.filter(p =>
+    !search || p.name.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div style={{ border: '1px solid #374151', borderRadius: 8, overflow: 'hidden', background: '#0a0a0a' }}>
+      {/* Search bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+        borderBottom: '1px solid #1f2937', background: '#111' }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search physicians..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, background: 'none', border: 'none', outline: 'none',
+            fontSize: 13, color: '#e2e8f0', fontFamily: 'inherit' }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')}
+            style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>
+            ×
+          </button>
+        )}
+      </div>
+      {/* List */}
+      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '16px 12px', fontSize: 12, color: '#4b5563', fontStyle: 'italic' }}>
+            No results found.
+          </div>
+        ) : filtered.map((p, i) => {
+          const isOn = selected.includes(p.id);
+          return (
+            <div key={p.id} onClick={() => onToggle(p.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                cursor: 'pointer', background: isOn ? 'rgba(8,145,178,0.07)' : 'transparent',
+                borderBottom: i < filtered.length - 1 ? '1px solid #1a1a1a' : 'none',
+                transition: 'background 0.12s' }}
+              onMouseEnter={e => { if (!isOn) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseLeave={e => { if (!isOn) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {/* Checkbox */}
+              <div style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                border: `2px solid ${isOn ? '#0891b2' : '#374151'}`,
+                background: isOn ? '#0891b2' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s' }}>
+                {isOn && (
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                    <polyline points="2,6 5,9 10,3"/>
+                  </svg>
+                )}
+              </div>
+              {/* Name + role */}
+              <div>
+                <div style={{ fontSize: 14, fontWeight: isOn ? 600 : 400,
+                  color: isOn ? '#e2e8f0' : '#cbd5e1' }}>
+                  {p.name}
+                  {p.credentials && (
+                    <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6, fontWeight: 400 }}>
+                      {p.credentials}
+                    </span>
+                  )}
+                </div>
+                {p.role && (
+                  <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{p.role}</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -88,22 +182,50 @@ interface ClientModalProps {
 }
 
 const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose }) => {
-  const [draft, setDraft] = useState<Draft>(
-    client ? {
-      name: client.name, code: client.code, address: client.address,
-      city: client.city, state: client.state, zip: client.zip,
-      phone: client.phone, fax: client.fax, email: client.email,
-      contactName: client.contactName, contactTitle: client.contactTitle,
-      notes: client.notes, status: client.status,
-      codeSystems: client.codeSystems ?? { ...defaultCodeSystems },
-    }
-           : { ...emptyDraft }
-  );
+  const initialDraft: Draft = client ? {
+    name: client.name, code: client.code, address: client.address,
+    city: client.city, state: client.state, zip: client.zip,
+    phone: client.phone, fax: client.fax, email: client.email,
+    contactName: client.contactName, contactTitle: client.contactTitle,
+    notes: client.notes, status: client.status,
+    codeSystems: client.codeSystems ?? { ...defaultCodeSystems },
+    pediatricAgeThreshold: (client as any).pediatricAgeThreshold ?? null,
+    authorizedPediatricPathologistIds: (client as any).authorizedPediatricPathologistIds ?? [],
+  } : { ...emptyDraft };
+
+  const [draft, setDraft] = useState<Draft>(initialDraft);
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({});
+  const [pathologists, setPathologists] = useState<{ id: string; name: string; credentials?: string }[]>([]);
+
+  // Load staff with canViewPediatric or pathologist role for the picker
+  useEffect(() => {
+    userService.getAll().then((res: any) => {
+      if (!res.ok) return;
+      const filtered = res.data.filter((u: any) => u.status === 'Active');
+      setPathologists(filtered.map((u: any) => ({
+        id: u.id,
+        name: `${u.firstName} ${u.lastName}`,
+        credentials: u.credentials,
+        role: u.roles?.[0] ?? '',
+      })));
+    }).catch(() => {});
+  }, []);
+
+  // isDirty — only enable Save Changes when something has actually changed
+  const isDirty = useMemo(() => {
+    if (mode === 'add') return true;
+    return JSON.stringify(draft) !== JSON.stringify(initialDraft);
+  }, [draft, mode, initialDraft]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     setDraft(prev => ({ ...prev, [k]: v }));
     setErrors(prev => ({ ...prev, [k]: '' }));
+  };
+
+  const togglePathologist = (id: string) => {
+    const current: string[] = (draft as any).authorizedPediatricPathologistIds ?? [];
+    const next = current.includes(id) ? current.filter((x: string) => x !== id) : [...current, id];
+    set('authorizedPediatricPathologistIds' as any, next);
   };
 
   const handleSave = () => {
@@ -275,6 +397,50 @@ const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose
             </div>
           </div>
 
+          {/* Pediatric Access Configuration */}
+          <div style={{
+            padding: '14px 16px', borderRadius: 8, marginBottom: 4,
+            background: 'rgba(8,145,178,0.06)', border: '1px solid rgba(8,145,178,0.2)',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ps-conf-teal)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Pediatric Patient Definition
+            </div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12, lineHeight: 1.5 }}>
+              Patients below the age threshold are classified as pediatric for this client.
+              Only pathologists listed as authorized below may report these cases.
+              Leave blank if this client does not submit pediatric specimens.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={FIELD}>
+                <label style={LABEL}>Age Threshold (years)</label>
+                <input
+                  type="number" min={0} max={25} step={1}
+                  value={(draft as any).pediatricAgeThreshold ?? ''}
+                  onChange={e => set('pediatricAgeThreshold' as any, e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="e.g. 18"
+                  style={{ ...INPUT, width: 80 }}
+                />
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 18 }}>years old (blank = not configured)</div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Authorized Pediatric Pathologists</label>
+              <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
+                Select pathologists approved to report pediatric cases from this client.
+                They must also have Pediatric Access enabled on their user record.
+              </div>
+              {pathologists.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#475569', fontStyle: 'italic' }}>Loading staff…</div>
+              ) : (
+                <PathologistPicker
+                  pathologists={pathologists}
+                  selected={(draft as any).authorizedPediatricPathologistIds ?? []}
+                  onToggle={togglePathologist}
+                />
+              )}
+            </div>
+          </div>
+
           {/* Status */}
           <div style={FIELD}>
             <label style={LABEL}>Status</label>
@@ -285,7 +451,11 @@ const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose
 
         <div style={{ ...modalFooterStyle, padding: '12px 24px', borderTop: '1px solid #1f2937', flexShrink: 0 }}>
           <button style={cancelButtonStyle} onClick={onClose}>Cancel</button>
-          <button style={applyButtonStyle} onClick={handleSave}>
+          <button
+            style={{ ...applyButtonStyle, opacity: isDirty ? 1 : 0.4, cursor: isDirty ? 'pointer' : 'not-allowed' }}
+            onClick={handleSave}
+            disabled={!isDirty}
+          >
             {mode === 'add' ? 'Add Client' : 'Save Changes'}
           </button>
         </div>
@@ -296,8 +466,16 @@ const ClientModal: React.FC<ClientModalProps> = ({ mode, client, onSave, onClose
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ClientDictionary: React.FC = () => {
+  const location                             = useLocation();
+  const navigate                             = useNavigate();
+  const deepLinkClientId                     = new URLSearchParams(location.search).get('client');
+  const isDeepLinked                         = !!deepLinkClientId;
+
   const [clients,      setClients]     = useState<Client[]>([]);
   const [loading,      setLoading]     = useState(true);
+  const [highlightId,  setHighlightId] = useState<string | null>(null);
+  const [modalOpened,  setModalOpened] = useState(false); // guard against re-open after save
+  const highlightRef                   = useRef<HTMLTableRowElement | null>(null);
 
   useEffect(() => {
     clientService.getAll().then(res => {
@@ -305,6 +483,20 @@ const ClientDictionary: React.FC = () => {
       setLoading(false);
     });
   }, []);
+
+  // Once clients load, open the deep-linked client's edit modal and highlight its row
+  useEffect(() => {
+    if (!deepLinkClientId || loading || clients.length === 0 || modalOpened) return;
+    const target = clients.find(c => c.id === deepLinkClientId);
+    if (!target) return;
+    setHighlightId(deepLinkClientId);
+    setModal({ mode: 'edit', client: target });
+    setModalOpened(true);
+    // Scroll the row into view after a brief paint delay
+    setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    // Clear highlight ring after 3 seconds
+    setTimeout(() => setHighlightId(null), 3000);
+  }, [deepLinkClientId, loading, clients, modalOpened]);
   const [search,       setSearch]      = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive'>('All');
   const [modal,        setModal]       = useState<{ mode: 'add' | 'edit'; client?: Client } | null>(null);
@@ -325,6 +517,8 @@ const ClientDictionary: React.FC = () => {
       if (res.ok) setClients((prev: any) => prev.map((c: any) => c.id === res.data.id ? res.data : c));
     }
     setModal(null);
+    // If admin arrived via a configLink deep-link, send them back to the worklist
+    if (isDeepLinked) navigate('/worklist');
   };
 
   const toggleStatus = async (id: string) => {
@@ -406,7 +600,14 @@ const ClientDictionary: React.FC = () => {
                 </tr>
               ) : filtered.map((c, i) => (
                 <tr key={c.id}
-                  style={{ borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', opacity: c.status === 'Inactive' ? 0.6 : 1 }}
+                  ref={c.id === highlightId ? highlightRef : null}
+                  style={{
+                    borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    opacity: c.status === 'Inactive' ? 0.6 : 1,
+                    outline: c.id === highlightId ? '2px solid rgba(245,158,11,0.7)' : 'none',
+                    outlineOffset: '-2px',
+                    transition: 'outline 0.4s ease',
+                  }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
 
@@ -424,6 +625,20 @@ const ClientDictionary: React.FC = () => {
                           )}
                           {(c.codeSystems?.icd === 'ICD-11' || c.codeSystems?.icd === 'both') && (
                             <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>ICD-11</span>
+                          )}
+                          {(c as any).pediatricAgeThreshold != null && (
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                              background: 'rgba(8,145,178,0.1)', color: '#38bdf8',
+                              border: '1px solid rgba(8,145,178,0.25)' }}>
+                              Peds &lt;{(c as any).pediatricAgeThreshold}yr
+                            </span>
+                          )}
+                          {(c as any).authorizedPediatricPathologistIds?.length > 0 && (
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                              background: 'rgba(8,145,178,0.06)', color: '#64748b',
+                              border: '1px solid rgba(8,145,178,0.15)' }}>
+                              {(c as any).authorizedPediatricPathologistIds.length} authorized
+                            </span>
                           )}
                           {c.codeSystems?.icdOEnabled && (
                             <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, background: 'rgba(138,180,248,0.1)', color: '#8AB4F8', border: '1px solid rgba(138,180,248,0.2)' }}>ICD-O-3.2</span>

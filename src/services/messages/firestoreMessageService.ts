@@ -44,6 +44,7 @@ const fromDoc = (id: string, data: any): Message => ({
   subject:        data.subject,
   body:           data.body,
   caseNumber:     data.caseNumber ?? undefined,
+  configLink:     data.configLink ?? undefined,
   timestamp:      data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date(data.timestamp),
   isUrgent:       data.isUrgent ?? false,
   isRead:         data.isRead ?? false,

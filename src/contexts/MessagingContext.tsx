@@ -60,6 +60,20 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   // Load on mount and when user changes
   useEffect(() => { reloadInbox(); }, [reloadInbox]);
 
+  // Poll for new messages every 20 seconds — picks up messages sent by other users
+  useEffect(() => {
+    if (!userId) return;
+    const interval = setInterval(() => { reloadInbox(); }, 20000);
+    return () => clearInterval(interval);
+  }, [userId, reloadInbox]);
+
+  // Also reload when the tab becomes visible again (user switches back to PathScribe)
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') reloadInbox(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [reloadInbox]);
+
   // Persist portal state
   useEffect(() => {
     sessionStorage.setItem('ps_drawer_open', String(portalOpen));

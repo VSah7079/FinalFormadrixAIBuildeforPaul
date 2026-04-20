@@ -104,36 +104,26 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
     : isCreatingNew;
 
   if (loadingMacros) return (
-    <div style={{ padding: '40px 24px', textAlign: 'center', color: '#6b7280', fontSize: 14 }}>Loading macros...</div>
+    <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--ps-conf-text-3)', fontSize: 14 }}>Loading macros...</div>
   );
 
   return (
-    <div style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 280px)', minHeight: '560px' }}>
+    <div style={{ display: 'flex', gap: '24px', height: 'calc(var(--app-height, 100vh) - 280px)', minHeight: '560px' }}>
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <div style={{
-        width: '260px',
-        flexShrink: 0,
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: '18px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-      }}>
+      <div className="ps-conf-card" style={{ width: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px', padding: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', margin: 0 }}>My Macros</h3>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ps-conf-text)', margin: 0 }}>My Macros</h3>
           <button
             onClick={handleCreateNew}
-            style={{ padding: '5px 12px', background: '#0891B2', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#0E7490'}
-            onMouseLeave={e => e.currentTarget.style.background = '#0891B2'}
+            style={{ padding: '5px 12px', background: 'var(--ps-conf-teal)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#0e7490'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--ps-conf-teal)'}
           >
             + New
           </button>
         </div>
 
-        <div style={{ fontSize: '11px', color: '#475569', padding: '8px 10px', background: 'rgba(8,145,178,0.08)', borderRadius: '6px', lineHeight: '1.5' }}>
+        <div style={{ fontSize: '11px', color: 'var(--ps-conf-text-dim)', padding: '8px 10px', background: 'rgba(8,145,178,0.08)', borderRadius: '6px', lineHeight: '1.5' }}>
           💡 Type a trigger shortcut while editing and press Space to auto-expand.
         </div>
 
@@ -157,12 +147,12 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
               }}
             >
               <div style={{ fontSize: '13px', fontWeight: 600 }}>{macro.name}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', fontFamily: 'monospace' }}>{macro.trigger}</div>
+              <div style={{ fontSize: '11px', color: 'var(--ps-conf-text-3)', fontFamily: 'monospace' }}>{macro.trigger}</div>
             </button>
           ))}
 
           {macros.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#475569', fontSize: '13px', padding: '24px 0' }}>
+            <div style={{ textAlign: 'center', color: 'var(--ps-conf-text-dim)', fontSize: '13px', padding: '24px 0' }}>
               No macros yet.<br />Click + New to create one.
             </div>
           )}
@@ -182,7 +172,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
             {/* Header row */}
             <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', color: '#94a3b8', marginBottom: '5px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label style={{ display: 'block', color: 'var(--ps-conf-text-2)', marginBottom: '5px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Macro Name
                 </label>
                 <input
@@ -203,7 +193,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
                 />
               </div>
               <div style={{ width: '180px' }}>
-                <label style={{ display: 'block', color: '#94a3b8', marginBottom: '5px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label style={{ display: 'block', color: 'var(--ps-conf-text-2)', marginBottom: '5px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Trigger Shortcut
                 </label>
                 <input
@@ -216,7 +206,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
                     borderRadius: '8px',
                     border: '1px solid rgba(255,255,255,0.15)',
                     background: 'rgba(0,0,0,0.3)',
-                    color: '#38bdf8',
+                    color: 'var(--ps-conf-teal-light)',
                     fontSize: '14px',
                     fontFamily: 'monospace',
                     fontWeight: 700,
@@ -251,7 +241,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
                     background: 'transparent',
                     border: '1px solid rgba(239,68,68,0.5)',
                     borderRadius: '8px',
-                    color: '#EF4444',
+                    color: 'var(--ps-conf-red)',
                     fontSize: '13px',
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -267,7 +257,7 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
                 disabled={!isDirty}
                 style={{
                   padding: '9px 24px',
-                  background: isDirty ? '#0891B2' : '#334155',
+                  background: isDirty ? '#0891B2' : 'var(--ps-conf-border)',
                   border: 'none',
                   borderRadius: '8px',
                   color: isDirty ? '#fff' : '#64748b',
@@ -276,8 +266,8 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
                   cursor: isDirty ? 'pointer' : 'not-allowed',
                   transition: 'background 0.2s',
                 }}
-                onMouseEnter={e => { if (isDirty) e.currentTarget.style.background = '#0E7490'; }}
-                onMouseLeave={e => { if (isDirty) e.currentTarget.style.background = '#0891B2'; }}
+                onMouseEnter={e => { if (isDirty) e.currentTarget.style.background = '#0e7490'; }}
+                onMouseLeave={e => { if (isDirty) e.currentTarget.style.background = 'var(--ps-conf-teal)'; }}
               >
                 {selectedMacroId ? 'Save Changes' : 'Create Macro'}
               </button>
@@ -291,20 +281,18 @@ const MacroPanel: React.FC<MacroPanelProps> = ({ approvedFonts }) => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#64748b',
+            color: 'var(--ps-conf-text-3)',
             gap: '16px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}>
+          }}
+          className="ps-conf-card">
             <div style={{ fontSize: '56px' }}>⚡</div>
-            <div style={{ fontSize: '18px', fontWeight: 700, color: '#94a3b8' }}>No Macro Selected</div>
-            <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '360px', lineHeight: '1.7', color: '#475569' }}>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ps-conf-text-2)' }}>No Macro Selected</div>
+            <div style={{ fontSize: '13px', textAlign: 'center', maxWidth: '360px', lineHeight: '1.7', color: 'var(--ps-conf-text-dim)' }}>
               Select a macro from the list to edit it, or click <strong style={{ color: '#0891B2' }}>+ New</strong> to create your first macro template.
             </div>
             <button
               onClick={handleCreateNew}
-              style={{ padding: '10px 24px', background: '#0891B2', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '8px' }}
+              style={{ padding: '10px 24px', background: 'var(--ps-conf-teal)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginTop: '8px' }}
             >
               + Create New Macro
             </button>

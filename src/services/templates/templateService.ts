@@ -284,6 +284,26 @@ export async function publishTemplate(id: string, _note?: string): Promise<Trans
   upsertRegistry({ id, status: 'published', reviewNote: undefined, lastModified: ts.slice(0, 10) });
 
   console.info(`[templateService] Published: ${entry.name}`);
+
+  // Notify the requester if template was built from a request
+  // Requester info stored in reviewNote as NOTIFY_REQUESTER:{...} marker
+  try {
+    const metaMatch = (entry.reviewNote ?? '').match(/NOTIFY_REQUESTER:({.*?})/);
+    if (metaMatch) {
+      const meta = JSON.parse(metaMatch[1]);
+      if (meta.requesterId && meta.requesterName) {
+        const { messageService } = await import('../../services');
+        await messageService.send({
+          id: '', senderId: 'u3', senderName: 'System Admin',
+          recipientId: meta.requesterId, recipientName: meta.requesterName,
+          subject: `Your template request is ready — ${entry.name}`,
+          body: `Great news — the synoptic template you requested, "${entry.name}", has been published and is now available in the Synoptic Library. You can add it to any case via "+ Add Synoptic Report".`,
+          timestamp: new Date(), isRead: false, isDeleted: false, isUrgent: false,
+          caseNumber: '', thread: [],
+        });
+      }
+    }
+  } catch { /* notification is best-effort */ }
   return { id, status: 'published', updatedAt: ts };
 
   // â”€â”€ REAL â”€â”€
@@ -565,6 +585,10 @@ import COLON_RESECTION_JSON      from '../../data/templates/CAP/colon_resection.
 import SKIN_MELANOMA_JSON        from '../../data/templates/CAP/skin_melanoma_bx.json';
 import PROSTATE_RESECTION_JSON   from '../../data/templates/CAP/prostate_resection.json';
 import LUNG_RESECTION_JSON       from '../../data/templates/CAP/lung_resection.json';
+import KIDNEY_RESECTION_JSON    from '../../data/templates/CAP/kidney_resection.json';
+import KIDNEY_BIOPSY_JSON       from '../../data/templates/CAP/kidney_biopsy.json';
+import WILMS_RESECTION_JSON     from '../../data/templates/CAP/wilms_resection.json';
+import WILMS_BIOPSY_JSON        from '../../data/templates/CAP/wilms_biopsy.json';
 
 // Seed all real CAP templates
 editorStore.set('breast_invasive',        BREAST_INVASIVE_JSON   as any);
@@ -573,6 +597,10 @@ editorStore.set('lung_adeno',             LUNG_ADENO_JSON        as any);
 editorStore.set('prostate_needle_biopsy', PROSTATE_NEEDLE_JSON   as any);
 editorStore.set('colon_resection',        COLON_RESECTION_JSON   as any);
 editorStore.set('skin_melanoma_bx',          SKIN_MELANOMA_JSON       as any);
+editorStore.set('kidney_resection',    KIDNEY_RESECTION_JSON    as unknown as EditorTemplate);
+editorStore.set('kidney_biopsy',       KIDNEY_BIOPSY_JSON       as unknown as EditorTemplate);
+editorStore.set('wilms_resection',     WILMS_RESECTION_JSON     as unknown as EditorTemplate);
+editorStore.set('wilms_biopsy',        WILMS_BIOPSY_JSON        as unknown as EditorTemplate);
 editorStore.set('prostate_resection',        PROSTATE_RESECTION_JSON  as any);
 editorStore.set('lung_resection',            LUNG_RESECTION_JSON      as any);
 // Alias — internal protocol ID used in CAP JSON

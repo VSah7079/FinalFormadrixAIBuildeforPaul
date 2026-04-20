@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Message } from '../../services/messages/IMessageService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export const MessageThread: React.FC<Props> = ({
   const [replyText, setReplyText] = useState('');
   const [menuOpen, setMenuOpen]   = useState(false);
   const bubbleEndRef = useRef<HTMLDivElement>(null);
+  const navigate     = useNavigate();
 
   // Auto-scroll to bottom when thread updates
   useEffect(() => {
@@ -96,6 +98,28 @@ export const MessageThread: React.FC<Props> = ({
                 </svg>
                 Case {message.caseNumber}
               </span>
+            )}
+            {message.configLink && (
+              <button
+                onClick={() => navigate(message.configLink!)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                  cursor: 'pointer', border: '1px solid rgba(99,102,241,0.4)',
+                  background: 'rgba(99,102,241,0.12)', color: '#818cf8',
+                  fontFamily: 'inherit', lineHeight: 1.4,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.22)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.12)')}
+                title="Open configuration page"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Open Configuration
+              </button>
             )}
           </div>
 

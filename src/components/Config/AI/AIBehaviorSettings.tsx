@@ -12,19 +12,16 @@ import React from 'react';
 import { aiBehaviorService } from '@/services';
 import type { AIBehaviorConfig } from '@/services/aiIntegration/IAIBehaviorService';
 
-const TEAL   = '#0891B2';
-const PANEL  = '#1e293b';
-const BORDER = '#334155';
-const TEXT   = '#f1f5f9';
-const MUTED  = '#94a3b8';
-const GREEN  = '#10b981';
-const AMBER  = '#f59e0b';
+// Use CSS tokens where possible; JS constants kept for dynamic style logic
+const TEAL   = 'var(--ps-conf-teal)';
+const PANEL  = 'var(--ps-conf-surface)';
+const BORDER = 'var(--ps-conf-border)';
+const TEXT   = 'var(--ps-conf-text)';
+const MUTED  = 'var(--ps-conf-text-2)';
+const GREEN  = 'var(--ps-conf-green)';
+const AMBER  = 'var(--ps-conf-amber)';
 
-const row: React.CSSProperties = {
-  display: 'flex', alignItems: 'flex-start',
-  justifyContent: 'space-between', gap: 24,
-  padding: '18px 0', borderBottom: `1px solid ${BORDER}`,
-};
+// row styling handled by .ps-conf-row CSS class
 
 export const AIBehaviorSettings: React.FC = () => {
   const [config,   setConfig]   = React.useState<AIBehaviorConfig | null>(null);
@@ -91,10 +88,10 @@ export const AIBehaviorSettings: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ background: PANEL, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '0 24px', marginBottom: 20 }}>
+      <div style={{ background: "var(--ps-conf-surface-2)", borderRadius: 10, border: "1px solid var(--ps-conf-border)", padding: "0 24px", marginBottom: 20 }}>
 
         {/* ── Auto-insert suggestions ─────────────────────────────────────── */}
-        <div style={row}>
+        <div className="ps-conf-row">
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 4 }}>
               Auto-insert suggestions
@@ -117,7 +114,7 @@ export const AIBehaviorSettings: React.FC = () => {
         </div>
 
         {/* ── Confidence threshold ────────────────────────────────────────── */}
-        <div style={{ ...row, borderBottom: 'none', paddingBottom: 20 }}>
+        <div className="ps-conf-row" style={{ borderBottom: "none", paddingBottom: 20 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 4 }}>
               Confidence threshold
@@ -152,8 +149,8 @@ export const AIBehaviorSettings: React.FC = () => {
       </div>
 
       {/* ── Additional toggles ──────────────────────────────────────────────── */}
-      <div style={{ background: PANEL, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '0 24px', marginBottom: 20 }}>
-        <div style={row}>
+      <div style={{ background: "var(--ps-conf-surface-2)", borderRadius: 10, border: "1px solid var(--ps-conf-border)", padding: "0 24px", marginBottom: 20 }}>
+        <div className="ps-conf-row">
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 4 }}>Show confidence scores</div>
             <div style={{ fontSize: 12, color: MUTED }}>Display percentage confidence on each AI suggestion badge in the synoptic editor.</div>
@@ -163,7 +160,7 @@ export const AIBehaviorSettings: React.FC = () => {
             <ToggleBtn field="showConfidenceScores" val={false} label="Off" />
           </div>
         </div>
-        <div style={{ ...row, borderBottom: 'none', paddingBottom: 18 }}>
+        <div className="ps-conf-row" style={{ borderBottom: "none", paddingBottom: 18 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: TEXT, marginBottom: 4 }}>Subspecialty routing</div>
             <div style={{ fontSize: 12, color: MUTED }}>Filter AI suggestions based on the assigned pathologist's subspecialty to improve relevance.</div>
@@ -183,7 +180,7 @@ export const AIBehaviorSettings: React.FC = () => {
           style={{
             padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600,
             cursor: dirty ? 'pointer' : 'default', border: 'none',
-            background: dirty ? TEAL : '#334155', color: '#fff', transition: 'all 0.2s',
+            background: dirty ? 'var(--ps-conf-teal)' : 'var(--ps-conf-border)', color: '#fff', transition: 'all 0.2s',
           }}
         >
           {saved ? '✓ Saved' : 'Save settings'}

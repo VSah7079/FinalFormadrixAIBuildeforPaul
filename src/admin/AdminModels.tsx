@@ -1,4 +1,4 @@
-import Header from "../components/Header";
+//import Header from "../components/Header";
 import AdminLayout from "./AdminLayout";
 
 export default function AdminModels() {

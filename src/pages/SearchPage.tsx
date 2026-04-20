@@ -1115,12 +1115,12 @@ const SearchPage: React.FC = () => {
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
-    <div style={{ position:'relative', width:'100vw', height:'100vh', backgroundColor:'#000', color:'#fff', fontFamily:"'Inter',sans-serif", opacity:isLoaded?1:0, transition:'opacity 0.5s ease', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+    <div style={{ position:'relative', width:'100vw', height:'var(--app-height, 100vh)', backgroundColor:'#000', color:'#fff', fontFamily:"'Inter',sans-serif", opacity:isLoaded?1:0, transition:'opacity 0.5s ease', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
       <div style={{ position:'absolute', inset:0, backgroundImage:'url(/main_background.jpg)', backgroundSize:'cover', backgroundPosition:'center', zIndex:0, filter:'brightness(0.3) contrast(1.1)' }} />
       <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom,rgba(0,0,0,0.4) 0%,#000 100%)', zIndex:1 }} />
 
-      <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
+      <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', height:'var(--app-height, 100vh)', overflow:'hidden' }}>
 
         {/* â”€â”€ Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
 
