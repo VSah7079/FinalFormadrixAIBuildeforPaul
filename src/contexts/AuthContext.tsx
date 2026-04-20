@@ -32,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const STORAGE_KEY = "pathscribe-user";
 
+  const getEnv = (key: string): string => String((import.meta as any).env?.[key] ?? "").trim();
+
   // Helper to sync state and storage
   const saveUser = (userData: User | null) => {
     if (userData) {
@@ -45,37 +47,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     return new Promise<boolean>(async (resolve) => {
         let authenticatedUser: User | null = null;
+        const demoEmail = getEnv("VITE_DEMO_EMAIL");
+        const demoPass = getEnv("VITE_DEMO_PASS");
+        const adminEmail = getEnv("VITE_ADMIN_EMAIL");
+        const adminPass = getEnv("VITE_ADMIN_PASS");
+        const ukDemoEmail = getEnv("VITE_UK_DEMO_EMAIL");
+        const ukDemoPass = getEnv("VITE_UK_DEMO_PASS");
+        const usDemoEmail = getEnv("VITE_US_DEMO_EMAIL");
+        const usDemoPass = getEnv("VITE_US_DEMO_PASS");
+        const tuthillEmail = getEnv("VITE_TUTHILL_EMAIL");
+        const tuthillPass = getEnv("VITE_TUTHILL_PASS");
 
         // Mock Login Data with Voice Profiles
-        if (email === import.meta.env.VITE_DEMO_EMAIL && password === import.meta.env.VITE_DEMO_PASS) {
+        if (email === demoEmail && password === demoPass) {
           authenticatedUser = {
             id: "PATH-001",
             name: "Dr. Sarah Johnson",
-            email: import.meta.env.VITE_DEMO_EMAIL,
+            email: demoEmail,
             role: "pathologist",
             initials: "SJ",
             voiceProfile: "EN-US",
           };
-        } else if (email === import.meta.env.VITE_ADMIN_EMAIL && password === import.meta.env.VITE_ADMIN_PASS) {
+        } else if (email === adminEmail && password === adminPass) {
           authenticatedUser = {
             id: "u3",
             name: "System Admin",
-            email: import.meta.env.VITE_ADMIN_EMAIL,
+            email: adminEmail,
             role: "admin",
             initials: "SA",
             voiceProfile: "EN-US",
           };
-        } else if (email === import.meta.env.VITE_UK_DEMO_EMAIL && password === import.meta.env.VITE_UK_DEMO_PASS) {
+        } else if (email === ukDemoEmail && password === ukDemoPass) {
           authenticatedUser = {
             id: "PATH-UK-001",
             name: "Paul Carter",
-            email: import.meta.env.VITE_UK_DEMO_EMAIL,
+            email: ukDemoEmail,
             role: "pathologist",
             initials: "PC",
             voiceProfile: "EN-GB",
             locale: "en-GB",
           } as any;
-        } else if (email === "oliver.pemberton@mft.nhs.uk" && password === import.meta.env.VITE_DEMO_PASS) {
+        } else if (email === "oliver.pemberton@mft.nhs.uk" && password === demoPass) {
           // UK Demo — Dr. Oliver Pemberton, no role assigned (security testing)
           authenticatedUser = {
             id: "PATH-UK-002",
@@ -86,23 +98,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             voiceProfile: "EN-GB",
             locale: "en-GB",
           } as any;
-        } else if (email === import.meta.env.VITE_US_DEMO_EMAIL && password === import.meta.env.VITE_US_DEMO_PASS) {
+        } else if (email === usDemoEmail && password === usDemoPass) {
           // US Demo — Amber Fehrs-Battey, MD FCAP — Midwest Pathology Associates
           authenticatedUser = {
             id: "PATH-US-001",
             name: "Amber Fehrs-Battey",
-            email: import.meta.env.VITE_US_DEMO_EMAIL,
+            email: usDemoEmail,
             role: "pathologist",
             initials: "AF",
             credentials: "MD, FCAP",
             voiceProfile: "EN-US",
           } as any;
-        } else if (email === import.meta.env.VITE_TUTHILL_EMAIL && password === import.meta.env.VITE_TUTHILL_PASS) {
+        } else if (email === tuthillEmail && password === tuthillPass) {
           // US Demo — Dr. J. Mark Tuthill — Henry Ford Health System
           authenticatedUser = {
             id: "PATH-US-002",
             name: "Dr. J. Mark Tuthill",
-            email: import.meta.env.VITE_TUTHILL_EMAIL,
+            email: tuthillEmail,
             role: "pathologist",
             initials: "MT",
             credentials: "MD, FCAP",
