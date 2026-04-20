@@ -122,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }] : [];
 
         // Specimen dot: based on whether any of its instances have answers
-        const specimenHasAnswers = allRows.some(r => Object.values(r.answers).some(v => v !== '' && !(Array.isArray(v) && !v.length)));
+        const specimenHasAnswers = allRows.some(r => Object.values(r.answers ?? {}).some(v => v !== '' && !(Array.isArray(v) && !v.length)));
         const specimenDot: DotStatus = allRows.length === 0 ? 'empty' : specimenHasAnswers ? 'partial' : 'empty';
 
         return (
@@ -199,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {allRows.map(inst => {
                   const isActiveInst = activeReportInstanceId === inst.instanceId ||
                     (!activeReportInstanceId && inst.instanceId === '__legacy__');
-                  const filledCount = Object.values(inst.answers).filter(v =>
+                  const filledCount = Object.values(inst.answers ?? {}).filter(v =>
                     v !== '' && !(Array.isArray(v) && !v.length)
                   ).length;
                   const instDot: DotStatus = filledCount > 0 ? 'partial' : 'empty';

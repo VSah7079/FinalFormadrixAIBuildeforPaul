@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import '../../../pathscribe.css';
 import FlagConfigPage    from './FlagConfigPage';
 import SpecimenDictionary from './SpecimenDictionary';
@@ -42,7 +43,17 @@ const SECTIONS: { id: SystemSection; emoji: string; label: string }[] = [
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const SystemTab: React.FC = () => {
-  const [active, setActive] = useState<SystemSection>('flags');
+  const location = useLocation();
+  const [active, setActive] = useState<SystemSection>(() => {
+    const section = new URLSearchParams(location.search).get('section') as SystemSection | null;
+    return section && SECTIONS.some(s => s.id === section) ? section : 'flags';
+  });
+
+  // Re-activate if URL changes (e.g. deep-link navigation)
+  useEffect(() => {
+    const section = new URLSearchParams(location.search).get('section') as SystemSection | null;
+    if (section && SECTIONS.some(s => s.id === section)) setActive(section);
+  }, [location.search]);
 
   const renderSection = () => {
     switch (active) {

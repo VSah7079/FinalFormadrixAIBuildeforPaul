@@ -2,6 +2,7 @@
 // Two-panel Flag Manager style modal for adding synoptic reports.
 
 import React, { useState, useEffect, useRef } from 'react';
+import { TemplateRequestModal } from '@/components/TemplateRequest/TemplateRequestModal';
 import type { Case, SynopticReportInstance } from '@/types/case/Case';
 
 interface Protocol {
@@ -28,6 +29,7 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
   const [selectedProtocol,    setSelectedProtocol]    = useState('');
   const [protocolSearch,      setProtocolSearch]      = useState('');
   const [learnPairing,        setLearnPairing]        = useState(true);
+  const [showRequestModal,    setShowRequestModal]    = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const specimens      = caseData?.specimens ?? [];
@@ -122,6 +124,7 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
   };
 
   return (
+    <>
     <div className="fm-overlay" onClick={onClose}>
       <div
         className="ps-research-modal"
@@ -303,6 +306,21 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
               })}
             </div>
 
+            {/* Request a template link */}
+            <div style={{ borderTop: '1px solid rgba(51,65,85,0.6)', padding: '10px 20px', textAlign: 'center' }}>
+              <button
+                onClick={() => setShowRequestModal(true)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontSize: 12, color: '#64748b', fontFamily: 'inherit',
+                  textDecoration: 'underline', textUnderlineOffset: 2,
+                  padding: '2px 0',
+                }}
+              >
+                Don't see what you need? Request a template →
+              </button>
+            </div>
+
             {/* Learn pairing */}
             <div style={{ borderTop: '1px solid rgba(51,65,85,0.9)', padding: '12px 20px' }}>
               <label style={{
@@ -361,6 +379,10 @@ const AddSynopticModal: React.FC<AddSynopticModalProps> = ({
         </div>
       </div>
     </div>
+      {showRequestModal && (
+        <TemplateRequestModal onClose={() => setShowRequestModal(false)} />
+      )}
+    </>
   );
 };
 

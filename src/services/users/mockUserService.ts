@@ -4,28 +4,35 @@ import { storageGet, storageSet } from '../mockStorage';
 
 // ─── Seed data (Updated with standardized Voice Profiles) ─────────────────────
 const SEED_USERS: StaffUser[] = [
-  { id: '1',  firstName: 'Sarah',   lastName: 'Chen',    email: 'schen@hospital.org',    roles: ['Pathologist'], npi: '1234567890', license: 'MD-12345', phone: '555-0101', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '2',  firstName: 'James',   lastName: 'Okafor',  email: 'jokafor@hospital.org',  roles: ['Resident'],    npi: '1234567891', license: 'MD-12346', phone: '555-0102', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '3',  firstName: 'Pete',    lastName: 'Nimmo',   email: 'pnimmo@hospital.org',   roles: ['Admin'],       npi: '',           license: '',         phone: '555-0103', department: 'Administration',       status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '4',  firstName: 'Maria',   lastName: 'Santos',  email: 'msantos@hospital.org',  roles: ['Pathologist'], npi: '1234567892', license: 'MD-12347', phone: '555-0104', department: 'Surgical Pathology',   status: 'Inactive', voiceProfile: 'EN-US' },
-  { id: '5',  firstName: 'Kevin',   lastName: 'Park',    email: 'kpark@hospital.org',    roles: ['Resident'],    npi: '1234567893', license: 'MD-12348', phone: '555-0105', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '6',  firstName: 'Aisha',   lastName: 'Patel',   email: 'apatel@hospital.org',   roles: ['Pathologist'], npi: '1234567894', license: 'MD-12349', phone: '555-0106', department: 'Neuropathology',       status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '7',  firstName: 'Thomas',  lastName: 'Nguyen',  email: 'tnguyen@hospital.org',  roles: ['Pathologist'], npi: '1234567895', license: 'MD-12350', phone: '555-0107', department: 'Surgical Pathology',   status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '8',  firstName: 'Lisa',    lastName: 'Hoffman', email: 'lhoffman@hospital.org', roles: ['Resident'],    npi: '1234567896', license: 'MD-12351', phone: '555-0108', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '9',  firstName: 'Marcus',  lastName: 'Webb',    email: 'mwebb@hospital.org',    roles: ['Pathologist'], npi: '1234567897', license: 'MD-12352', phone: '555-0109', department: 'Hematopathology',      status: 'Active',   voiceProfile: 'EN-US' },
-  { id: '10', firstName: 'Priya',   lastName: 'Sharma',    email: 'psharma@hospital.org',        roles: ['Resident'],    npi: '1234567898', license: 'MD-12353',    phone: '555-0110',     department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
-  // ── UK Demo Staff — Manchester University NHS Foundation Trust ─────────────
-  { id: 'PATH-UK-001', firstName: 'Paul',   lastName: 'Carter',       email: 'paul.carter@mft.nhs.uk',              roles: ['Pathologist'], npi: '',           gmcNumber: 'G4234567', license: 'GMC-4234567', phone: '0161 234 5000', department: 'Histopathology',        status: 'Active', voiceProfile: 'EN-GB' },
-  { id: 'PATH-UK-002', firstName: 'Oliver', lastName: 'Pemberton',    email: 'oliver.pemberton@mft.nhs.uk',         roles: ['Resident'],    npi: '',           gmcNumber: 'G7891234', license: 'GMC-7891234', phone: '0161 234 5001', department: 'Histopathology',        status: 'Active', voiceProfile: 'EN-GB' },
-  // ── US Demo Staff ────────────────────────────────────────────────────────────
-  { id: 'PATH-US-001', firstName: 'Amber',  lastName: 'Fehrs-Battey', email: 'amber.fehrs@demo.pathscribe.ai',      roles: ['Pathologist'], npi: '1234567900', gmcNumber: '',         license: 'MD-US-001',  phone: '313-555-0200', department: 'Surgical Pathology',    status: 'Active', voiceProfile: 'EN-US' },
-  { id: 'PATH-US-002', firstName: 'Mark',   lastName: 'Tuthill',      email: 'mark.tuthill@hfhs-demo.pathscribe.ai', roles: ['Pathologist'], npi: '1234567901', gmcNumber: '',        license: 'MD-US-002',  phone: '313-555-0201', department: 'Pathology Informatics', status: 'Active', voiceProfile: 'EN-US' },
+  { id: '1',  firstName: 'Sarah',   lastName: 'Chen',    credentials: 'MD, FCAP',    email: 'schen@hospital.org',    roles: ['Pathologist'], npi: '1234567890', license: 'MD-12345', phone: '555-0101', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '2',  firstName: 'James',   lastName: 'Okafor',  credentials: 'MD',  email: 'jokafor@hospital.org',  roles: ['Resident'],    npi: '1234567891', license: 'MD-12346', phone: '555-0102', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '3',  firstName: 'Pete',    lastName: 'Nimmo',   credentials: '',   email: 'pnimmo@hospital.org',   roles: ['Admin'],       npi: '',           license: '',         phone: '555-0103', department: 'Administration',       status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '4',  firstName: 'Maria',   lastName: 'Santos',  credentials: 'MD, FCAP',  email: 'msantos@hospital.org',  roles: ['Pathologist'], npi: '1234567892', license: 'MD-12347', phone: '555-0104', department: 'Surgical Pathology',   status: 'Inactive', voiceProfile: 'EN-US' },
+  { id: '5',  firstName: 'Kevin',   lastName: 'Park',    credentials: 'MD',    email: 'kpark@hospital.org',    roles: ['Resident'],    npi: '1234567893', license: 'MD-12348', phone: '555-0105', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '6',  firstName: 'Aisha',   lastName: 'Patel',   credentials: 'MD, FCAP',   email: 'apatel@hospital.org',   roles: ['Pathologist'], npi: '1234567894', license: 'MD-12349', phone: '555-0106', department: 'Neuropathology',       status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '7',  firstName: 'Thomas',  lastName: 'Nguyen',  credentials: 'MD',  email: 'tnguyen@hospital.org',  roles: ['Pathologist'], npi: '1234567895', license: 'MD-12350', phone: '555-0107', department: 'Surgical Pathology',   status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '8',  firstName: 'Lisa',    lastName: 'Hoffman', credentials: 'MD', email: 'lhoffman@hospital.org', roles: ['Resident'],    npi: '1234567896', license: 'MD-12351', phone: '555-0108', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '9',  firstName: 'Marcus',  lastName: 'Webb',    credentials: 'MD, FCAP',    email: 'mwebb@hospital.org',    roles: ['Pathologist'], npi: '1234567897', license: 'MD-12352', phone: '555-0109', department: 'Hematopathology',      status: 'Active',   voiceProfile: 'EN-US' },
+  { id: '10', firstName: 'Priya',   lastName: 'Sharma',  credentials: 'MD',  email: 'psharma@hospital.org',  roles: ['Resident'],    npi: '1234567898', license: 'MD-12353', phone: '555-0110', department: 'Anatomic Pathology',  status: 'Active',   voiceProfile: 'EN-US' },
+  // ── US / UK Demo Users ─────────────────────────────────────────────────────
+  { id: 'PATH-US-001', firstName: 'Amber',   lastName: 'Fehrs-Battey', credentials: 'MD, FCAP', canViewPediatric: false, email: 'amber.fehrs-battey@mpa.org',  roles: ['Pathologist', 'Admin'], npi: '1234567900', license: 'MD-12360', phone: '313-555-2001', department: 'Surgical Pathology', status: 'Active', voiceProfile: 'EN-US' },
+  { id: 'PATH-US-002', firstName: 'J. Mark', lastName: 'Tuthill',      credentials: 'MD, FCAP', canViewPediatric: false,      email: 'mark.tuthill@hfhs.org',       roles: ['Pathologist'], npi: '1234567901', license: 'MD-12361', phone: '313-555-2002', department: 'Pathology Informatics',   status: 'Active', voiceProfile: 'EN-US' },
+  { id: 'PATH-UK-001', firstName: 'Paul',    lastName: 'Carter',       credentials: 'MBChB, FRCPath',       email: 'paul.carter@mft.nhs.uk',      roles: ['Pathologist'], npi: '',           license: 'GMC-12362', phone: '+44-161-555-2003', department: 'Histopathology', status: 'Active', voiceProfile: 'EN-GB' },
+  { id: 'PATH-UK-002', firstName: 'Oliver',  lastName: 'Pemberton',    credentials: 'MBChB, FRCPath',    email: 'oliver.pemberton@mft.nhs.uk', roles: ['Pathologist'], npi: '',           license: 'GMC-12363', phone: '+44-161-555-2004', department: 'Histopathology', status: 'Active', voiceProfile: 'EN-GB' },
 ];
+
+// Increment USERS_VERSION whenever SEED_USERS is changed.
+const USERS_VERSION = '4'; // bumped: Amber now has dual roles [Pathologist, Admin]
+const USERS_VERSION_KEY = 'pathscribe_users_version';
+if (localStorage.getItem(USERS_VERSION_KEY) !== USERS_VERSION) {
+  localStorage.removeItem('pathscribe_mock_pathscribe_users');
+  localStorage.setItem(USERS_VERSION_KEY, USERS_VERSION);
+}
 
 const load = () => {
   const data = storageGet<StaffUser[]>('pathscribe_users', SEED_USERS);
   // Migration: Ensure all loaded users have a default voice profile if missing
-  return data.map(u => ({ ...u, voiceProfile: u.voiceProfile || 'EN-US', gmcNumber: (u as any).gmcNumber || '' }));
+  return data.map(u => ({ ...u, voiceProfile: u.voiceProfile || 'EN-US' }));
 };
 
 const persist = (data: StaffUser[]) => storageSet('pathscribe_users', data);

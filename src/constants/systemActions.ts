@@ -550,6 +550,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionSet> = {
     // Synoptic Navigation
     'synoptic.jumpNextUnanswered': true, 'synoptic.jumpNextRequired': true,
     'synoptic.markDeferred': true, 'synoptic.confirmField': true, 'synoptic.overrideField': true,
+    // Pediatric access — off by default, enabled per role by admin
+    'case.viewPediatric': false,
   },
   Resident: {
     'system.openMessages': true, 'system.openWorklist': true,

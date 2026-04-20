@@ -1,4 +1,4 @@
-import Header from "../components/Header";
+//import Header from "../components/Header";
 import AdminLayout from "./AdminLayout";
 
 export default function AdminPerformance() {
@@ -239,7 +239,7 @@ const selectStyle = {
 
 const tableStyle = {
   width: "100%",
-  borderCollapse: "collapse"
+  borderCollapse: "collapse" as const
 };
 
 const thStyle = {
