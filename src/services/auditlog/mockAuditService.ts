@@ -90,6 +90,10 @@ const SEED_AUDIT_LOGS: AuditLog[] = [
   { id: 'al-58',  timestamp: ts(14, 16, 22), type: 'system',event: 'User Login',          detail: 'User authenticated successfully',                                         user: 'Dr. Sarah Johnson',   caseId: null,       confidence: null },
   { id: 'al-59',  timestamp: ts(14,  8, 55), type: 'ai',    event: 'Protocol Selected',   detail: 'AI auto-selected CAP Soft Tissue protocol',                              user: 'System (AI)',         caseId: 'S26-4325', confidence: 88   },
   { id: 'al-60',  timestamp: ts(14,  8,  0), type: 'system',event: 'LIS Sync',            detail: 'Gross description received from LIS',                                    user: 'System (LIS)',        caseId: 'S26-4325', confidence: null },
+
+  // ── Pediatric Access Control Events ─────────────────────────────────────────
+  { id: 'al-61',  timestamp: ts(0,  8,  5), type: 'system', event: 'Pediatric Access Denied',    detail: 'Case MPA26-1007-PED opened by Dr. Amber Fehrs-Battey — blocked: patient age 8 below Metro General Hospital pediatric threshold (18). User lacks canViewPediatric permission.', user: 'Dr. Amber Fehrs-Battey', caseId: 'MPA26-1007-PED', confidence: null },
+  { id: 'al-62',  timestamp: ts(0,  8,  6), type: 'system', event: 'Pediatric Access Requested', detail: 'Dr. Amber Fehrs-Battey requested Pediatric Access permission for case MPA26-1007-PED (patient age 8). Request sent to System Admin.',                                            user: 'Dr. Amber Fehrs-Battey', caseId: 'MPA26-1007-PED', confidence: null },
 ];
 
 const SEED_ERROR_LOGS: ErrorLog[] = [
