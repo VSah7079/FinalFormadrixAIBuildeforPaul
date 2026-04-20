@@ -202,6 +202,31 @@ export let PROTOCOL_REGISTRY: Protocol[] = [
     status: 'published', fields: 22, snomedPct: 80, icdPct: 72,
     lastModified: '2026-04-10', owner: 'Dr. S. Johnson',
   },
+  // ── Kidney ──────────────────────────────────────────────────────────────────
+  {
+    id: 'kidney_resection', name: 'CAP Kidney — Renal Cell Carcinoma Resection',
+    category: 'KIDNEY', version: '4.2.1.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 35, snomedPct: 0, icdPct: 0,
+    lastModified: '2026-04-18', owner: 'System',
+  },
+  {
+    id: 'kidney_biopsy', name: 'CAP Kidney — Renal Cell Carcinoma Biopsy',
+    category: 'KIDNEY', version: '4.2.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 10, snomedPct: 0, icdPct: 0,
+    lastModified: '2026-04-18', owner: 'System',
+  },
+  {
+    id: 'wilms_resection', name: 'CAP Kidney — Wilms & Pediatric Renal Tumors Resection',
+    category: 'KIDNEY', version: '4.4.0.0', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 42, snomedPct: 0, icdPct: 0,
+    lastModified: '2026-04-18', owner: 'System',
+  },
+  {
+    id: 'wilms_biopsy', name: 'CAP Kidney — Wilms & Pediatric Renal Tumors Biopsy',
+    category: 'KIDNEY', version: '5.0.0.1', source: 'CAP', type: 'Base template',
+    status: 'published', fields: 8, snomedPct: 0, icdPct: 0,
+    lastModified: '2026-04-18', owner: 'System',
+  },
 ];
 
 // Hydrate from localStorage on module load — merges saved overrides so that

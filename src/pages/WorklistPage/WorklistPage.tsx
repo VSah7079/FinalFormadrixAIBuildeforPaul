@@ -15,7 +15,10 @@ import { useAuth } from '@/contexts/AuthContext';
 const WorklistPage: React.FC = () => {
   const handleLogout = useLogout();
   const { user } = useAuth();
-  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing' | 'participating' | 'countersign'>('all');
+  const navigate = useNavigate();
+  const location  = useLocation();
+
+  const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing'>('all');
   const [realCases, setRealCases]             = useState<Case[]>([]);
   const [delegatedToMeCount, setDelegatedToMeCount] = useState(0);
   const [physicianFilter, setPhysicianFilter] = useState<string>('');
@@ -26,7 +29,7 @@ const WorklistPage: React.FC = () => {
   const CURRENT_USER_NAME = user?.name ?? 'Dr. Sarah Johnson';
 
   // Measure available height for the table container.
-  // We get the wrapper's top offset from the viewport and subtract from 100vh.
+  // We get the wrapper's top offset from the viewport and subtract from var(--app-height, 100vh).
   // This is immune to any parent overflow/flex chain issues.
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [tableHeight, setTableHeight] = useState<number>(400);
@@ -47,14 +50,56 @@ const WorklistPage: React.FC = () => {
   const [claimModal, setClaimModal] = useState<{ caseId: string; summary: string; poolName: string } | null>(null);
 
   // Load real cases from mockCaseService on mount
+  // Also load client pediatric thresholds so we can filter cases the user can't access
+  const [clientThresholds, setClientThresholds] = useState<Record<string, number | null>>({});
+  const [clientAuthorized, setClientAuthorized] = useState<Record<string, string[]>>({});
+  const [thresholdsLoaded, setThresholdsLoaded] = useState(false);
   useEffect(() => {
-    mockCaseService.listCasesForUser(user?.id ?? 'current').then(setRealCases).catch(() => {});
+    import('@/services').then(({ clientService }) => {
+      clientService.getAll().then(res => {
+        if (!res.ok) return;
+        const threshMap: Record<string, number | null> = {};
+        const authMap: Record<string, string[]> = {};
+        for (const c of res.data) {
+          threshMap[c.id] = (c as any).pediatricAgeThreshold ?? null;
+          authMap[c.id] = (c as any).authorizedPediatricPathologistIds ?? [];
+        }
+        setClientThresholds(threshMap);
+        setClientAuthorized(authMap);
+        setThresholdsLoaded(true);
+      }).catch(() => setThresholdsLoaded(true));
+    });
+  }, [location.key]);
+
+  useEffect(() => {
+    const canViewPeds = (user as any)?.canViewPediatric ?? false;
+    mockCaseService.listCasesForUser(user?.id ?? 'current', canViewPeds).then(cases => {
+      setRealCases(cases);
+    }).catch(() => {});
     // Load delegated-to-me count
     getDelegations().then(all => {
       const count = all.filter(d => d.toUserId === CURRENT_USER_ID && d.status === 'pending').length;
       setDelegatedToMeCount(count);
     }).catch(() => {});
-  }, [user?.id]);
+  }, [user?.id, location.key]);
+
+  // Auto-clear the "Access requested" badge for any case that is no longer restricted
+  useEffect(() => {
+    if (!thresholdsLoaded || realCases.length === 0) return;
+    try {
+      const stored = localStorage.getItem('pathscribe_ped_requested');
+      if (!stored) return;
+      const requested: string[] = JSON.parse(stored);
+      const stillRestricted = requested.filter(caseId => {
+        const c = realCases.find((rc: any) => rc.id === caseId);
+        if (!c) return false; // case gone — clear it
+        return !canViewCase(c); // keep only if still restricted
+      });
+      if (stillRestricted.length !== requested.length) {
+        localStorage.setItem('pathscribe_ped_requested', JSON.stringify(stillRestricted));
+      }
+    } catch { /* ignore */ }
+  }, [thresholdsLoaded, realCases]);
 
   // Quick Links Data
   const quickLinks = {
@@ -73,9 +118,6 @@ const WorklistPage: React.FC = () => {
   };
 
   // ── 50 Mock Cases ──────────────────────────────────────────────────────────
-  const navigate = useNavigate();
-  const location  = useLocation();
-
   // ── Voice: selected row index for keyboard/voice navigation ───────────────
   const [selectedIndex,    setSelectedIndex]    = useState<number>(-1);
   const [selectedCaseId,   setSelectedCaseId]   = useState<string | null>(null);
@@ -107,7 +149,24 @@ const WorklistPage: React.FC = () => {
   }, [displayOrder]); // fires once displayOrder arrives from the table
 
 
+  // Returns true if the current user is allowed to see this case
+  const canViewCase = (c: any): boolean => {
+    if (!thresholdsLoaded) return false;
+    const dob = c?.patient?.dateOfBirth;
+    const clientId = c?.order?.clientId;
+    const threshold = clientId ? (clientThresholds[clientId] ?? null) : null;
+    if (!dob || threshold === null) return true; // no pediatric threshold configured — always visible
+    const ageYrs = Math.floor((Date.now() - new Date(dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+    if (ageYrs >= threshold) return true; // not pediatric — always visible
+    // Patient is pediatric — check Option C dual gate:
+    // Either user-level flag OR being in the client's authorized list grants access
+    const canViewPeds = (user as any)?.canViewPediatric ?? false;
+    const authorizedIds: string[] = clientId ? (clientAuthorized[clientId] ?? []) : [];
+    return canViewPeds || authorizedIds.includes(user?.id ?? '');
+  };
+
   const filteredCases = realCases.filter(c => {
+    if (!canViewCase(c)) return false; // ← pediatric access gate
     if (activeFilter === 'pool')       return (c as any).status === 'pool';
     if (activeFilter === 'all')        return (c as any).status !== 'pool';
     // Urgent shows pool cases too — they appear grouped as pool in the list
@@ -119,24 +178,11 @@ const WorklistPage: React.FC = () => {
     if (activeFilter === 'draft')      return c.status === 'draft';
     if (activeFilter === 'inprogress') return c.status === 'in-progress';
     if (activeFilter === 'amended')    return c.status === 'amended';
-    if (activeFilter === 'physician')    return (c.order?.requestingProvider ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
-    if (activeFilter === 'participating') {
-      // Cases where current user is the assignee OR appears in caseTeam
-      const isAssigned = (c.order?.assignedTo ?? (c as any).assignedTo) === CURRENT_USER_ID;
-      const inTeam = ((c as any).caseTeam ?? []).some((m: any) =>
-        (m.userId ?? m.id ?? m) === CURRENT_USER_ID
-      );
-      return isAssigned || inTeam;
-    }
-    if (activeFilter === 'countersign') {
-      // Cases pending countersignature — awaiting attending countersign
-      return (c as any).requiresCountersign === true &&
-        c.status === 'pending-countersign';
-    }
+    if (activeFilter === 'physician')  return (c.order?.requestingProvider ?? '').toLowerCase().includes(physicianFilter.toLowerCase());
     return true;
   });
 
-  const nonPoolCases = realCases.filter(c => (c as any).status !== 'pool');
+  const nonPoolCases = realCases.filter(c => (c as any).status !== 'pool' && canViewCase(c));
   const stats = {
     total:          nonPoolCases.length,
     pool:           realCases.filter(c => (c as any).status === 'pool').length,
@@ -146,17 +192,6 @@ const WorklistPage: React.FC = () => {
     amended:        nonPoolCases.filter(c => c.status === 'amended').length,
     draft:          nonPoolCases.filter(c => c.status === 'draft').length,
     finalizing:     nonPoolCases.filter(c => c.status === 'finalizing').length,
-    participating:  nonPoolCases.filter(c => {
-      const isAssigned = (c.order?.assignedTo ?? (c as any).assignedTo) === CURRENT_USER_ID;
-      const inTeam = ((c as any).caseTeam ?? []).some((m: any) =>
-        (m.userId ?? m.id ?? m) === CURRENT_USER_ID
-      );
-      return isAssigned || inTeam;
-    }).length,
-    countersign:    nonPoolCases.filter(c =>
-      (c as any).requiresCountersign === true &&
-      c.status === 'pending-countersign'
-    ).length,
     completedToday: nonPoolCases.filter(c => {
       if (c.status !== 'finalized') return false;
       if (!c.updatedAt) return false;
@@ -251,13 +286,10 @@ const WorklistPage: React.FC = () => {
     };
 
     // Filter commands — reset selection when filter changes
-    const filterUrgent        = () => { setActiveFilter('urgent');        setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterCompleted     = () => { setActiveFilter('completed');     setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterReview        = () => { setActiveFilter('review');        setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterParticipating = () => { setActiveFilter('participating'); setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterCountersign   = () => { setActiveFilter('countersign');   setSelectedIndex(-1); setSelectedCaseId(null); };
-    const filterPool          = () => { setActiveFilter('pool');          setSelectedIndex(-1); setSelectedCaseId(null); };
-    const clearFilter         = () => { setActiveFilter('all');           setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterUrgent    = () => { setActiveFilter('urgent');    setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterCompleted = () => { setActiveFilter('completed'); setSelectedIndex(-1); setSelectedCaseId(null); };
+    const filterReview    = () => { setActiveFilter('review');    setSelectedIndex(-1); setSelectedCaseId(null); };
+    const clearFilter     = () => { setActiveFilter('all');       setSelectedIndex(-1); setSelectedCaseId(null); };
 
     // Sort commands — forward to WorklistTable's internal sort system via custom events
     const sortDate     = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_SORT_APPLY', { detail: { key: 'accessionDate', dir: 'desc' } }));
@@ -308,14 +340,13 @@ const WorklistPage: React.FC = () => {
     window.addEventListener('PATHSCRIBE_TABLE_LAST',             last);
     window.addEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
     window.addEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',        filterUrgent);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',     filterCompleted);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',        filterReview);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',     filterPhysician);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING', filterParticipating);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',   filterCountersign);
-    window.addEventListener('PATHSCRIBE_TABLE_FILTER_POOL',          filterPool);
-    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',         clearFilter);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+    window.addEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
     window.addEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
     window.addEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
     window.addEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
@@ -336,14 +367,13 @@ const WorklistPage: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_TABLE_LAST',             last);
       window.removeEventListener('PATHSCRIBE_TABLE_OPEN_SELECTED',    openSelected);
       window.removeEventListener('PATHSCRIBE_TABLE_REFRESH',          refresh);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',        filterUrgent);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED',     filterCompleted);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',        filterReview);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN',     filterPhysician);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PARTICIPATING', filterParticipating);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COUNTERSIGN',   filterCountersign);
-      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_POOL',          filterPool);
-      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',         clearFilter);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_CLEAR_FILTER',     clearFilter);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_URGENT',    filterUrgent);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_REVIEW',    filterReview);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_COMPLETED', filterCompleted);
+      window.removeEventListener('PATHSCRIBE_TABLE_FILTER_PHYSICIAN', filterPhysician);
       window.removeEventListener('PATHSCRIBE_READ_FLAGS',             readFlags);
       window.removeEventListener('PATHSCRIBE_READ_SPECIMEN',          readSpecimen);
       window.removeEventListener('PATHSCRIBE_TABLE_SORT_DATE',        sortDate);
@@ -359,7 +389,7 @@ const WorklistPage: React.FC = () => {
 
   return (
     <div style={{
-      position: 'relative', width: '100vw', height: '100vh',
+      position: 'relative', width: '100vw', height: 'var(--app-height, var(--app-height, 100vh))',
       backgroundColor: '#000000', color: '#ffffff',
       fontFamily: "'Inter', sans-serif",
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -436,8 +466,6 @@ const WorklistPage: React.FC = () => {
 
                 {/* ── Filter tiles group ── */}
                 {([
-                  { key: 'participating', label: 'My Cases',        count: stats.participating,  color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
-                  { key: 'countersign',   label: 'Countersign',     count: stats.countersign,    color: '#F59E0B', bg: 'rgba(245,158,11,0.05)',  border: 'rgba(245,158,11,0.18)',  activeBg: 'rgba(245,158,11,0.18)',  activeBorder: '#F59E0B',               glow: '0 0 12px rgba(245,158,11,0.4)' },
                   { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#F97316', bg: 'rgba(249,115,22,0.05)',  border: 'rgba(249,115,22,0.18)',  activeBg: 'rgba(249,115,22,0.18)',  activeBorder: '#F97316',               glow: '0 0 12px rgba(249,115,22,0.4)' },
                   { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
                   { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },

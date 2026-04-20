@@ -449,9 +449,19 @@ interface ThreadPanelProps {
   onSend: () => void;
   onSoftDelete: () => void;
   onMarkUnread: () => void;
+  onCreateTemplate?: (messageId: string) => void;
 }
 
-const ThreadPanel: React.FC<ThreadPanelProps> = ({ message, userId, inputText, onInputChange, onSend, onSoftDelete, onMarkUnread }) => {
+const ThreadPanel: React.FC<ThreadPanelProps> = ({ message, userId, inputText, onInputChange, onSend, onSoftDelete, onMarkUnread, onCreateTemplate }) => {
+  // Detect template requests — body contains embedded metadata marker
+  const isTemplateRequest = typeof message.body === 'string' && message.body.includes('<!-- TEMPLATE_REQUEST_META:');
+  const templateMeta = React.useMemo(() => {
+    if (!isTemplateRequest) return null;
+    try {
+      const match = message.body.match(/<!-- TEMPLATE_REQUEST_META:(.*?) -->/s);
+      return match ? JSON.parse(match[1]) : null;
+    } catch { return null; }
+  }, [message.body, isTemplateRequest]);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const bubbleEndRef = React.useRef<HTMLDivElement>(null);
 
@@ -479,6 +489,42 @@ const ThreadPanel: React.FC<ThreadPanelProps> = ({ message, userId, inputText, o
           );
         })}
         <div ref={bubbleEndRef} />
+
+        {/* ── Template Request Action Banner ── */}
+        {isTemplateRequest && templateMeta && (
+          <div style={{
+            margin: '0 0 16px', padding: '12px 16px', borderRadius: 10,
+            background: 'rgba(8,145,178,0.08)', border: '1px solid rgba(8,145,178,0.25)',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ fontSize: 18 }}>📋</span>
+            <div style={{ flex: 1, fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>
+              <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: 2 }}>
+                Synoptic Template Request
+              </strong>
+              {templateMeta.standard} {templateMeta.organ} — {templateMeta.procedure}
+              {templateMeta.baseTemplateName && (
+                <span style={{ color: '#38bdf8' }}> · Base: {templateMeta.baseTemplateName}</span>
+              )}
+            </div>
+            {onCreateTemplate && (
+              <button
+                onClick={() => onCreateTemplate(message.id)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', border: '1.5px solid rgba(8,145,178,0.5)',
+                  background: 'rgba(8,145,178,0.15)', color: '#38bdf8',
+                  fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap' as const,
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(8,145,178,0.28)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(8,145,178,0.15)')}
+              >
+                ＋ Create Template
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ⋯ menu */}
         <div style={{ position: 'absolute', top: 0, right: 0 }}>
@@ -909,18 +955,12 @@ const AppShell: React.FC = () => {
     const goForward              = () => navigate(1);
     const nextCase               = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_NEXT_CASE'));
     const previousCase           = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_NAV_PREVIOUS_CASE'));
-    const tableRefineSearch      = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_TABLE_REFINE_SEARCH_EXECUTE'));
-    const aiReviewNext           = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_AI_REVIEW_NEXT_EXECUTE'));
 
     // ── Home page actions ────────────────────────────────────────────────────
-    const openEnhancementRequest = () => {
-      window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST'));
-    };
-    const openTestingFeedback = () => {
-      window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK'));
-    };
+    const openEnhancementRequest = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_ENHANCEMENT_REQUEST'));
+    const openTestingFeedback    = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_HOME_OPEN_TESTING_FEEDBACK'));
     const viewHelp               = () => window.open('/help/documentation.pdf', '_blank');
-    const openResources = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_PAGE_OPEN_RESOURCES'));
+    const openResources          = () => window.dispatchEvent(new CustomEvent('PATHSCRIBE_PAGE_OPEN_RESOURCES'));
     const systemLogout           = () => handleLogout();
 
     // ── Messages: navigation ─────────────────────────────────────────────────
@@ -1005,8 +1045,6 @@ const AppShell: React.FC = () => {
     window.addEventListener('PATHSCRIBE_GO_FORWARD',              goForward);
     window.addEventListener('PATHSCRIBE_NEXT_CASE',               nextCase);
     window.addEventListener('PATHSCRIBE_PREVIOUS_CASE',           previousCase);
-    window.addEventListener('PATHSCRIBE_TABLE_REFINE_SEARCH',     tableRefineSearch);
-    window.addEventListener('PATHSCRIBE_AI_REVIEW_NEXT',          aiReviewNext);
     window.addEventListener('PATHSCRIBE_OPEN_ENHANCEMENT_REQUEST',openEnhancementRequest);
     window.addEventListener('PATHSCRIBE_OPEN_TESTING_FEEDBACK',   openTestingFeedback);
     window.addEventListener('PATHSCRIBE_VIEW_HELP',               viewHelp);
@@ -1035,7 +1073,6 @@ const AppShell: React.FC = () => {
     window.addEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
     window.addEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
     window.addEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
-    window.addEventListener('PATHSCRIBE_MSG_MARK_URGENT',         msgUrgent);  // alias
     window.addEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
 
     return () => {
@@ -1078,7 +1115,6 @@ const AppShell: React.FC = () => {
       window.removeEventListener('PATHSCRIBE_MSG_CLEAR_SUBJECT',       msgClearSubject);
       window.removeEventListener('PATHSCRIBE_MSG_CLEAR_BODY',          msgClearBody);
       window.removeEventListener('PATHSCRIBE_MSG_URGENT',              msgUrgent);
-      window.removeEventListener('PATHSCRIBE_MSG_MARK_URGENT',         msgUrgent);
       window.removeEventListener('PATHSCRIBE_MSG_RECIPIENT_SEARCH',    msgRecipientSearch);
     };
   }, [
@@ -1090,7 +1126,7 @@ const AppShell: React.FC = () => {
   ]);
 
  return (
-    <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', color: '#f1f5f9', background: '#020617', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="ps-app-root" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', color: '#f1f5f9', background: '#020617', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
      {/* ── NAVBAR ── */}
       <NavBar
@@ -1129,8 +1165,8 @@ const AppShell: React.FC = () => {
           })}
         </div>
       )}
-      {/* Outlet — flex:1 so it fills remaining height exactly */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      {/* Outlet — flex:1 so it fills remaining height and full width exactly */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', width: '100%' }}>
         <Outlet />
       </div>
 
@@ -1215,6 +1251,29 @@ const AppShell: React.FC = () => {
                           >
                             Case {currentMsg.caseNumber}
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                          </button>
+                        )}
+                        {(currentMsg as any).configLink && (
+                          <button onClick={() => {
+                            const link = (currentMsg as any).configLink as string;
+                            setPortalOpen(false);
+                            navigate(link);
+                            // If the link targets a system section, fire the nav event after a tick
+                            const params = new URLSearchParams(link.split('?')[1] ?? '');
+                            const section = params.get('section');
+                            if (section) {
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('PATHSCRIBE_SYSTEM_NAVIGATE', { detail: { section } }));
+                              }, 150);
+                            }
+                          }}
+                            style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '5px', cursor: 'pointer', color: '#818cf8', fontSize: '11px', fontWeight: 600, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0, transition: 'all 0.15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; }}
+                            title="Open configuration page"
+                          >
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Open Configuration
                           </button>
                         )}
                       </div>
@@ -1312,6 +1371,10 @@ const AppShell: React.FC = () => {
                     onSend={handleSend}
                     onSoftDelete={() => handleSoftDelete(selectedMsgId)}
                     onMarkUnread={() => setMessages(prev => prev.map(m => m.id === selectedMsgId ? { ...m, isRead: false } : m))}
+                    onCreateTemplate={(msgId) => {
+                      setPortalOpen(false);
+                      navigate(`/template-editor/new?from=request&requestId=${msgId}`);
+                    }}
                   />
                 ) : (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#8aaccc' }}>

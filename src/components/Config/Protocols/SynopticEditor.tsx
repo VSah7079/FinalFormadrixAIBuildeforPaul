@@ -638,6 +638,54 @@ const SynopticEditor: React.FC = () => {
 
       {/* ── Main layout ── */}
       <div style={{ display: 'flex', gap: '24px', padding: '28px 40px 80px', maxWidth: '1200px', margin: '0 auto' }}>
+
+        {/* ── Request Details Banner (shown when opened from a template request message) ── */}
+        {fromRequest && requestMeta && (
+          <div style={{
+            position: 'absolute', left: 40, right: 40, top: 72,
+            padding: '12px 20px', borderRadius: 10, zIndex: 50,
+            background: 'rgba(8,145,178,0.08)', border: '1px solid rgba(8,145,178,0.3)',
+            display: 'flex', alignItems: 'flex-start', gap: 16, fontSize: 13,
+          }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>📋</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: 6 }}>
+                Template Request from {requestMeta.requestedByName}
+                <span style={{
+                  marginLeft: 10, fontSize: 11, fontWeight: 700, padding: '2px 8px',
+                  borderRadius: 20, background: 'rgba(8,145,178,0.18)', color: '#38bdf8',
+                  textTransform: 'uppercase', letterSpacing: '0.04em', verticalAlign: 'middle',
+                }}>
+                  {requestMeta.urgency}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px', fontSize: 12 }}>
+                {[
+                  ['Standard', requestMeta.standard],
+                  ['Organ', requestMeta.organ],
+                  ['Procedure', requestMeta.procedure],
+                  ['Base', requestMeta.baseTemplateName ?? 'None specified'],
+                ].map(([l, v]) => (
+                  <span key={l} style={{ color: '#64748b' }}>
+                    {l}: <strong style={{ color: '#cbd5e1' }}>{v}</strong>
+                  </span>
+                ))}
+              </div>
+              {requestMeta.keyFields && (
+                <details style={{ marginTop: 6 }}>
+                  <summary style={{ fontSize: 11, color: '#38bdf8', cursor: 'pointer' }}>
+                    View requested fields
+                  </summary>
+                  <pre style={{
+                    margin: '6px 0 0', padding: '8px 12px', borderRadius: 6,
+                    background: 'rgba(0,0,0,0.25)', color: '#94a3b8',
+                    fontSize: 11, fontFamily: 'inherit', whiteSpace: 'pre-wrap', lineHeight: 1.5,
+                  }}>{requestMeta.keyFields}</pre>
+                </details>
+              )}
+            </div>
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           {registryEntry?.status === 'needs_changes' && registryEntry.reviewNote && (
             <div style={{ marginBottom: '16px', padding: '14px 18px', borderRadius: '10px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)' }}>

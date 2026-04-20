@@ -112,7 +112,7 @@ const cards = [
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 60px', overflow: 'hidden' }}>
           <header style={{ marginBottom: '32px' }}>
             <h1 style={{ fontSize: '48px', fontWeight: 900, margin: 0, letterSpacing: '-2px' }}>
-              Welcome back,&nbsp;<span style={{ color: '#0891B2' }}>{user?.name ? user.name.split(',')[0] : 'Doctor'}</span>
+              Welcome back,&nbsp;<span style={{ color: '#0891B2' }}>{user?.name ? user.name.split(',')[0] : 'Doctor'}</span>{(user as any)?.credentials && <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 8 }}>{(user as any).credentials}</span>}
             </h1>
             <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginTop: '12px' }}>
               The AI models are updated and synchronized with the latest CAP protocols.

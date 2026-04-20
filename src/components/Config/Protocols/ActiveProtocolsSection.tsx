@@ -53,13 +53,13 @@ const ProtocolCard: React.FC<{ protocol: Protocol }> = ({ protocol: p }) => {
         style={{
           display: 'flex', alignItems: 'center', gap: '14px',
           padding: '14px 18px',
-          background:   open ? '#1a2744' : '#1e293b',
-          border:       `1px solid ${open ? 'rgba(8,145,178,0.3)' : '#334155'}`,
+          background:   open ? 'var(--ps-conf-surface-2)' : 'var(--ps-conf-surface)',
+          border:       `1px solid ${open ? 'var(--ps-conf-border-active)' : 'var(--ps-conf-border)'}`,
           borderRadius: open ? '10px 10px 0 0' : '10px',
           cursor: 'pointer', transition: 'all 0.12s',
         }}
-        onMouseEnter={e => { if (!open) { e.currentTarget.style.background = '#243050'; e.currentTarget.style.borderColor = '#475569'; }}}
-        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = '#1e293b'; e.currentTarget.style.borderColor = '#334155'; }}}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'var(--ps-conf-surface-2)'; e.currentTarget.style.borderColor = '#475569'; }}}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'var(--ps-conf-surface)'; e.currentTarget.style.borderColor = '#334155'; }}}
       >
         <div style={{ width: '3px', height: '36px', borderRadius: '2px', background: catColor, flexShrink: 0 }} />
 
@@ -80,7 +80,7 @@ const ProtocolCard: React.FC<{ protocol: Protocol }> = ({ protocol: p }) => {
 
       {/* Expanded panel */}
       {open && (
-        <div style={{ background: '#131c30', border: '1px solid rgba(8,145,178,0.2)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px 20px 18px' }}>
+        <div style={{ background: 'var(--ps-conf-surface-3)', border: '1px solid rgba(8,145,178,0.2)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px 20px 18px' }}>
 
           {/* Stats */}
           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', paddingBottom: '14px', marginBottom: '14px', borderBottom: '1px solid #1e293b' }}>
@@ -227,7 +227,7 @@ export const SearchBar: React.FC<{ value: string; onChange: (v: string) => void 
   <div style={{ position: 'relative', marginBottom: '16px' }}>
     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: '14px', pointerEvents: 'none' }}>🔍</span>
     <input value={value} onChange={e => onChange(e.target.value)} placeholder="Search protocols…"
-      style={{ width: '100%', padding: '9px 12px 9px 36px', background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '13px', color: '#f1f5f9', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+      style={{ width: '100%', padding: '9px 12px 9px 36px', background: 'var(--ps-conf-surface)', border: '1px solid var(--ps-conf-border)', borderRadius: '8px', fontSize: '13px', color: '#f1f5f9', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
       onFocus={e => (e.currentTarget.style.borderColor = '#0891B2')}
       onBlur={e  => (e.currentTarget.style.borderColor = '#334155')}
     />

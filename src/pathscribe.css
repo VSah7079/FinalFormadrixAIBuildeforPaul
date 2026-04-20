@@ -27,6 +27,8 @@
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  height: var(--app-height);
   background-color: var(--ps-navy-base);
   color: var(--ps-text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -1502,6 +1504,8 @@
   position: relative;
   width: 100vw;
   min-height: 100vh;
+  min-height: 100dvh;
+  min-height: var(--app-height);
   background-color: var(--ps-navy-base);
   color: var(--ps-text-primary);
   font-family: 'Inter', sans-serif;
@@ -1809,13 +1813,16 @@
 /* ── Worklist internal scroll ───────────────────────────── */
 .wl-scroll {
   overflow-y: auto;
+  overflow-x: auto;
   flex: 1;
   min-height: 0;
+  padding-bottom: 80px;
   /* Custom scrollbar — subtle on dark bg */
   scrollbar-width: thin;
   scrollbar-color: rgba(100,116,139,0.4) transparent;
 }
-.wl-scroll::-webkit-scrollbar { width: 6px; }
+.wl-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.wl-scroll::-webkit-scrollbar-corner { background: transparent; }
 .wl-scroll::-webkit-scrollbar-track { background: transparent; }
 .wl-scroll::-webkit-scrollbar-thumb {
   background: rgba(100,116,139,0.4);
@@ -2537,6 +2544,279 @@
   --msg-bubble-them:  #141e2e;
   --msg-radius:       10px;
   --msg-input-bg:     #0b1422;
+  /* ─── Configuration UI Design Tokens ──────────────────────────────────────
+     Use these everywhere in Config tab components.
+     Never hardcode background/border/text colors in Config components.     */
+
+  /* Surfaces */
+  --ps-conf-bg:          #0f172a;   /* page background (same as app bg)    */
+  --ps-conf-surface:     rgba(8,145,178,0.08);   /* card / panel surface — teal tinted */
+  --ps-conf-surface-2:   rgba(8,145,178,0.15);   /* hover state                        */
+  --ps-conf-surface-3:   rgba(8,145,178,0.12);   /* expanded panel interior             */
+  --ps-conf-overlay:     rgba(255,255,255,0.03); /* subtle zebra / hover   */
+
+  /* Borders */
+  --ps-conf-border:      #334155;
+  --ps-conf-border-dim:  rgba(255,255,255,0.08);
+  --ps-conf-border-active: rgba(8,145,178,0.3);
+
+  /* Text */
+  --ps-conf-text:        #f1f5f9;   /* primary */
+  --ps-conf-text-2:      #94a3b8;   /* secondary / labels */
+  --ps-conf-text-3:      #64748b;   /* muted / hints */
+  --ps-conf-text-dim:    #475569;   /* very muted */
+
+  /* Accent */
+  --ps-conf-teal:        #0891b2;
+  --ps-conf-teal-light:  #38bdf8;
+  --ps-conf-teal-bg:     rgba(8,145,178,0.1);
+  --ps-conf-teal-border: rgba(8,145,178,0.3);
+
+  /* Semantic */
+  --ps-conf-green:       #22c55e;
+  --ps-conf-amber:       #f59e0b;
+  --ps-conf-red:         #ef4444;
+  --ps-conf-red-bg:      rgba(239,68,68,0.08);
+  --ps-conf-red-border:  rgba(239,68,68,0.25);
+
+}
+
+/* ─── Viewport height fix (Windows taskbar / iOS Safari) ────────────────────
+   100vh on Windows includes the area behind the taskbar, causing content to
+   be obscured at the bottom. 100dvh (dynamic viewport height) fixes this.
+   The duplicate declaration provides a fallback for browsers without dvh.     */
+
+:root {
+  --app-height: 100vh;
+}
+
+/* ─── Configuration Tab Layout Utilities ─────────────────────────────────── */
+
+/* Standard card surface used by ALL config tab content panels */
+.ps-conf-card {
+  background:    var(--ps-conf-surface);
+  border:        1px solid var(--ps-conf-border);
+  border-radius: 12px;
+  padding:       20px 24px;
+}
+
+/* Card without padding (for tables/lists that manage their own spacing) */
+.ps-conf-card--flush {
+  background:    var(--ps-conf-surface);
+  border:        1px solid var(--ps-conf-border);
+  border-radius: 12px;
+  overflow:      hidden;
+}
+
+/* Section header row (title + action buttons) */
+.ps-conf-section-header {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  margin-bottom:   20px;
+  gap:             16px;
+}
+
+.ps-conf-section-title {
+  font-size:   18px;
+  font-weight: 700;
+  color:       var(--ps-conf-text);
+  margin:      0 0 4px;
+}
+
+.ps-conf-section-subtitle {
+  font-size: 13px;
+  color:     var(--ps-conf-text-3);
+  margin:    0;
+}
+
+/* Search input — standard across all config tabs */
+.ps-conf-search {
+  width:            100%;
+  padding:          9px 16px;
+  font-size:        13px;
+  color:            var(--ps-conf-text);
+  background:       var(--ps-conf-surface);
+  border:           1px solid var(--ps-conf-border);
+  border-radius:    8px;
+  outline:          none;
+  box-sizing:       border-box;
+  font-family:      inherit;
+  transition:       border-color 0.15s;
+}
+.ps-conf-search:focus { border-color: var(--ps-conf-teal); }
+
+/* Standard table header cell */
+.ps-conf-th {
+  text-align:     left;
+  padding:        10px 8px;
+  font-size:      11px;
+  font-weight:    600;
+  color:          var(--ps-conf-text-3);
+  border-bottom:  1px solid var(--ps-conf-border);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Standard table data cell */
+.ps-conf-td {
+  padding:       12px 8px;
+  font-size:     14px;
+  color:         var(--ps-conf-text);
+  border-bottom: 1px solid var(--ps-conf-border-dim);
+}
+
+/* Primary action button */
+.ps-conf-btn-primary {
+  padding:       8px 18px;
+  background:    var(--ps-conf-teal);
+  border:        none;
+  border-radius: 8px;
+  color:         #fff;
+  font-size:     13px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    background 0.15s;
+  font-family:   inherit;
+}
+.ps-conf-btn-primary:hover { background: #0e7490; }
+
+/* Secondary / outline button */
+.ps-conf-btn-secondary {
+  padding:       8px 16px;
+  background:    transparent;
+  border:        1px solid var(--ps-conf-border);
+  border-radius: 8px;
+  color:         var(--ps-conf-text-2);
+  font-size:     13px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    all 0.15s;
+  font-family:   inherit;
+}
+.ps-conf-btn-secondary:hover {
+  color:         var(--ps-conf-text);
+  border-color:  var(--ps-conf-text-dim);
+}
+
+/* Danger button */
+.ps-conf-btn-danger {
+  padding:       8px 16px;
+  background:    transparent;
+  border:        1px solid var(--ps-conf-red-border);
+  border-radius: 8px;
+  color:         var(--ps-conf-red);
+  font-size:     13px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    all 0.15s;
+  font-family:   inherit;
+}
+.ps-conf-btn-danger:hover { background: var(--ps-conf-red-bg); }
+
+/* Small edit button (used in table rows) */
+.ps-conf-btn-row {
+  padding:       5px 14px;
+  font-size:     12px;
+  font-weight:   600;
+  border-radius: 6px;
+  cursor:        pointer;
+  border:        1px solid var(--ps-conf-border);
+  background:    var(--ps-conf-overlay);
+  color:         var(--ps-conf-text);
+  transition:    all 0.15s;
+  font-family:   inherit;
+}
+.ps-conf-btn-row:hover { background: rgba(255,255,255,0.08); }
+
+/* Select / dropdown */
+.ps-conf-select {
+  padding:          9px 36px 9px 14px;
+  font-size:        13px;
+  font-weight:      600;
+  color:            var(--ps-conf-text);
+  background:       var(--ps-conf-surface);
+  border:           1px solid var(--ps-conf-border);
+  border-radius:    8px;
+  outline:          none;
+  cursor:           pointer;
+  appearance:       none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:   no-repeat;
+  background-position: right 12px center;
+  font-family:      inherit;
+}
+.ps-conf-select:focus { border-color: var(--ps-conf-teal); }
+
+/* Text / textarea input */
+.ps-conf-input {
+  width:        100%;
+  padding:      9px 12px;
+  border-radius: 8px;
+  border:       1px solid var(--ps-conf-border);
+  font-size:    14px;
+  background:   var(--ps-conf-surface);
+  color:        var(--ps-conf-text);
+  outline:      none;
+  box-sizing:   border-box;
+  font-family:  inherit;
+  transition:   border-color 0.15s;
+}
+.ps-conf-input:focus { border-color: var(--ps-conf-teal); }
+
+/* Label above inputs */
+.ps-conf-label {
+  font-size:     12px;
+  font-weight:   600;
+  color:         var(--ps-conf-text-2);
+  display:       block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Row divider inside a card */
+.ps-conf-row {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  gap:             24px;
+  padding:         18px 0;
+  border-bottom:   1px solid var(--ps-conf-border);
+}
+.ps-conf-row:last-child { border-bottom: none; }
+
+/* Modal backdrop */
+.ps-conf-backdrop {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  display:         flex;
+  justify-content: center;
+  align-items:     center;
+  z-index:         9999;
+}
+
+/* Modal card */
+.ps-conf-modal {
+  background:    var(--ps-conf-surface);
+  border:        1px solid var(--ps-conf-border);
+  border-radius: 14px;
+  padding:       28px;
+  width:         460px;
+  color:         var(--ps-conf-text);
+  box-shadow:    0 25px 50px rgba(0,0,0,0.6);
+}
+
+
+@supports (height: 100dvh) {
+  :root { --app-height: 100dvh; }
+}
+
+.ps-app-root {
+  height: var(--app-height);
 }
 
 /* ── Shell ───────────────────────────────────────────────────────────────── */
@@ -5199,81 +5479,26 @@
   background: linear-gradient(90deg, #dc2626, #ef4444);
 }
 
-/* ─── Dark modal variant (UnsavedWarningModal, ConfirmModal) ─────────────── */
-.ps-modal-dark {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 32px;
-  width: 420px;
-  max-width: calc(100vw - 48px);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.ps-modal-dark-header {
+/* ── Close button — high specificity to override UA button styles ─────────── */
+button.ps-close-btn {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.ps-modal-dark-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.ps-modal-dark-body {
-  font-size: 14px;
-  color: #94a3b8;
-  margin: 0 0 10px 0;
-  line-height: 1.6;
-}
-
-.ps-modal-dark-hint {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
-}
-
-.ps-modal-dark-footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-/* ─── Button variants used in dark modals ────────────────────────────────── */
-.ps-btn-ghost-dark {
-  padding: 10px 20px;
-  border: 1px solid #334155;
-  border-radius: 8px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: transparent;
-  color: #94a3b8;
-  font-size: 14px;
-  font-weight: 600;
+  border: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.ps-btn-ghost-dark:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
 }
 
-.ps-btn-amber {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background: #f59e0b;
-  color: #1c1007;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.ps-btn-amber:hover {
-  background: #fbbf24;
+button.ps-close-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
 }

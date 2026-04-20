@@ -350,164 +350,138 @@ const SEED_MESSAGES: Message[] = [
     ],
   },
 
+ {
+  id: 'uk-m6',
+  senderId: 'mft-admin', // FIX: Added missing required property
+  senderName: 'MFT Laboratory Admin',
+  recipientId: 'PATH-UK-001',
+  recipientName: 'Dr. Paul Carter',
+  subject: `Pool case available — Right hemicolectomy emergency resection`,
+  // Use backticks to safely handle apostrophes like "patient's" or "Carter's"
+  body: `Dr. Carter, a STAT pool case has been added to the histopathology queue — MFT26-8809, Dorothy Whitworth, right hemicolectomy emergency resection. This case has not yet been assigned. Please accept from the pool if you are able to report today.`,
+  caseNumber: 'MFT26-8809-POOL',
+  timestamp: new Date(Date.now() - 1000 * 60 * 30),
+  isUrgent: true,
+  isRead: false,
+  isDeleted: false,
+  thread: [
+    {
+      sender: 'MFT Laboratory Admin',
+      senderId: 'mft-admin',
+      text: `Dr. Carter, a STAT pool case has been added to the histopathology queue — MFT26-8809, Dorothy Whitworth, right hemicolectomy emergency resection. This case has not yet been assigned. Please accept from the pool if you are able to report today.`,
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+    },
+  ],
+},
+
+  // ── Amber Fehrs-Battey (PATH-US-001) — Michigan Pathology Associates ────────
+
+  // Urgent: case-linked consultation request from ordering physician
   {
-    id: 'uk-m6',
-    senderName: 'MFT Laboratory Admin',
-    recipientId: 'PATH-UK-001',
-    recipientName: 'Dr. Paul Carter',
-    subject: 'Pool case available — Right hemicolectomy emergency resection',
-    body: 'Dr. Carter, a STAT pool case has been added to the histopathology queue — MFT26-8809, Dorothy Whitworth, right hemicolectomy emergency resection. This case has not yet been assigned. Please accept from the pool if you are able to report today.',
-    caseNumber: 'MFT26-8809-POOL',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
+    id: 'mpa-001',
+    senderId: 'u-priya-nair', senderName: 'Dr. Priya Nair',
+    recipientId: 'PATH-US-001', recipientName: 'Dr. Amber Fehrs-Battey',
+    subject: 'Urgent Query — MPA26-1001-BR',
+    body: `Dr. Fehrs-Battey — the patient's oncologist is requesting clarification on the ER Allred score for case MPA26-1001-BR (Patricia Novak). They need it before the tumour board meeting tomorrow at 09:00. Please advise when you have a moment.`,
+    caseNumber: 'MPA26-1001-BR',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45),
+    isUrgent: true, isRead: false, isDeleted: false,
+    thread: [
+      { sender: 'Dr. Priya Nair', senderId: 'u-priya-nair',
+        text: `Dr. Fehrs-Battey — the patient's oncologist is requesting clarification on the ER Allred score for case MPA26-1001-BR (Patricia Novak). They need it before the tumour board meeting tomorrow at 09:00. Please advise when you have a moment.`,
+        timestamp: new Date(Date.now() - 1000 * 60 * 45) },
+    ],
+  },
+
+  // System: AI confidence alert on colorectal case
+  {
+    id: 'mpa-002',
+    senderId: 'system', senderName: 'PathScribe AI',
+    recipientId: 'PATH-US-001', recipientName: 'Dr. Amber Fehrs-Battey',
+    subject: 'AI Confidence Alert — MPA26-1002-CR',
+    body: 'PathScribe AI flagged low confidence (61%) on the Tumour Deposits field for case MPA26-1002-CR (Robert Dziedzic, colorectal resection). Manual review of the synoptic is recommended before sign-out. Case MPA26-1002-CR is ready for your review.',
+    caseNumber: 'MPA26-1002-CR',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90),
+    isUrgent: false, isRead: false, isDeleted: false,
+    thread: [
+      { sender: 'PathScribe AI', senderId: 'system',
+        text: 'PathScribe AI flagged low confidence (61%) on the Tumour Deposits field for case MPA26-1002-CR. Manual review recommended.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 90) },
+    ],
+  },
+
+  // Pediatric access request auto-notification to Amber
+  {
+    id: 'mpa-003',
+    senderId: 'system', senderName: 'PathScribe System',
+    recipientId: 'PATH-US-001', recipientName: 'Dr. Amber Fehrs-Battey',
+    subject: 'Pediatric Case Access Restricted — MPA26-1007-PED',
+    body: 'You attempted to open case MPA26-1007-PED which contains a pediatric patient (age 8) from Metro General Hospital.\n\nAccess to this case requires authorization on the client record.\n\nTo request access:\n1. Go to Configuration → System → Client Dictionary\n2. Open Metro General Hospital\n3. Add your name to the Authorized Pediatric Pathologists list\n\nIf you believe this is an error, contact your System Administrator.',
+    caseNumber: 'MPA26-1007-PED',
+    timestamp: new Date(Date.now() - 1000 * 60 * 20),
+    isUrgent: false, isRead: false, isDeleted: false,
+    thread: [
+      { sender: 'PathScribe System', senderId: 'system',
+        text: 'Access restricted: case MPA26-1007-PED contains a pediatric patient. See message for instructions to request authorization.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 20) },
+    ],
+  },
+
+  // Read: case assigned notification
+  {
+    id: 'mpa-004',
+    senderId: 'u3', senderName: 'System Admin',
+    recipientId: 'PATH-US-001', recipientName: 'Dr. Amber Fehrs-Battey',
+    subject: 'Cases Assigned — MPA26-1001, 1002, 1003',
+    body: 'Three new cases have been assigned to you from Michigan Pathology Associates:\n\n• MPA26-1001-BR — Breast lumpectomy, Patricia Novak\n• MPA26-1002-CR — Colorectal resection, Robert Dziedzic\n• MPA26-1003-PRO — Radical prostatectomy, Charles Okafor\n\nAll cases are available in your worklist. CAP synoptic templates have been pre-loaded.',
+    caseNumber: undefined,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+    isUrgent: false, isRead: true, isDeleted: false,
+    thread: [
+      { sender: 'System Admin', senderId: 'u3',
+        text: 'Three new cases assigned: MPA26-1001-BR, MPA26-1002-CR, MPA26-1003-PRO. All available in worklist.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) },
+    ],
+  },
+
+  // Read: LIS sync confirmation
+  {
+    id: 'mpa-005',
+    senderId: 'system', senderName: 'PathScribe System',
+    recipientId: 'PATH-US-001', recipientName: 'Dr. Amber Fehrs-Battey',
+    subject: 'LIS Sync Complete — MPA26-1003-PRO',
+    body: 'Gross description for case MPA26-1003-PRO (Charles Okafor, radical prostatectomy) has been received from the LIS and is now available in the synoptic editor. AI analysis is in progress.',
+    caseNumber: 'MPA26-1003-PRO',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
+    isUrgent: false, isRead: true, isDeleted: false,
+    thread: [
+      { sender: 'PathScribe System', senderId: 'system',
+        text: 'LIS sync complete for MPA26-1003-PRO. Gross description available.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5) },
+    ],
+  },
+
+  // ── Pediatric Access Routing Notification ────────────────────────────────
+  {
+    id: 'm-ped-001',
+    senderId: 'system',
+    senderName: 'PathScribe System',
+    recipientId: 'u3',
+    recipientName: 'System Admin',
+    subject: '⚠️ Pediatric Case Requires Assignment — MPA26-1007-PED',
+    body: 'Case MPA26-1007-PED (Liam Osei, age 8) was received from Metro General Hospital and could not be assigned to Dr. Amber Fehrs-Battey.\n\nReason: Metro General Hospital has a pediatric age threshold of 18 years. The assigned pathologist does not have Pediatric Access enabled on their role.\n\nThe case has been moved to the Pediatric — Awaiting Assignment pool and requires manual assignment to a qualified pathologist.\n\nTo resolve:\n• Assign the case to a pathologist with Pediatric Access, OR\n• Enable Pediatric Access on Dr. Fehrs-Battey\'s role in Configuration → Staff → Role Dictionary\n\nCase: Right radical nephrectomy, Wilms tumour (nephroblastoma), 7.2 cm.',
+    caseNumber: 'MPA26-1007-PED',
+    timestamp: new Date(Date.now() - 1000 * 60 * 20),
     isUrgent: true,
     isRead: false,
     isDeleted: false,
     thread: [
       {
-        sender: 'MFT Laboratory Admin',
-        senderId: 'mft-admin',
-        text: 'Dr. Carter, a STAT pool case has been added to the histopathology queue — MFT26-8809, Dorothy Whitworth, right hemicolectomy emergency resection. This case has not yet been assigned. Please accept from the pool if you are able to report today.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        sender: 'PathScribe System',
+        senderId: 'system',
+        text: 'Case MPA26-1007-PED automatically rerouted to Pediatric — Awaiting Assignment pool. Assigned pathologist PATH-US-001 lacks Pediatric Access permission.',
+        timestamp: new Date(Date.now() - 1000 * 60 * 20),
       },
-    ],
-  },
-
-  // ─── Amber Fehrs-Battey (PATH-US-001) — HFHS US Demo Messages ───────────────
-  {
-    id: 'mus-001',
-    senderId: 'PATH-US-002',
-    senderName: 'Dr. Mark Tuthill',
-    recipientId: 'PATH-US-001',
-    recipientName: 'Amber Fehrs-Battey',
-    subject: 'Welcome to PathScribe — HFHS Pilot',
-    body: 'Amber, welcome aboard the PathScribe pilot at HFHS. Looking forward to your feedback on the workflow. I have loaded a few cases in your queue that represent typical surgical path volume. Let me know if you have any questions as you work through them.',
-    caseNumber: undefined,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    isUrgent: false, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'Dr. Mark Tuthill', senderId: 'PATH-US-002', text: 'Amber, welcome aboard the PathScribe pilot at HFHS. Looking forward to your feedback on the workflow. I have loaded a few cases in your queue that represent typical surgical path volume. Let me know if you have any questions as you work through them.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) },
-    ],
-  },
-  {
-    id: 'mus-002',
-    senderId: 'u3',
-    senderName: 'System Admin',
-    recipientId: 'PATH-US-001',
-    recipientName: 'Amber Fehrs-Battey',
-    subject: 'HER2 FISH Result Available — MPA26-1001-BR',
-    body: 'HER2 FISH result is now available for case MPA26-1001-BR (Patricia Novak, left breast lumpectomy). HER2/CEP17 ratio: 1.8 — HER2 not amplified. Please update synoptic accordingly.',
-    caseNumber: 'MPA26-1001-BR',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45),
-    isUrgent: false, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'System Admin', senderId: 'u3', text: 'HER2 FISH result is now available for case MPA26-1001-BR (Patricia Novak, left breast lumpectomy). HER2/CEP17 ratio: 1.8 — HER2 not amplified. Please update synoptic accordingly.', timestamp: new Date(Date.now() - 1000 * 60 * 45) },
-    ],
-  },
-  {
-    id: 'mus-003',
-    senderId: 'u2',
-    senderName: 'Dr. Lisa Kaminski',
-    recipientId: 'PATH-US-001',
-    recipientName: 'Amber Fehrs-Battey',
-    subject: 'Urgent — Breast margin question MPA26-1001',
-    body: 'Amber, the surgeon is asking about the anterior margin on Patricia Novak. The 0.2 cm clearance — is that measured radially or perpendicularly? She is considering whether to re-excise. Can you clarify as soon as possible? Thank you.',
-    caseNumber: 'MPA26-1001-BR',
-    timestamp: new Date(Date.now() - 1000 * 60 * 20),
-    isUrgent: true, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'Dr. Lisa Kaminski', senderId: 'u2', text: 'Amber, the surgeon is asking about the anterior margin on Patricia Novak. The 0.2 cm clearance — is that measured radially or perpendicularly? She is considering whether to re-excise. Can you clarify as soon as possible? Thank you.', timestamp: new Date(Date.now() - 1000 * 60 * 20) },
-    ],
-  },
-  {
-    id: 'mus-004',
-    senderId: 'u3',
-    senderName: 'Tumor Board Coordinator',
-    recipientId: 'PATH-US-001',
-    recipientName: 'Amber Fehrs-Battey',
-    subject: 'MDT — GI Tumor Board Thursday 08:00',
-    body: 'Amber, Robert Dziedzic (MPA26-1002-CR) has been added to Thursday\'s GI Tumor Board agenda. The oncology team will want pathologic staging, MMR status, and RAS/BRAF results confirmed before the meeting. Slides will be available in the conference room from 07:30.',
-    caseNumber: 'MPA26-1002-CR',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-    isUrgent: false, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'Tumor Board Coordinator', senderId: 'u3', text: 'Amber, Robert Dziedzic (MPA26-1002-CR) has been added to Thursday\'s GI Tumor Board agenda. The oncology team will want pathologic staging, MMR status, and RAS/BRAF results confirmed before the meeting. Slides will be available in the conference room from 07:30.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4) },
-    ],
-  },
-  {
-    id: 'mus-005',
-    senderId: 'u3',
-    senderName: 'System Admin',
-    recipientId: 'PATH-US-001',
-    recipientName: 'Amber Fehrs-Battey',
-    subject: 'PathScribe — Your Account is Active',
-    body: 'Welcome to PathScribe AI at Midwest Pathology Associates. Your account has been configured for the Surgical Pathology department. Your login credentials have been provided separately. Please review the PathScribe Quick Start Guide before your first session. Support is available at ext. 5100 for any technical questions.',
-    caseNumber: undefined,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-    isUrgent: false, isRead: true, isDeleted: false,
-    thread: [
-      { sender: 'System Admin', senderId: 'u3', text: 'Welcome to PathScribe AI at Midwest Pathology Associates. Your account has been configured for the Surgical Pathology department.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-    ],
-  },
-
-  // ─── Dr. Mark Tuthill (PATH-US-002) — HFHS Pathology Informatics Messages ────
-  {
-    id: 'mus-006',
-    senderId: 'PATH-US-001',
-    senderName: 'Amber Fehrs-Battey',
-    recipientId: 'PATH-US-002',
-    recipientName: 'Dr. Mark Tuthill',
-    subject: 'PathScribe first impressions',
-    body: 'Mark, worked through three cases this morning. The AI suggestions on the breast case are impressive — HER2 equivocal flag picked up automatically, FISH prompted without me asking. Voice control took about 10 minutes to feel natural. One thing to explore: the Case Team feature for co-sign workflows. Worth a look before your session.',
-    caseNumber: undefined,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    isUrgent: false, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'Amber Fehrs-Battey', senderId: 'PATH-US-001', text: 'Mark, worked through three cases this morning. The AI suggestions on the breast case are impressive — HER2 equivocal flag picked up automatically, FISH prompted without me asking. Voice control took about 10 minutes to feel natural. One thing to explore: the Case Team feature for co-sign workflows. Worth a look before your session.', timestamp: new Date(Date.now() - 1000 * 60 * 30) },
-    ],
-  },
-  {
-    id: 'mus-007',
-    senderId: 'u3',
-    senderName: 'System Admin',
-    recipientId: 'PATH-US-002',
-    recipientName: 'Dr. Mark Tuthill',
-    subject: 'STAT Frozen Section — HFHS26-1005-FS — OR Waiting',
-    body: 'Dr. Tuthill, intraoperative frozen section received for HFHS26-1005-FS (George Washington, pancreatic head). Dr. Iskandar is waiting in OR 4. Pancreatic neck margin and common bile duct margin require assessment. Sections are on the cryostat.',
-    caseNumber: 'HFHS26-1005-FS',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15),
-    isUrgent: true, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'System Admin', senderId: 'u3', text: 'Dr. Tuthill, intraoperative frozen section received for HFHS26-1005-FS (George Washington, pancreatic head). Dr. Iskandar is waiting in OR 4. Pancreatic neck margin and common bile duct margin require assessment. Sections are on the cryostat.', timestamp: new Date(Date.now() - 1000 * 60 * 15) },
-    ],
-  },
-  {
-    id: 'mus-008',
-    senderId: 'u3',
-    senderName: 'Pathology Informatics',
-    recipientId: 'PATH-US-002',
-    recipientName: 'Dr. Mark Tuthill',
-    subject: 'LIS Integration — PathScribe Pilot Notes',
-    body: 'Mark, a few observations from the pilot setup worth noting for your evaluation: (1) HL7 ORU^R01 routing is working as expected — cases arriving without assignment are being routed to the correct subspecialty pools based on specimen type. (2) The routing rules are configurable in System > Routing Rules — the keyword table is editable without a code deploy. (3) Turnaround time data is being captured per case. Will have a dashboard ready by end of week.',
-    caseNumber: undefined,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    isUrgent: false, isRead: false, isDeleted: false,
-    thread: [
-      { sender: 'Pathology Informatics', senderId: 'u3', text: 'Mark, a few observations from the pilot setup worth noting for your evaluation: (1) HL7 ORU^R01 routing is working as expected. (2) Routing rules are configurable without a code deploy. (3) TAT data is being captured.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) },
-    ],
-  },
-  {
-    id: 'mus-009',
-    senderId: 'u3',
-    senderName: 'System Admin',
-    recipientId: 'PATH-US-002',
-    recipientName: 'Dr. Mark Tuthill',
-    subject: 'PathScribe — Your Account is Active',
-    body: 'Welcome to PathScribe AI at Henry Ford Health System. Your account has been configured with Division Head access. You have visibility across all HFHS cases in the pilot. The Action Registry, Routing Rules, and Participation Type configuration are accessible via Configuration > System. Please refer to the PathScribe Administrator Manual for full documentation.',
-    caseNumber: undefined,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-    isUrgent: false, isRead: true, isDeleted: false,
-    thread: [
-      { sender: 'System Admin', senderId: 'u3', text: 'Welcome to PathScribe AI at Henry Ford Health System. Your account has been configured with Division Head access.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
     ],
   },
 ];
@@ -515,7 +489,7 @@ const SEED_MESSAGES: Message[] = [
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'pathscribe_messages';
-const MESSAGES_VERSION = '4'; // bump this to force seed data refresh
+const MESSAGES_VERSION = '6'; // bumped: added Amber seed messages
 const VERSION_KEY = 'pathscribe_messages_version';
 
 const load = (): Message[] => {

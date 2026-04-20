@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { VoiceProfileId } from "../constants/voiceProfiles";
-import { shouldShowBiometricWizard } from "../services/biometric/mockBiometricService";
+import { getBiometricPolicy, getCredentialForUser } from "../services/biometric/mockBiometricService";
 
 // 1. Defined the User with the new linguistic property
 export interface User {
@@ -43,8 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
+    return new Promise<boolean>(async (resolve) => {
         let authenticatedUser: User | null = null;
 
         // Mock Login Data with Voice Profiles
@@ -111,7 +110,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } as any;
         }
 
+        // Show biometric wizard only if:
+        // 1. Admin has enabled biometric at institution level (policy.enabled)
+        // 2. This user has not yet enrolled a credential
+        const shouldShowBiometricWizard = (userId: string): boolean => {
+          try {
+            const policy = getBiometricPolicy();
+            if (!policy.enabled) return false;           // Feature off — never prompt
+            const credential = getCredentialForUser(userId);
+            return credential === null;                  // No credential = not yet enrolled
+          } catch {
+            return false;                                // Fail safe — don't block login
+          }
+        };
+
         if (authenticatedUser) {
+          // Resolve canViewPediatric from the user's role
+          try {
+            const { mockRoleService } = await import('../services/roles/mockRoleService');
+            const rolesRes = await mockRoleService.getAll();
+            if (rolesRes.ok) {
+              const userRole = rolesRes.data.find((r: any) =>
+                r.name.toLowerCase() === (authenticatedUser as any).role?.toLowerCase()
+              );
+              if (userRole) {
+                (authenticatedUser as any).canViewPediatric = (userRole as any).canViewPediatric ?? false;
+              }
+            }
+          } catch { (authenticatedUser as any).canViewPediatric = false; }
+
+          // Resolve credentials from userService
+          try {
+            const { userService } = await import('../services');
+            const usersRes = await userService.getAll();
+            if (usersRes.ok) {
+              const staffUser = usersRes.data.find((u: any) => u.id === authenticatedUser!.id);
+              if (staffUser?.credentials) {
+                (authenticatedUser as any).credentials = staffUser.credentials;
+              }
+            }
+          } catch { /* non-critical */ }
+
           saveUser(authenticatedUser);
           // Check if biometric setup wizard should be shown on first login
           if (shouldShowBiometricWizard(authenticatedUser.id)) {
@@ -121,7 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           resolve(false);
         }
-      }, 500);
     });
   };
 
@@ -140,11 +178,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Migration check: ensure old sessions get a default profile
+        // Migration: ensure old sessions get a default voice profile
         if (parsed && !parsed.voiceProfile) {
           parsed.voiceProfile = "EN-US";
         }
-        setUser(parsed);
+        // Migration: resolve canViewPediatric and credentials if missing from stored session
+        if (parsed && parsed.canViewPediatric === undefined) {
+          (async () => {
+            try {
+              const { mockRoleService } = await import('../services/roles/mockRoleService');
+              const rolesRes = await mockRoleService.getAll();
+              if (rolesRes.ok) {
+                const userRole = rolesRes.data.find((r: any) =>
+                  r.name.toLowerCase() === parsed.role?.toLowerCase()
+                );
+                parsed.canViewPediatric = (userRole as any)?.canViewPediatric ?? false;
+              } else {
+                parsed.canViewPediatric = false;
+              }
+            } catch { parsed.canViewPediatric = false; }
+            try {
+              const { userService } = await import('../services');
+              const usersRes = await userService.getAll();
+              if (usersRes.ok) {
+                const staffUser = usersRes.data.find((u: any) => u.id === parsed.id);
+                if (staffUser?.credentials) parsed.credentials = staffUser.credentials;
+              }
+            } catch { /* non-critical */ }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            setUser({ ...parsed });
+          })();
+        } else {
+          setUser(parsed);
+        }
       } catch (e) {
         console.error("Failed to parse stored user", e);
       }

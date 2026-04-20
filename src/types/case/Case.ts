@@ -37,6 +37,8 @@ export interface OrderMetadata {
   clinicalIndication?: string;
   receivedDate?: string;
   assignedTo?: string;
+  /** Participation type of the assigned pathologist — e.g. 'primary', 'consultant' */
+  assignedParticipationTypeId?: string;
 }
 
 export interface DiagnosticMetadata {

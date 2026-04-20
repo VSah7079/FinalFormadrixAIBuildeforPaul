@@ -1,9 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { messageService, clientService, auditService } from "@/services";
+import { useMessaging } from "@/contexts/MessagingContext";
 import { getOrganisationByHospitalId, getOrganisationShortName } from '../../services/organisation/organisationService';
 import '../../pathscribe.css';
 import { Case } from "../../types/case/Case";
-import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil } from '@/utils/formatDate';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -73,9 +75,27 @@ const FLAG_PALETTE: Record<string, { bg: string; border: string; dot: string }> 
 // DATE & TIME HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const formatDate = (iso?: string): string => formatDateUtil(iso, 'en-GB');
+const formatDate = (iso?: string): string => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
+};
 
-const formatDateTime = (iso?: string): string => formatDateTimeUtil(iso, 'en-GB');
+const formatDateTime = (iso?: string): string => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const hh   = String(d.getHours()).padStart(2, '0');
+  const min  = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}/${dd}/${yyyy} ${hh}:${min}`;
+};
 
 const getAgeLabel = (dobStr: string): string => {
   const dob = new Date(dobStr);
@@ -313,6 +333,69 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
   onDisplayOrder,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { reloadInbox } = useMessaging();
+
+  // ── Pediatric access state ──────────────────────────────────────────────
+  const [pedBlockedCase, setPedBlockedCase] = React.useState<{id:string;age:number;clientId?:string}|null>(null);
+
+  // Persisted set of case IDs where access has been requested — survives refresh
+  const [pedRequestedIds, setPedRequestedIds] = React.useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('pathscribe_ped_requested');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const markPedRequested = React.useCallback((caseId: string) => {
+    setPedRequestedIds(prev => {
+      const next = new Set(prev).add(caseId);
+      localStorage.setItem('pathscribe_ped_requested', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const pedRequestSent = pedBlockedCase ? pedRequestedIds.has(pedBlockedCase.id) : false;
+  const [clientThresholds, setClientThresholds] = React.useState<Record<string, any>>({});
+
+  const loadClientThresholds = React.useCallback(() => {
+    clientService.getAll().then(res => {
+      if (!res.ok) return;
+      const map: Record<string, any> = {};
+      res.data.forEach((c: any) => {
+        map[c.id] = c.pediatricAgeThreshold ?? null;
+        map[`${c.id}_authorized`] = c.authorizedPediatricPathologistIds ?? [];
+      });
+      setClientThresholds(map);
+    }).catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    loadClientThresholds();
+  }, [loadClientThresholds]);
+
+  // Reload when tab becomes visible — picks up client changes made in config
+  React.useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') loadClientThresholds(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadClientThresholds]);
+
+  const isPedRestricted = React.useCallback((c: any): boolean => {
+    const clientId  = c?.order?.clientId;
+    const dob       = c?.patient?.dateOfBirth;
+    const threshold = clientId ? (clientThresholds[clientId] ?? null) : null;
+    if (!dob || threshold === null) return false; // client has no pediatric policy
+
+    const age = Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
+    if (age >= threshold) return false; // not a pediatric patient
+
+    // Option C: user must be in the client's authorized pediatric pathologist list
+    const authorizedIds: string[] = clientId
+      ? ((clientThresholds as any)[`${clientId}_authorized`] ?? [])
+      : [];
+    return !authorizedIds.includes((user as any)?.id ?? '');
+  }, [user, clientThresholds]);
   
   // Ref for the scrollable container to implement infinite scroll
   const scrollRef  = useRef<HTMLDivElement>(null);
@@ -566,6 +649,24 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
     (id: string) => {
       const c = cases.find(c => c.id === id);
 
+      // Pediatric restricted — show access modal instead of opening case
+      if (isPedRestricted(c as any)) {
+        const dob = (c as any)?.patient?.dateOfBirth;
+        const age = dob ? Math.floor((Date.now()-new Date(dob).getTime())/31557600000) : 0;
+        const clientId = (c as any)?.order?.clientId;
+        setPedBlockedCase({ id, age, clientId });
+        // Audit: access denied event
+        auditService.logEvent({
+          type: 'system',
+          event: 'Pediatric Access Denied',
+          detail: `Case ${id} opened by ${(user as any)?.name ?? 'Unknown'} — blocked: patient age ${age} below client pediatric threshold. User lacks canViewPediatric permission.`,
+          user: (user as any)?.name ?? 'Unknown',
+          caseId: id,
+          confidence: null,
+        }).catch(() => {});
+        return;
+      }
+
       // Pool cases open the claim modal instead of navigating
       if ((c as any)?.status === 'pool' && onPoolCaseClick) {
         const summary = c?.specimens?.[0]?.description ?? c?.specimens?.[0]?.label ?? '';
@@ -815,16 +916,29 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                       <div>
                         <div className="wl-card__field-label">Patient</div>
                         <div className="wl-card__field-value" data-phi="name">
-                          {c.patient.lastName}, {c.patient.firstName}
+                          {isPedRestricted(c)
+                            ? <span style={{color:'#f59e0b'}}>🔒 Restricted Patient</span>
+                            : <>{c.patient.lastName}, {c.patient.firstName}</>}
                         </div>
-                        <div className="wl-card__field-sub" data-phi="dob">
-                          {c.patient.sex?.charAt(0) ?? '—'}
-                          {' · '}
-                          {formatDate(c.patient.dateOfBirth)}
-                          {' '}
-                          ({c.patient.dateOfBirth ? getAgeLabel(c.patient.dateOfBirth) : '—'})
-                          <span style={{ marginLeft: '6px' }} data-phi="mrn">· MRN {c.patient.mrn ?? '—'}</span>
-                        </div>
+                        {isPedRestricted(c) ? (
+                          <div style={{fontSize:'10px',color:'#f59e0b',opacity:0.8,fontStyle:'italic',marginTop:2}}>
+                            {pedRequestedIds.has(c.id) ? (
+                              <span style={{fontStyle:'normal',fontWeight:600,background:'rgba(245,158,11,0.1)',
+                                border:'1px solid rgba(245,158,11,0.3)',borderRadius:4,padding:'1px 6px'}}>
+                                ⏳ Access requested
+                              </span>
+                            ) : 'Click to request pediatric access'}
+                          </div>
+                        ) : (
+                          <div className="wl-card__field-sub" data-phi="dob">
+                            {c.patient.sex?.charAt(0) ?? '—'}
+                            {' · '}
+                            {formatDate(c.patient.dateOfBirth)}
+                            {' '}
+                            ({c.patient.dateOfBirth ? getAgeLabel(c.patient.dateOfBirth) : '—'})
+                            <span style={{marginLeft:'6px'}} data-phi="mrn">· MRN {c.patient.mrn ?? '—'}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Accession + Physician */}
@@ -837,7 +951,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                       </div>
 
                       {/* Specimens — full width */}
-                      {c.specimens && c.specimens.length > 0 && (
+                      {!isPedRestricted(c) && c.specimens && c.specimens.length > 0 && (
                         <div className="wl-card__body-full">
                           <div className="wl-card__field-label">Specimen{c.specimens.length > 1 ? 's' : ''}</div>
                           <div className="wl-card__chips">
@@ -849,7 +963,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                       )}
 
                       {/* Flags — full width, only if present */}
-                      {((c.caseFlags?.length ?? 0) + (c.specimenFlags?.length ?? 0)) > 0 && (
+                      {!isPedRestricted(c) && ((c.caseFlags?.length ?? 0) + (c.specimenFlags?.length ?? 0)) > 0 && (
                         <div className="wl-card__body-full">
                           <div className="wl-card__field-label">Flags</div>
                           <div className="wl-card__chips">
@@ -997,34 +1111,55 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
 
                     {/* Patient name */}
                     <td style={{ padding: '12px 8px 12px 0', verticalAlign: 'middle' }} data-phi="name">
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.patient.lastName}, {c.patient.firstName}
-                      </div>
+                      {isPedRestricted(c) ? (
+                        <div>
+                          <div style={{color:'#f59e0b',fontWeight:600}}>🔒 Restricted Patient</div>
+                          {pedRequestedIds.has(c.id) ? (
+                            <div style={{fontSize:'10px',color:'#f59e0b',fontWeight:600,marginTop:3,display:'inline-flex',alignItems:'center',gap:4,
+                              background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.3)',
+                              borderRadius:4,padding:'1px 6px'}}>
+                              ⏳ Access requested
+                            </div>
+                          ) : (
+                            <div style={{fontSize:'10px',color:'#f59e0b',opacity:0.75,fontStyle:'italic',marginTop:2}}>Click to request pediatric access</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.patient.lastName}, {c.patient.firstName}
+                        </div>
+                      )}
                     </td>
 
                     {/* MRN */}
                     <td style={{ padding: '12px 8px 12px 0', verticalAlign: 'middle', opacity: 0.6, fontSize: '12px' }} data-phi="mrn">
-                      {c.patient.mrn ?? '—'}
+                      {isPedRestricted(c) ? '—' : (c.patient.mrn ?? '—')}
                     </td>
 
                     {/* Sex */}
                     <td style={{ padding: '12px 8px 12px 0', verticalAlign: 'middle', opacity: 0.6, textAlign: 'center' }}>
-                      {c.patient.sex?.charAt(0) ?? '—'}
+                      {isPedRestricted(c) ? '—' : (c.patient.sex?.charAt(0) ?? '—')}
                     </td>
 
                     {/* DOB */}
                     <td style={{ padding: '12px 8px 12px 0', verticalAlign: 'middle', fontSize: '12px', whiteSpace: 'nowrap' }} data-phi="dob">
-                      {formatDate(c.patient.dateOfBirth)}
-                      <span style={{ opacity: 0.4, marginLeft: '4px' }}>({c.patient.dateOfBirth ? getAgeLabel(c.patient.dateOfBirth) : '—'})</span>
+                      {isPedRestricted(c) ? '—' : (
+                        <>{formatDate(c.patient.dateOfBirth)}
+                        <span style={{ opacity: 0.4, marginLeft: '4px' }}>({c.patient.dateOfBirth ? getAgeLabel(c.patient.dateOfBirth) : '—'})</span></>
+                      )}
                     </td>
 
                     {/* Specimens */}
                     <td style={{ padding: '12px 8px 12px 0', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                        {c.specimens?.slice(0, 3).map(s => (
-                          <SpecimenChip key={s.id} label={s.label} description={s.description} />
-                        ))}
-                      </div>
+                      {isPedRestricted(c) ? (
+                        <span style={{ color: '#475569', fontSize: 12, fontStyle: 'italic' }}>—</span>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                          {c.specimens?.slice(0, 3).map(s => (
+                            <SpecimenChip key={s.id} label={s.label} description={s.description} />
+                          ))}
+                        </div>
+                      )}
                     </td>
 
                     {/* Accession date */}
@@ -1141,6 +1276,87 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
         .wl-card__field-sub { font-size: 11px; color: #64748b; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .wl-card__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
       `}</style>
+
+      {/* ── Pediatric Access Modal ─────────────────────────────────────── */}
+      {pedBlockedCase && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(6px)',
+          display:'flex',alignItems:'center',justifyContent:'center',zIndex:50000}}>
+          <div style={{background:'#1e293b',border:'1px solid rgba(245,158,11,0.4)',borderRadius:16,
+            padding:'32px',width:480,boxShadow:'0 24px 60px rgba(0,0,0,0.6)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:16}}>
+              <div style={{width:48,height:48,borderRadius:12,flexShrink:0,fontSize:26,
+                background:'rgba(245,158,11,0.12)',border:'1px solid rgba(245,158,11,0.3)',
+                display:'flex',alignItems:'center',justifyContent:'center'}}>🔒</div>
+              <div>
+                <div style={{fontSize:17,fontWeight:700,color:'#f1f5f9',marginBottom:2}}>Pediatric Access Required</div>
+                <div style={{fontSize:12,color:'#94a3b8'}}>Patient age {pedBlockedCase.age} · Case {pedBlockedCase.id}</div>
+              </div>
+            </div>
+            <p style={{fontSize:13,color:'#94a3b8',lineHeight:1.6,marginBottom:20}}>
+              This patient is classified as pediatric. Access requires both a user-level qualification <em>and</em> authorization
+              by the submitting client. Your System Admin can grant access via{' '}
+              <strong style={{color:'#f59e0b'}}>Configuration → Client Dictionary</strong>.
+            </p>
+            {pedRequestSent ? (
+              <div style={{padding:'12px 16px',borderRadius:8,marginBottom:20,textAlign:'center',
+                background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',
+                fontSize:13,color:'#f59e0b'}}>
+                ⏳ Access request pending — your System Admin has been notified.<br/>
+                <span style={{fontSize:11,opacity:0.75}}>You'll receive a message when access is granted.</span>
+              </div>
+            ) : (
+              <div style={{padding:'12px 16px',borderRadius:8,marginBottom:20,
+                background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',
+                fontSize:12,color:'#94a3b8',lineHeight:1.6}}>
+                <strong style={{color:'#f59e0b'}}>Request Pediatric Access</strong><br/>
+                One click sends an automated request to your System Admin.
+              </div>
+            )}
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button onClick={() => setPedBlockedCase(null)}
+                style={{padding:'9px 18px',borderRadius:8,fontSize:13,cursor:'pointer',
+                  border:'1px solid #334155',background:'transparent',color:'#94a3b8',fontFamily:'inherit'}}>
+                Close
+              </button>
+              {!pedRequestSent && (
+                <button onClick={async () => {
+                  if (!user || !pedBlockedCase) return;
+                  try {
+                    await messageService.send({
+                      senderId: (user as any).id,
+                      senderName: (user as any).name,
+                      recipientId: 'u3',
+                      recipientName: 'System Admin',
+                      subject: `Pediatric Access Request — ${(user as any).name}`,
+                      body: `${(user as any).name} needs Pediatric Access for case ${pedBlockedCase.id} (patient age ${pedBlockedCase.age}).\n\nTo grant access:\n1. Go to Configuration → Client Dictionary\n2. Open the submitting client for this case\n3. Add ${(user as any).name} to the Authorized Pediatric Pathologists list\n\nNote: Both the user-level Pediatric flag AND the client authorization must be set for access to be granted.`,
+                      configLink: pedBlockedCase.clientId
+                        ? `/configuration?tab=system&section=clients&client=${pedBlockedCase.clientId}`
+                        : '/configuration?tab=system&section=clients',
+                      timestamp: new Date(),
+                      isUrgent: false,
+                    });
+                    markPedRequested(pedBlockedCase.id);
+                    reloadInbox(); // refresh messaging context immediately
+                    // Audit: permission request sent
+                    auditService.logEvent({
+                      type: 'system',
+                      event: 'Pediatric Access Requested',
+                      detail: `${(user as any)?.name ?? 'Unknown'} requested Pediatric Access permission for case ${pedBlockedCase!.id} (patient age ${pedBlockedCase!.age}). Request sent to System Admin.`,
+                      user: (user as any)?.name ?? 'Unknown',
+                      caseId: pedBlockedCase!.id,
+                      confidence: null,
+                    }).catch(() => {});
+                  } catch { markPedRequested(pedBlockedCase.id); }
+                }}
+                style={{padding:'9px 20px',borderRadius:8,fontSize:13,fontWeight:700,
+                  cursor:'pointer',border:'none',background:'#f59e0b',color:'#000',fontFamily:'inherit'}}>
+                  Request Pediatric Access
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

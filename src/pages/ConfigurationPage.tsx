@@ -19,9 +19,8 @@ import SystemTab     from '../components/Config/System/index';
 import MacrosTab     from '../components/Config/Macros/index';
 import VoiceSettings from '../components/Voice/VoiceSettings';
 import { ActionsTab } from '../components/Config/Actions/ActionsTab';
-import { DemoResetTab } from '../components/Config/System/DemoResetTab';
 
-const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros', 'demoreset'] as const;
+const VALID_TABS = ['ai', 'models', 'protocols', 'staff', 'voice', 'system', 'narrative', 'actions', 'macros'] as const;
 type TabId = typeof VALID_TABS[number];
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
@@ -34,7 +33,6 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: 'actions',   label: 'Action Registry'   },
   { id: 'macros',    label: 'Macros'            },
   { id: 'narrative', label: 'Narrative Templates' },
-  { id: 'demoreset', label: '⟳ Demo Reset'          },
 
 ];
 
@@ -105,7 +103,6 @@ const ConfigurationPage: React.FC = () => {
       case 'protocols': return <ProtocolsTab />;
       case 'staff':     return <StaffTab />;
       case 'system':    return <SystemTab />;
-      case 'demoreset': return <DemoResetTab />;
       case 'actions':   return <ActionsTab />;
       case 'macros':    return <MacrosTab />;
       case 'voice':     return <VoiceSettings />;
@@ -117,17 +114,17 @@ const ConfigurationPage: React.FC = () => {
   if (!isLoaded) return <div style={{ padding: '24px', color: '#e2e8f0' }}>Loading configuration…</div>;
 
   return (
-    <div style={{ minHeight: '100vh', color: '#f1f5f9' }}>
-      <div style={{ padding: '32px 40px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', color: '#f1f5f9', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '32px 40px 0', boxSizing: 'border-box' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: '28px' }}>
+        <div style={{ marginBottom: '28px', flexShrink: 0 }}>
           <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#f1f5f9', marginBottom: '4px' }}>Configuration</h1>
           <p style={{ fontSize: '13px', color: '#94a3b8' }}>Control AI behavior, templates, users, and system settings</p>
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #1e293b' }}>
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
           {TAB_LABELS.map(tab => (
             <button
               key={tab.id}
@@ -147,8 +144,8 @@ const ConfigurationPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 220px)', paddingBottom: 40 }}>
+        {/* Tab Content — fills remaining height, scrolls internally */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: 40, width: '100%', display: 'flex', flexDirection: 'column' }}>
           {renderActiveTab()}
         </div>
       </div>

@@ -34,8 +34,6 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setCardVisible(true), 50);
@@ -83,29 +81,13 @@ export default function Login() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter your email and password.");
-      return;
-    }
-    setError("");
-    setIsLoading(true);
-    try {
-      const success = await login(email, password);
-      if (success) {
-        navigate("/");
-      } else {
-        setError("Incorrect email or password. Please try again.");
-      }
-    } catch {
-      setError("Unable to sign in. Please check your connection and try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    const success = await login(email, password);
+    if (success) navigate("/");
   }
 
   return (
     <div style={{
-      height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center",
+      height: "var(--app-height, 100vh)", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center",
       backgroundImage: `url('/main_background.jpg')`, backgroundSize: "cover", backgroundPosition: "center",
       position: "relative", overflow: "hidden", fontFamily: "sans-serif"
     }}>
@@ -140,27 +122,19 @@ export default function Login() {
 
         <form onSubmit={handleLogin}>
           <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: isDark ? "#cbd5e1" : "#475569" }}>Email</label>
-          <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} onFocus={() => setPauseAnimation(true)} onBlur={() => setPauseAnimation(false)}
-            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: error ? "1px solid rgba(239,68,68,0.6)" : isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)", background: isDark ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.5)", color: isDark ? "#fff" : "#000", marginBottom: "16px", outline: "none", boxSizing: "border-box" }} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setPauseAnimation(true)} onBlur={() => setPauseAnimation(false)}
+            style={{ width: "100%", padding: "12px", borderRadius: "8px", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)", background: isDark ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.5)", color: isDark ? "#fff" : "#000", marginBottom: "16px", outline: "none", boxSizing: "border-box" }} />
 
           <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: isDark ? "#cbd5e1" : "#475569" }}>Password</label>
           <div style={{ position: "relative", marginBottom: "20px" }}>
-            <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} onFocus={() => setPauseAnimation(true)} onBlur={() => setPauseAnimation(false)}
+            <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setPauseAnimation(true)} onBlur={() => setPauseAnimation(false)}
               style={{ width: "100%", padding: "12px", paddingRight: "45px", borderRadius: "8px", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)", background: isDark ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.5)", color: isDark ? "#fff" : "#000", outline: "none", boxSizing: "border-box" }} />
             <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: isDark ? "#94a3b8" : "#64748b" }}>
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
 
-          {error && (
-            <div style={{ marginBottom: "16px", padding: "10px 14px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: isDark ? "#fca5a5" : "#dc2626", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              {error}
-            </div>
-          )}
-          <button type="submit" disabled={isLoading} style={{ width: "100%", padding: "14px", borderRadius: "8px", border: "none", background: isLoading ? "rgba(37,99,235,0.6)" : "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", fontWeight: 600, cursor: isLoading ? "wait" : "pointer", marginBottom: "16px", transition: "all 0.2s" }}>
-            {isLoading ? "Signing in…" : "Sign In"}
-          </button>
+          <button type="submit" style={{ width: "100%", padding: "14px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", fontWeight: 600, cursor: "pointer", marginBottom: "16px" }}>Sign In</button>
           
           <div style={{ textAlign: "center", marginBottom: "20px" }}>
             <a href="#" style={{ fontSize: "13px", color: isDark ? "#60a5fa" : "#2563eb", textDecoration: "none" }}>Forgot password?</a>

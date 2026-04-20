@@ -9,7 +9,7 @@ import {
   ActionId, PermissionSet,
 } from '../../../constants/systemActions';
 import { loadParticipationTypes, ParticipationType } from '../System/ParticipationTypesSection';
-import { roleService } from '../../../services';
+import { roleService, auditService } from '../../../services';
 import {
   overlay, modalBox, modalHeaderStyle, modalFooterStyle,
   cancelButtonStyle, applyButtonStyle,
@@ -101,6 +101,7 @@ const RoleModal: React.FC<{
     description: role?.description ?? '',
     color: role?.color ?? '#8AB4F8',
     caseAccess: role?.caseAccess ?? false,
+    canViewPediatric: (role as any)?.canViewPediatric ?? false,
     configAccess: role?.configAccess ?? false,
     permissions: role?.permissions ?? {},
     builtIn: role?.builtIn ?? false,
@@ -230,6 +231,19 @@ const RoleModal: React.FC<{
             <input type="checkbox" checked={draft.configAccess} onChange={e => setDraft(d => ({ ...d, configAccess: e.target.checked }))}
               style={{ width: 16, height: 16, accentColor: '#8AB4F8', cursor: 'pointer' }} />
             <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>Config Access</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flexShrink: 0,
+            padding: '4px 10px', borderRadius: 6,
+            background: (draft as any).canViewPediatric ? 'rgba(245,158,11,0.1)' : 'transparent',
+            border: `1px solid ${(draft as any).canViewPediatric ? 'rgba(245,158,11,0.35)' : 'transparent'}`,
+          }}>
+            <input type="checkbox"
+              checked={(draft as any).canViewPediatric ?? false}
+              onChange={e => setDraft(d => ({ ...d, canViewPediatric: e.target.checked } as any))}
+              style={{ width: 16, height: 16, accentColor: '#f59e0b', cursor: 'pointer' }} />
+            <span style={{ fontSize: 13, color: (draft as any).canViewPediatric ? '#f59e0b' : '#9ca3af', fontWeight: 600 }}>
+              Pediatric Access
+            </span>
           </label>
         </div>
 
@@ -649,6 +663,19 @@ const RoleDictionary: React.FC<{ onRolesChange?: (roles: Role[]) => void }> = ({
       if (res.ok) {
         const next = roles.map(r => r.id === res.data.id ? res.data : r);
         setRoles(next); onRolesChange?.(next);
+        // Audit: log if Pediatric Access permission changed
+        const prevPed = (modal.role as any)?.canViewPediatric ?? false;
+        const newPed  = (draft as any)?.canViewPediatric ?? false;
+        if (prevPed !== newPed) {
+          auditService.logEvent({
+            type: 'system',
+            event: newPed ? 'Pediatric Access Granted' : 'Pediatric Access Revoked',
+            detail: `Pediatric Access ${newPed ? 'enabled' : 'disabled'} on role "${draft.name}" by administrator.`,
+            user: 'System Admin',
+            caseId: null,
+            confidence: null,
+          }).catch(() => {});
+        }
       }
     }
     setModal(null);
@@ -708,6 +735,11 @@ const RoleDictionary: React.FC<{ onRolesChange?: (roles: Role[]) => void }> = ({
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: role.caseAccess ? '#22c55e' : '#374151' }}>{role.caseAccess ? '✓ Yes' : '— No'}</span>
+                    {(role as any).canViewPediatric && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginLeft: 6, padding: '1px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                        Peds
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: role.configAccess ? '#22c55e' : '#374151' }}>{role.configAccess ? '✓ Yes' : '— No'}</span>
