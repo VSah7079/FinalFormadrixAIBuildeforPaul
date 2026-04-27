@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVoice } from '../../contexts/VoiceProvider';
 
-const CaseSearchBar: React.FC = () => {
+interface CaseSearchBarProps {
+  compact?: boolean;
+}
+
+const CaseSearchBar: React.FC<CaseSearchBarProps> = ({ compact = false }) => {
   const [caseNumber, setCaseNumber] = useState('');
   const [scanFlash, setScanFlash]   = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +64,15 @@ const CaseSearchBar: React.FC = () => {
       ? '#F59E0B'
       : 'rgba(255,255,255,0.1)';
 
+  // Compact mode: slimmer padding, smaller icon, tighter radius — designed for the
+  // 280px inline slot in the WorklistPage header row.
+  const iconSize  = compact ? 16 : 20;
+  const iconLeft  = compact ? '10px' : '16px';
+  const iconTop   = compact ? '8px'  : '12px';
+  const inputPad  = compact ? '8px 40px 8px 34px' : '12px 48px 12px 48px';
+  const radius    = compact ? '8px'  : '10px';
+  const fontSize  = compact ? '12px' : 'inherit';
+
   return (
     <div style={{ width: '100%', position: 'relative' }}>
       <input
@@ -68,26 +81,29 @@ const CaseSearchBar: React.FC = () => {
         value={caseNumber}
         onChange={(e) => setCaseNumber(e.target.value.toUpperCase())}
         onKeyDown={handleKeyDown}
-        placeholder="Enter or scan case number..."
+        placeholder={compact ? 'Case / scan…' : 'Enter or scan case number...'}
+        aria-label="Search or scan case number"
         style={{
           width: '100%',
-          padding: '12px 48px 12px 48px',
+          padding: inputPad,
+          fontSize,
           background: scanFlash ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.05)',
           border: `2px solid ${borderColor}`,
-          borderRadius: '10px',
+          borderRadius: radius,
           color: '#fff',
           outline: 'none',
           transition: 'all 0.2s',
+          boxSizing: 'border-box',
         }}
       />
       {/* Icon */}
-      <div style={{ position: 'absolute', left: '16px', top: '12px', color: scanFlash ? '#10B981' : phase === 'direct' ? '#F59E0B' : '#64748b' }}>
+      <div style={{ position: 'absolute', left: iconLeft, top: iconTop, color: scanFlash ? '#10B981' : phase === 'direct' ? '#F59E0B' : '#94a3b8', pointerEvents: 'none' }}>
         {scanFlash ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         )}
@@ -96,14 +112,23 @@ const CaseSearchBar: React.FC = () => {
       {caseNumber.trim().length > 3 && !scanFlash && (
         <button
           onClick={() => { navigate(`/case/${caseNumber.trim()}/synoptic`); setCaseNumber(''); }}
-          style={{ position: 'absolute', right: '8px', top: '7px', padding: '5px 12px', background: '#0891B2', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+          aria-label="Open case"
+          style={{
+            position: 'absolute', right: '6px',
+            top: compact ? '5px' : '7px',
+            padding: compact ? '3px 10px' : '5px 12px',
+            background: '#0891B2', border: 'none',
+            borderRadius: '6px', color: '#fff',
+            fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            minHeight: '32px',
+          }}
         >
           Go →
         </button>
       )}
       {/* Scan success indicator */}
       {scanFlash && (
-        <div style={{ position: 'absolute', right: '12px', top: '12px', fontSize: '12px', fontWeight: 600, color: '#10B981' }}>
+        <div style={{ position: 'absolute', right: '10px', top: compact ? '8px' : '12px', fontSize: '12px', fontWeight: 600, color: '#10B981' }}>
           ✓ Scanned
         </div>
       )}

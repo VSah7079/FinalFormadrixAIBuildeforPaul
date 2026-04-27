@@ -21,6 +21,7 @@ const WorklistPage: React.FC = () => {
   const [activeFilter, setActiveFilter]       = useState<'all' | 'review' | 'completed' | 'urgent' | 'physician' | 'pool' | 'delegated' | 'inprogress' | 'amended' | 'draft' | 'finalizing'>('all');
   const [realCases, setRealCases]             = useState<Case[]>([]);
   const [delegatedToMeCount, setDelegatedToMeCount] = useState(0);
+  const [delegatedCaseIds, setDelegatedCaseIds]     = useState<string[]>([]);
   const [physicianFilter, setPhysicianFilter] = useState<string>('');
   const [physicianPrompt, setPhysicianPrompt] = useState<string | null>(null);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
@@ -73,13 +74,14 @@ const WorklistPage: React.FC = () => {
 
   useEffect(() => {
     const canViewPeds = (user as any)?.canViewPediatric ?? false;
-    mockCaseService.listCasesForUser(user?.id ?? 'current', canViewPeds).then(cases => {
+    mockCaseService.listCasesForUser(user?.id ?? 'current').then(cases => {
       setRealCases(cases);
     }).catch(() => {});
-    // Load delegated-to-me count
+    // Load delegated-to-me count + case IDs
     getDelegations().then(all => {
-      const count = all.filter(d => d.toUserId === CURRENT_USER_ID && d.status === 'pending').length;
-      setDelegatedToMeCount(count);
+      const mine = all.filter(d => d.toUserId === CURRENT_USER_ID && d.status === 'pending');
+      setDelegatedToMeCount(mine.length);
+      setDelegatedCaseIds(mine.map(d => d.caseId).filter(Boolean));
     }).catch(() => {});
   }, [user?.id, location.key]);
 
@@ -167,12 +169,11 @@ const WorklistPage: React.FC = () => {
 
   const filteredCases = realCases.filter(c => {
     if (!canViewCase(c)) return false; // ← pediatric access gate
-    if (activeFilter === 'pool')       return (c as any).status === 'pool';
-    if (activeFilter === 'all')        return (c as any).status !== 'pool';
-    // Urgent shows pool cases too — they appear grouped as pool in the list
+    if (activeFilter === 'pool')       return c.status === 'pool';
+    if (activeFilter === 'all')        return true; // pool cases shown under Pool group
+    // Pool cases always pass through so they appear under their own group
+    if (c.status === 'pool')  return true;
     if (activeFilter === 'urgent')     return c.order?.priority === 'STAT';
-    // All other filters exclude pool cases
-    if ((c as any).status === 'pool')  return false;
     if (activeFilter === 'review')     return c.status === 'pending-review';
     if (activeFilter === 'completed')  return c.status === 'finalized';
     if (activeFilter === 'draft')      return c.status === 'draft';
@@ -182,13 +183,13 @@ const WorklistPage: React.FC = () => {
     return true;
   });
 
-  const nonPoolCases = realCases.filter(c => (c as any).status !== 'pool' && canViewCase(c));
+  const nonPoolCases = realCases.filter(c => c.status !== 'pool' && canViewCase(c));
   const stats = {
     total:          nonPoolCases.length,
-    pool:           realCases.filter(c => (c as any).status === 'pool').length,
+    pool:           realCases.filter(c => c.status === 'pool').length,
     inProgress:     nonPoolCases.filter(c => c.status === 'in-progress').length,
     needsReview:    nonPoolCases.filter(c => c.status === 'pending-review').length,
-    urgent:         nonPoolCases.filter(c => c.order?.priority === 'STAT').length,
+    urgent:         realCases.filter(c => canViewCase(c) && c.order?.priority === 'STAT').length,
     amended:        nonPoolCases.filter(c => c.status === 'amended').length,
     draft:          nonPoolCases.filter(c => c.status === 'draft').length,
     finalizing:     nonPoolCases.filter(c => c.status === 'finalizing').length,
@@ -401,17 +402,12 @@ const WorklistPage: React.FC = () => {
       {/* All content — fills viewport exactly, no overflow */}
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-        {/* Search bar — fixed height, never scrolls */}
-        <div data-capture-hide="true" style={{ flexShrink: 0, padding: '12px 24px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <CaseSearchBar />
-        </div>
-
         {/* Main — fills remaining height */}
         <main style={{ flex: 1, minHeight: 0, padding: '12px 20px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
-            {/* Header row — title LEFT, tiles RIGHT, fixed height */}
-            <div data-capture-hide="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexShrink: 0 }}>
+            {/* Header row — title LEFT, search + tiles RIGHT */}
+            <div data-capture-hide="true" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '20px', flexShrink: 0 }}>
 
               {/* Title */}
               <div style={{ flexShrink: 0 }}>
@@ -423,6 +419,14 @@ const WorklistPage: React.FC = () => {
                   }
                 </p>
               </div>
+
+              {/* Right side — compact search + tiles */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flex: 1, minWidth: 0 }}>
+
+                {/* Compact search bar — sits above the tiles, right-aligned */}
+                <div data-capture-hide="true" style={{ width: '100%', maxWidth: '280px' }}>
+                  <CaseSearchBar compact />
+                </div>
 
               {/* Tiles — right side, compact, act as filter buttons */}
               <div style={{ display: 'flex', gap: '6px', alignItems: 'stretch', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -442,6 +446,7 @@ const WorklistPage: React.FC = () => {
                         padding:        '6px 14px',
                         backdropFilter: 'blur(10px)',
                         minWidth:       '90px',
+                        minHeight:      '44px',
                         cursor:         'pointer',
                         transition:     'all 0.15s ease',
                         textAlign:      'left' as const,
@@ -450,7 +455,7 @@ const WorklistPage: React.FC = () => {
                         marginRight:    '6px', // extra breathing room before divider
                       }}
                     >
-                      <div style={{ fontSize: '8px', fontWeight: 800, color: isActive ? '#e2e8f0' : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: isActive ? '#e2e8f0' : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         {isActive && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#e2e8f0', display: 'inline-block', flexShrink: 0 }} />}
                         ⬡ Total Cases
                       </div>
@@ -468,7 +473,7 @@ const WorklistPage: React.FC = () => {
                 {([
                   { key: 'pool',       label: activeFilter === 'pool' ? '← Back to My Cases' : 'Pool Cases',      count: stats.pool,           color: '#F97316', bg: 'rgba(249,115,22,0.05)',  border: 'rgba(249,115,22,0.18)',  activeBg: 'rgba(249,115,22,0.18)',  activeBorder: '#F97316',               glow: '0 0 12px rgba(249,115,22,0.4)' },
                   { key: 'delegated',  label: 'Delegated to Me', count: delegatedToMeCount,   color: '#38bdf8', bg: 'rgba(56,189,248,0.05)',  border: 'rgba(56,189,248,0.18)',  activeBg: 'rgba(56,189,248,0.18)',  activeBorder: '#38bdf8',               glow: '0 0 12px rgba(56,189,248,0.4)' },
-                  { key: 'urgent',     label: 'Critical',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
+                  { key: 'urgent',     label: 'Urgent',        count: stats.urgent,         color: '#EF4444', bg: 'rgba(239,68,68,0.05)',   border: 'rgba(239,68,68,0.18)',   activeBg: 'rgba(239,68,68,0.18)',   activeBorder: '#EF4444',               glow: '0 0 12px rgba(239,68,68,0.4)' },
                   { key: 'inprogress', label: 'In Progress',     count: stats.inProgress,     color: '#0891B2', bg: 'rgba(8,145,178,0.05)',   border: 'rgba(8,145,178,0.18)',   activeBg: 'rgba(8,145,178,0.18)',   activeBorder: '#0891B2',               glow: '0 0 12px rgba(8,145,178,0.4)' },
                   { key: 'review',     label: 'Needs Review',    count: stats.needsReview,    color: '#F59E0B', bg: 'rgba(245,158,11,0.05)',  border: 'rgba(245,158,11,0.18)',  activeBg: 'rgba(245,158,11,0.18)',  activeBorder: '#F59E0B',               glow: '0 0 12px rgba(245,158,11,0.4)' },
                   { key: 'amended',    label: 'Amended',         count: stats.amended,        color: '#8B5CF6', bg: 'rgba(139,92,246,0.05)',  border: 'rgba(139,92,246,0.18)',  activeBg: 'rgba(139,92,246,0.18)',  activeBorder: '#8B5CF6',               glow: '0 0 12px rgba(139,92,246,0.4)' },
@@ -490,6 +495,7 @@ const WorklistPage: React.FC = () => {
                         padding:        '6px 12px',
                         backdropFilter: 'blur(10px)',
                         minWidth:       '80px',
+                        minHeight:      '44px',
                         cursor:         'pointer',
                         transition:     'all 0.15s ease',
                         textAlign:      'left' as const,
@@ -497,7 +503,7 @@ const WorklistPage: React.FC = () => {
                         transform:      isActive ? 'translateY(-1px)' : 'none',
                       }}
                     >
-                      <div style={{ fontSize: '8px', fontWeight: 800, color: isActive ? tile.color : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: isActive ? tile.color : '#8899aa', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         {isActive && <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: tile.color, display: 'inline-block', flexShrink: 0 }} />}
                         {tile.label}
                       </div>
@@ -514,6 +520,7 @@ const WorklistPage: React.FC = () => {
                   </div>
                 )}
               </div>
+              </div>{/* end right-side column */}
             </div>
 
             {/* Physician voice prompt — conditional, fixed height */}
@@ -533,6 +540,7 @@ const WorklistPage: React.FC = () => {
                 cases={realCases}
                 activeFilter={activeFilter}
                 tableHeight={tableHeight}
+                delegatedCaseIds={delegatedCaseIds}
                 onPoolCaseClick={(caseId, summary) => {
                   const c = realCases.find(c => c.id === caseId);
                   setClaimModal({
