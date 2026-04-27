@@ -28,6 +28,7 @@ interface WorklistTableProps {
   cases: Case[];
   activeFilter: string;
   tableHeight?: number;
+  delegatedCaseIds?: string[];
   onBeforeNavigate?: (caseId: string) => void;
   onPoolCaseClick?: (caseId: string, summary: string) => void;
   selectedIndex?: number;
@@ -324,6 +325,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
   cases,
   activeFilter,
   tableHeight,
+  delegatedCaseIds = [],
   onBeforeNavigate,
   onPoolCaseClick,
   selectedIndex = -1,
@@ -541,16 +543,27 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
    */
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
-      // 1. Show everything (non-pool)
-      if (activeFilter === 'all') return (c as any).status !== 'pool';
+      // 1. Show everything — pool cases are grouped separately in the table
+      if (activeFilter === 'all') return true;
 
-      // 1b. Pool queue
-      if (activeFilter === 'pool') return (c as any).status === 'pool';
+      // 1b. Pool queue (show only pool)
+      if (activeFilter === 'pool') return c.status === 'pool';
+
+      // Pool cases: only pass through for filters where they can actually qualify.
+      // Status-based filters (inprogress, review, amended, draft etc.) should NOT
+      // show pool cases — pool cases have status='pool' and won't match those statuses.
+      if (c.status === 'pool') {
+        if (activeFilter === 'urgent') return isUrgentCase(c);
+        return false; // excluded from all status-specific filters
+      }
 
       // 2. Urgent / STAT cases only
       if (activeFilter === 'urgent') return isUrgentCase(c);
 
-      // 3. Status-based filters
+      // 3. Delegated to me
+      if (activeFilter === 'delegated') return delegatedCaseIds.includes(c.id);
+
+      // 4. Status-based filters — cast to any to bypass CaseStatus union constraint
       if (activeFilter === 'review')     return c.status === 'pending-review';
       if (activeFilter === 'inprogress') return c.status === 'in-progress';
       if (activeFilter === 'amended')    return c.status === 'amended';
@@ -610,12 +623,15 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
    * 3. Re-combines them so Urgent is always first.
    */
   const finalCases = useMemo(() => {
-    const urgent = filteredCases.filter(isUrgentCase);
-    const normal = filteredCases.filter((c) => !isUrgentCase(c));
+    const poolCases = filteredCases.filter(c => c.status === 'pool');
+    const nonPool   = filteredCases.filter(c => c.status !== 'pool');
+    const urgent    = nonPool.filter(isUrgentCase);
+    const normal    = nonPool.filter(c => !isUrgentCase(c));
 
     return [
       ...sortGroup(urgent),
-      ...sortGroup(normal)
+      ...sortGroup(normal),
+      ...sortGroup(poolCases),
     ];
   }, [filteredCases, isUrgentCase, sortGroup]);
 
@@ -691,30 +707,33 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
    * Maps the sorted cases into a format that includes UI dividers.
    */
   const displayRows = useMemo<DisplayRow[]>(() => {
-    const urgent = finalCases.filter(isUrgentCase);
-    const normal = finalCases.filter(c => !isUrgentCase(c));
+    const pool        = finalCases.filter(c => c.status === 'pool');
+    const poolUrgent  = pool.filter(isUrgentCase);
+    const poolNormal  = pool.filter(c => !isUrgentCase(c));
+    const urgent      = finalCases.filter(c => isUrgentCase(c) && c.status !== 'pool');
+    const normal      = finalCases.filter(c => !isUrgentCase(c) && c.status !== 'pool');
     const rows: DisplayRow[] = [];
-    
-    // If there are STAT cases, add the Urgent section
+
+    // Urgent non-pool cases always first
     if (urgent.length > 0) {
-      rows.push({ 
-        __divider: true, 
-        label: 'Urgent', 
-        count: urgent.length 
-      });
+      rows.push({ __divider: true, label: 'Urgent',    count: urgent.length });
       rows.push(...urgent);
     }
-    
-    // Add the standard section
+    // Normal non-pool cases
     if (normal.length > 0) {
-      rows.push({ 
-        __divider: true, 
-        label: 'All Cases', 
-        count: normal.length 
-      });
+      rows.push({ __divider: true, label: 'All Cases', count: normal.length });
       rows.push(...normal);
     }
-    
+    // Pool urgent cases before pool normal
+    if (poolUrgent.length > 0) {
+      rows.push({ __divider: true, label: 'Pool — Urgent', count: poolUrgent.length });
+      rows.push(...poolUrgent);
+    }
+    if (poolNormal.length > 0) {
+      rows.push({ __divider: true, label: 'Pool', count: poolNormal.length });
+      rows.push(...poolNormal);
+    }
+
     return rows;
   }, [finalCases, isUrgentCase]);
 
@@ -855,7 +874,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                 if ('__divider' in row) {
                   return (
                     <div key={`div-${row.label}-${rowIndex}`} className="wl-card-divider">
-                      <span className={`wl-card-divider__label${row.label === 'Urgent' ? ' wl-card-divider__label--urgent' : ''}`}>
+                      <span className={`wl-card-divider__label${row.label === 'Urgent' || row.label === 'Pool — Urgent' ? ' wl-card-divider__label--urgent' : row.label === 'Pool' ? ' wl-card-divider__label--pool' : ''}`}>
                         {row.label}
                       </span>
                       <span className="wl-card-divider__count">{row.count}</span>
@@ -1071,7 +1090,7 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
                 // Case row
                 const c = row as Case;
                 const isUrgent = isUrgentCase(c);
-                const isPool   = (c as any).status === 'pool';
+                const isPool   = c.status === 'pool';
                 const isSelected = selectedCaseId ? c.id === selectedCaseId : false;
                 const isHovered = hoveredRow === c.id;
 
@@ -1237,9 +1256,10 @@ const WorklistTable: React.FC<WorklistTableProps> = ({
         /* ── Card layout (tablet < 1024px) ── */
         .wl-card-list { padding: 12px; overflow-x: hidden; }
         .wl-card-divider { display: flex; align-items: center; gap: 8px; padding: 16px 4px 8px; }
-        .wl-card-divider__label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+        .wl-card-divider__label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }
         .wl-card-divider__label--urgent { color: #f87171; }
-        .wl-card-divider__count { font-size: 9px; background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 10px; color: #64748b; }
+        .wl-card-divider__label--pool   { color: #F97316; }
+        .wl-card-divider__count { font-size: 11px; background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 10px; color: #94a3b8; }
         .wl-card-divider__line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
 
         .wl-card {

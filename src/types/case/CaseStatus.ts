@@ -46,4 +46,7 @@ export type CaseStatus =
   | "pool"
 
   /** Case is temporarily locked while a pathologist is reviewing the accept/pass prompt — released after 30s if not confirmed */
-  | "claiming";
+  | "claiming"
+
+  /** Case is in the process of being finalized — synoptic complete, awaiting sign-out */
+  | "finalizing";

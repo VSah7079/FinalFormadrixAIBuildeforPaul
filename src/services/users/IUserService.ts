@@ -15,10 +15,17 @@ export interface StaffUser {
   department: string;
   signatureUrl?: string;
   status: 'Active' | 'Inactive';
-  /** * The personal linguistic override. 
+  /** The personal linguistic override.
    * If undefined/null, the system falls back to the Global Facility Profile.
    */
-  voiceProfile?: VoiceProfileId | null; 
+  voiceProfile?: VoiceProfileId | null;
+  /** Professional credentials suffix (e.g. MD, FCAP, MBChB, FRCPath) */
+  credentials?: string;
+  /** Option C — user-level pediatric qualification flag.
+   * Must also be on the client's authorizedPediatricPathologistIds list. */
+  canViewPediatric?: boolean;
+  /** GMC number for UK users */
+  gmcNumber?: string;
 }
 
 export interface IUserService {

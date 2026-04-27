@@ -12,7 +12,7 @@
   --msg-border:       rgba(255,255,255,0.07);
   --msg-border-hover: rgba(255,255,255,0.13);
   --msg-text:         #d0daea;
-  --msg-muted:        #4e607a;
+  --msg-muted:        #6b7f99;   /* 4.70:1 ✅ — was #4e607a (3.24:1 ❌) */
   --msg-accent:       #0891B2;
   --msg-accent-dim:   rgba(8,145,178,0.12);
   --msg-urgent:       #EF4444;
@@ -286,19 +286,23 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 9px 14px;
-  background: var(--msg-accent);
+  padding: 11px 16px;                       /* taller — easier to find */
+  background: #076f92;                      /* 5.68:1 ✅ — was #0891B2 (3.68:1 ❌) */
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 9px;
+  font-size: 13.5px;                        /* slightly larger, more readable */
+  font-weight: 700;                         /* bolder — more prominent */
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.1px;
+  box-shadow: 0 2px 12px rgba(8, 145, 178, 0.35);  /* teal glow — easier to spot */
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  min-height: 44px;                         /* WCAG 2.5.5 touch target */
 }
 .ps-msg-compose-btn:hover {
-  background: #0a9fc7;
+  background: #0880a8;
   transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(8, 145, 178, 0.5);
 }
 
 .ps-msg-email-btn {

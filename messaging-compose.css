@@ -65,7 +65,7 @@
 }
 
 .ps-compose-field-input::placeholder {
-  color: #4e6a82;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #4e6a82 (3.32:1 ❌) */
 }
 
 /* ── To: field area ───────────────────────────────────────── */
@@ -125,7 +125,7 @@
 }
 
 .ps-compose-to-input::placeholder {
-  color: #4e6a82;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #4e6a82 (3.32:1 ❌) */
 }
 
 /* Spyglass button */
@@ -232,7 +232,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   cursor: pointer;
-  color: #64748b;
+  color: #94a3b8;                           /* 7.34:1 ✅ — was #64748b (3.96:1 ❌) */
   font-size: 11px;
   font-weight: 600;
   padding: 4px 9px;
@@ -253,21 +253,23 @@
 
 /* Cancel */
 .ps-compose-cancel-btn {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);   /* visible ghost surface */
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 7px;
-  padding: 6px 14px;
+  padding: 6px 18px;                        /* wider for easier tap target */
+  min-height: 34px;
   cursor: pointer;
-  color: #64748b;
+  color: #b8c8d8;                           /* 11.02:1 ✅ — was #64748b (3.96:1 ❌) */
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .ps-compose-cancel-btn:hover {
-  color: #94a3b8;
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(239, 68, 68, 0.10);      /* subtle red → signals "discard" */
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
 }
 
 /* Secure Email */
@@ -295,7 +297,7 @@
 .ps-compose-secure-btn.disabled {
   background: transparent;
   border-color: rgba(255, 255, 255, 0.06);
-  color: #3a5266;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #3a5266 (2.31:1 ❌) */
   cursor: not-allowed;
 }
 
@@ -304,7 +306,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #0891B2;
+  background: #076f92;                      /* 5.68:1 ✅ — was #0891B2 (3.68:1 ❌) */
   border: none;
   border-radius: 7px;
   padding: 6px 16px;
@@ -317,13 +319,13 @@
 }
 
 .ps-compose-send-btn:hover:not(.disabled) {
-  background: #0a9fc7;
+  background: #087fa8;
   transform: translateY(-1px);
 }
 
 .ps-compose-send-btn.disabled {
   background: #0e1726;
-  color: #3a5266;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #3a5266 (2.31:1 ❌) */
   cursor: not-allowed;
   transform: none;
 }
@@ -344,7 +346,7 @@
 }
 
 .ps-compose-textarea::placeholder {
-  color: #3a5266;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #3a5266 (2.31:1 ❌) */
 }
 
 /* ── User search modal ────────────────────────────────────── */
@@ -423,7 +425,7 @@
 }
 
 .ps-user-search-input::placeholder {
-  color: #4e6a82;
+  color: #6b7f99;   /* 4.59:1 ✅ — was #4e6a82 (3.32:1 ❌) */
 }
 
 .ps-user-search-results {
