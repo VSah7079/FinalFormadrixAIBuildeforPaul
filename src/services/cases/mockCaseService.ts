@@ -2942,7 +2942,7 @@ export async function findSimilarCases(
 
     results.push({
       caseId: c.id,
-      accession: c.accession.fullAccession,
+      accession: c.accession.fullAccession ?? c.accession.accessionNumber ?? '',
       patientInitials,
       date: new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       diagnosis: primaryReport?.templateName?.replace('CAP ', '').replace(' — Resection', '').replace(' — Needle Biopsy', '') ?? 'Unknown',

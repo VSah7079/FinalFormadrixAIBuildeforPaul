@@ -10,7 +10,7 @@
 //     setFlagDefinitions(result.data.map(adaptFlag));
 //   }
 
-import { Flag } from "../services/IFlagService";
+import { Flag } from "../services/flags/IFlagService";
 import { FlagDefinition } from "../types/FlagDefinition";
 
 export function adaptFlag(flag: Flag): FlagDefinition {

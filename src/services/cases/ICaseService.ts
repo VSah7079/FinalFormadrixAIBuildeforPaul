@@ -6,6 +6,24 @@
 
 import { Case } from "../../types/case/Case";
 
+// Re-export types for convenience
+export type { Case as PathologyCase } from "../../types/case/Case";
+export type { CaseStatus } from "../../types/case/CaseStatus";
+
+// Legacy type exports for backwards compatibility
+export type CasePriority = "Routine" | "STAT" | "ASAP" | "Critical";
+export type AIStatus = "pending" | "running" | "completed" | "failed";
+export type CaseFilterParams = Record<string, any>;
+export type CaseGender = "M" | "F" | "Other";
+export type FlagColor = "red" | "yellow" | "green" | "blue";
+
+export interface Flag {
+  id: string;
+  caseId: string;
+  color: FlagColor;
+  description?: string;
+}
+
 export interface ICaseService {
   /**
    * Fetch a single case by ID.

@@ -294,12 +294,12 @@ export async function publishTemplate(id: string, _note?: string): Promise<Trans
       if (meta.requesterId && meta.requesterName) {
         const { messageService } = await import('../../services');
         await messageService.send({
-          id: '', senderId: 'u3', senderName: 'System Admin',
+          senderId: 'u3', senderName: 'System Admin',
           recipientId: meta.requesterId, recipientName: meta.requesterName,
           subject: `Your template request is ready — ${entry.name}`,
           body: `Great news — the synoptic template you requested, "${entry.name}", has been published and is now available in the Synoptic Library. You can add it to any case via "+ Add Synoptic Report".`,
-          timestamp: new Date(), isRead: false, isDeleted: false, isUrgent: false,
-          caseNumber: '', thread: [],
+          timestamp: new Date(), isUrgent: false,
+          caseNumber: '',
         });
       }
     }

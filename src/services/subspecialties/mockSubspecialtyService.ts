@@ -8,56 +8,56 @@ const SEED_SUBSPECIALTIES: Subspecialty[] = [
     id: 'gi', name: 'Gastrointestinal',
     description: 'GI tract and hepatobiliary pathology.',
     userIds: ['1', '7'], specimenIds: ['sp1', 'sp2'], clientIds: ['c1'],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'breast', name: 'Breast',
     description: 'Breast pathology including oncology and benign disease.',
     userIds: ['1', '6'], specimenIds: ['sp3'], clientIds: ['c1', 'c2'],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'derm', name: 'Dermatopathology',
     description: 'Skin and soft tissue pathology.',
     userIds: ['6'], specimenIds: ['sp4', 'sp5'], clientIds: [],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'neuro', name: 'Neuropathology',
     description: 'CNS and peripheral nervous system pathology.',
     userIds: ['6'], specimenIds: ['sp6'], clientIds: [],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'heme', name: 'Hematopathology',
     description: 'Blood, bone marrow, and lymph node pathology.',
     userIds: ['9'], specimenIds: ['sp7'], clientIds: ['c3'],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'gyn', name: 'Gynecological',
     description: 'Female reproductive tract pathology.',
     userIds: ['1'], specimenIds: ['sp8'], clientIds: [],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'uro', name: 'Urological',
     description: 'Urinary tract and male reproductive pathology.',
     userIds: ['7'], specimenIds: ['sp9'], clientIds: [],
-    isWorkgroup: false, active: true, status: 'Active',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: true, status: 'Active',
   },
   {
     id: 'thoracic', name: 'Thoracic',
     description: 'Pulmonary and mediastinal pathology.',
     userIds: [], specimenIds: [], clientIds: [],
-    isWorkgroup: false, active: false, status: 'Inactive',
+    isWorkgroup: false, isWorkgroupEnabled: false, active: false, status: 'Inactive',
   },
   // ── Workgroup example ─────────────────────────────────────────────────────
   {
     id: 'oncology-pool', name: 'Oncology Pool',
     description: 'Shared queue for general oncology cases — any member can claim.',
     userIds: ['1', '6', '7', '9'], specimenIds: [], clientIds: ['c1', 'c2', 'c4'],
-    isWorkgroup: true, active: true, status: 'Active',
+    isWorkgroup: true, isWorkgroupEnabled: true, active: true, status: 'Active',
   },
 ];
 
@@ -67,6 +67,7 @@ const migrate = (s: any): Subspecialty => ({
   description:  s.description  ?? '',
   clientIds:    s.clientIds    ?? [],
   isWorkgroup:  s.isWorkgroup  ?? false,
+  isWorkgroupEnabled: s.isWorkgroupEnabled ?? (s.isWorkgroup ?? false),
   active:       s.active       ?? (s.status === 'Active'),
 });
 
